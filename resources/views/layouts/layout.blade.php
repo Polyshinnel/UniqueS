@@ -33,7 +33,7 @@
             <ul class="menu-list main-menu-list">
                 <li>
                     <div class="menu-block-item menu-block-item__active">
-                        <a href="/organizations"><img src="{{ asset('assets/img/icons/organizations.svg') }}" alt="events"></a>
+                        <a href="/"><img src="{{ asset('assets/img/icons/organizations.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
@@ -97,6 +97,6 @@
         </div>
     </div>
 
-    @yield('scripts')
+    @stack('scripts')
 </body>
 </html>

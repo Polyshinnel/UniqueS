@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('role_id')->nullable()->after('phone');
             $table->boolean('has_whatsapp')->default(false)->after('role_id');
             $table->boolean('has_telegram')->default(false)->after('has_whatsapp');
+            $table->boolean('active')->default(true);
 
             $table->foreign('role_id', 'user-role_id_foreign')->references('id')->on('role_lists');
         });

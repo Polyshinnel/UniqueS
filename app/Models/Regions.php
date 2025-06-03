@@ -10,4 +10,14 @@ class Regions extends Model
     use HasFactory;
 
     protected $guarded = false;
+
+    protected $fillable = [
+        'name',
+        'city_name',
+        'active'
+    ];
+
+    protected $casts = [
+        'active' => 'boolean'
+    ];
 }
