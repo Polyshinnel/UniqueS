@@ -553,3 +553,61 @@ body {
 .status-item-active{
     background: #133E71;
 }
+
+.selected-regions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.selected-regions .status-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+}
+
+.remove-region {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0;
+    line-height: 1;
+}
+
+.checkbox-group {
+    margin-bottom: 10px;
+}
+
+.checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.checkbox-group input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.region-list{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 3px;
+}
+
+.region-item{
+    padding: 5px 10px;
+    border-radius: 10px;
+    border: 1px solid #133E71;
+    font-size: 12px;
+}
+
+.user-form-content{
+    margin-top: 30px;
+}

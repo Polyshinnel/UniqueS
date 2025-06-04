@@ -24,6 +24,7 @@ class User extends Authenticatable
         'role_id',
         'has_whatsapp',
         'has_telegram',
+        'active',
         'password',
     ];
 
@@ -44,5 +45,19 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'has_whatsapp' => 'boolean',
+        'has_telegram' => 'boolean',
+        'active' => 'boolean',
     ];
+
+    public function regions()
+    {
+        return $this->belongsToMany(Regions::class, 'users_to_regions', 'user_id', 'region_id')
+            ->withTimestamps();
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(RoleList::class, 'role_id');
+    }
 }

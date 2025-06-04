@@ -32,25 +32,25 @@
 
             <ul class="menu-list main-menu-list">
                 <li>
-                    <div class="menu-block-item menu-block-item__active">
+                    <div class="menu-block-item {{ request()->is('/') ? 'menu-block-item__active' : '' }}">
                         <a href="/"><img src="{{ asset('assets/img/icons/organizations.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
                 <li>
-                    <div class="menu-block-item">
+                    <div class="menu-block-item {{ request()->is('products*') ? 'menu-block-item__active' : '' }}">
                         <a href="/products"><img src="{{ asset('assets/img/icons/machines.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
                 <li>
-                    <div class="menu-block-item">
+                    <div class="menu-block-item {{ request()->is('adv*') ? 'menu-block-item__active' : '' }}">
                         <a href="/adv"><img src="{{ asset('assets/img/icons/adv.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
                 <li>
-                    <div class="menu-block-item">
+                    <div class="menu-block-item {{ request()->is('guide*') ? 'menu-block-item__active' : '' }}">
                         <a href="/guide"><img src="{{ asset('assets/img/icons/book.svg') }}" alt="events"></a>
                     </div>
                 </li>
