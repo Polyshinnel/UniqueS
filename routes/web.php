@@ -19,9 +19,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/company', [\App\Http\Controllers\Company\CompanyController::class, 'index']);
+Route::get('/company/{company}', [\App\Http\Controllers\Company\CompanyController::class, 'show']);
+
 
 Route::get('/guide', [GuidesMain::class, 'index']);
 Route::get('/guide/users', [GuidesUsers::class, 'index'])->name('users.index');
