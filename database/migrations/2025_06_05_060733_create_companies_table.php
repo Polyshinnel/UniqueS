@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('inn')->nullable();
             $table->unsignedBigInteger('source_id');
             $table->unsignedBigInteger('region_id');
+            $table->unsignedBigInteger('regional_user_id');
             $table->unsignedBigInteger('owner_user_id');
             $table->string('email');
             $table->string('site');
@@ -27,6 +28,7 @@ return new class extends Migration
 
             $table->foreign('source_id')->references('id')->on('sources');
             $table->foreign('region_id')->references('id')->on('regions');
+            $table->foreign('regional_user_id')->references('id')->on('users');
             $table->foreign('owner_user_id')->references('id')->on('users');
             $table->foreign('company_status_id')->references('id')->on('company_statuses');
         });

@@ -18,6 +18,34 @@ return new class extends Migration
             $table->boolean('active')->default(true);
             $table->timestamps();
         });
+
+        $companyStatuses = [
+            [
+                'name' => 'В работе',
+                'color' => '#133E71',
+                'active' => true,
+            ],
+            [
+                'name' => 'Вторая очередь',
+                'color' => '#35A645',
+                'active' => true,
+            ],
+            [
+                'name' => 'Холд',
+                'color' => '#DF7F2B',
+                'active' => true,
+            ],
+            [
+                'name' => 'Отказ',
+                'color' => '#F60F0F',
+                'active' => true,
+            ],
+        ];
+
+        foreach ($companyStatuses as $companyStatus) {
+            DB::table('company_statuses')->insert($companyStatus);
+        }
+
     }
 
     /**

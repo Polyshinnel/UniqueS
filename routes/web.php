@@ -19,8 +19,9 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/company', [\App\Http\Controllers\Company\CompanyController::class, 'index']);
-Route::get('/company/{company}', [\App\Http\Controllers\Company\CompanyController::class, 'show']);
+Route::get('/company', [\App\Http\Controllers\Company\CompanyController::class, 'index'])->name('companies.index');
+Route::post('/company', [\App\Http\Controllers\Company\CompanyController::class, 'store'])->name('companies.store');
+Route::get('/company/{company}', [\App\Http\Controllers\Company\CompanyController::class, 'show'])->name('companies.show');
 
 
 Route::get('/guide', [GuidesMain::class, 'index']);

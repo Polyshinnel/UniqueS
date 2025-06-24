@@ -32,8 +32,8 @@
 
             <ul class="menu-list main-menu-list">
                 <li>
-                    <div class="menu-block-item {{ request()->is('/') ? 'menu-block-item__active' : '' }}">
-                        <a href="/"><img src="{{ asset('assets/img/icons/organizations.svg') }}" alt="events"></a>
+                    <div class="menu-block-item {{ request()->is('company*') ? 'menu-block-item__active' : '' }}">
+                        <a href="/company"><img src="{{ asset('assets/img/icons/organizations.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
