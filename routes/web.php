@@ -23,6 +23,10 @@ Route::get('/company', [\App\Http\Controllers\Company\CompanyController::class, 
 Route::post('/company', [\App\Http\Controllers\Company\CompanyController::class, 'store'])->name('companies.store');
 Route::get('/company/{company}', [\App\Http\Controllers\Company\CompanyController::class, 'show'])->name('companies.show');
 
+Route::get('/product', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
+Route::get('/product/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
+Route::post('/product', [\App\Http\Controllers\Product\ProductController::class, 'store'])->name('products.store');
+
 
 Route::get('/guide', [GuidesMain::class, 'index']);
 Route::get('/guide/users', [GuidesUsers::class, 'index'])->name('users.index');

@@ -9,39 +9,63 @@
 @section('content')
 
 <div class="organizations-table">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Контактное лицо</th>
-                    <th>Ответственные</th>
-                    <th>Адрес компании</th>
-                    <th>Общая информация</th>
-                    <th>Дата след.действия</th>
-                    <th>Статус</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($companies as $company)
-                <tr class="organization-item">
-                    <td>
-                        <div class="organization-name">
-                            <p class="warehouse-name">{{ $company->sku }}</p>
-                            <p class="organization-name">{{ $company->name }}</p>
-                            <a href="/company/{{ $company->id }}" class="organization-history">Подробнее</a>
-                        </div>
-                    </td>
-                
-                    <td>
-                        @if($company->contacts->isNotEmpty())
-                        <div class="contact-main">
-                            <p class="contact-main-role">{{ $company->contacts->first()->position }}</p>
-                            <p class="contact-main-name">{{ $company->contacts->first()->name }}</p>
-                            @foreach($company->contacts->first()->phones as $phone)
-                                <p class="contact-main-phone">{{ $phone->phone }}</p>
-                            @endforeach
-                        </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Название</th>
+                <th>Контактное лицо</th>
+                <th>Ответственные</th>
+                <th>Адрес компании</th>
+                <th>Общая информация</th>
+                <th>Дата след.действия</th>
+                <th>Статус</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($companies as $company)
+            <tr class="organization-item">
+                <td>
+                    <div class="organization-name">
+                        <p class="warehouse-name">{{ $company->sku }}</p>
+                        <p class="organization-name">{{ $company->name }}</p>
+                        <a href="/company/{{ $company->id }}" class="organization-history">Подробнее</a>
+                    </div>
+                </td>
+            
+                <td>
+                    @if($company->contacts->isNotEmpty())
+                    <div class="contact-main">
+                        <p class="contact-main-role">{{ $company->contacts->first()->position }}</p>
+                        <p class="contact-main-name">{{ $company->contacts->first()->name }}</p>
+                        @foreach($company->contacts->first()->phones as $phone)
+                            <p class="contact-main-phone">{{ $phone->phone }}</p>
+                        @endforeach
+                    </div>
 
+                    <div class="contact-socials">
+                        <a href="#">
+                            <div class="social-round">
+                                <img src="{{ asset('assets/img/icons/eye-w.svg') }}" alt="telegram">
+                            </div>
+                        </a>
+                        <a href="#">
+                            <div class="social-round">
+                                <img src="{{ asset('assets/img/icons/telegram.svg') }}" alt="telegram">
+                            </div>
+                        </a>
+                        <a href="#">
+                            <div class="social-round">
+                                <img src="{{ asset('assets/img/icons/whatsapp.svg') }}" alt="telegram">
+                            </div>
+                        </a>
+                    </div>
+                    @endif
+                </td>
+
+                <td>
+                    @if($company->regional)
+                    <div class="responsible-item">
+                        <p class="responsible-main-name">Регионал: {{ $company->regional->name }}</p>
                         <div class="contact-socials">
                             <a href="#">
                                 <div class="social-round">
@@ -59,84 +83,60 @@
                                 </div>
                             </a>
                         </div>
-                        @endif
-                    </td>
-
-                    <td>
-                        @if($company->regional)
-                        <div class="responsible-item">
-                            <p class="responsible-main-name">Регионал: {{ $company->regional->name }}</p>
-                            <div class="contact-socials">
-                                <a href="#">
-                                    <div class="social-round">
-                                        <img src="{{ asset('assets/img/icons/eye-w.svg') }}" alt="telegram">
-                                    </div>
-                                </a>
-                                <a href="#">
-                                    <div class="social-round">
-                                        <img src="{{ asset('assets/img/icons/telegram.svg') }}" alt="telegram">
-                                    </div>
-                                </a>
-                                <a href="#">
-                                    <div class="social-round">
-                                        <img src="{{ asset('assets/img/icons/whatsapp.svg') }}" alt="telegram">
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                        @endif
-                        
-                        @if($company->owner)
-                        <div class="responsible-item">
-                            <p class="responsible-main-name">Менеджер: {{ $company->owner->name }}</p>
-                            <div class="contact-socials">
-                                <a href="#">
-                                    <div class="social-round">
-                                        <img src="{{ asset('assets/img/icons/eye-w.svg') }}" alt="telegram">
-                                    </div>
-                                </a>
-                                <a href="#">
-                                    <div class="social-round">
-                                        <img src="{{ asset('assets/img/icons/telegram.svg') }}" alt="telegram">
-                                    </div>
-                                </a>
-                                <a href="#">
-                                    <div class="social-round">
-                                        <img src="{{ asset('assets/img/icons/whatsapp.svg') }}" alt="telegram">
-                                    </div>
-                                </a>
-                            </div>
-                        </div>
-                        @endif
-                    </td>
-
-                    <td>
-                        @if($company->addresses->isNotEmpty())
-                            <p class="address-main">{{ $company->addresses->first()->address }}</p>
-                        @endif
-                    </td>
+                    </div>
+                    @endif
                     
-                    <td>
-                        <p class="info-main">{{ $company->common_info }}</p>
-                    </td>
-
-                    <td>
-                        <p class="date-main">{{ now()->format('d.m.Y H:i:s') }}</p>
-                        <p>Вывести текст действия</p>
-                    </td>
-
-                    <td>
-                        @if($company->status)
-                        <div class="status-item" style="background-color: {{ $company->status->color }}">
-                            <span class="status-main">{{ $company->status->name }}</span>
+                    @if($company->owner)
+                    <div class="responsible-item">
+                        <p class="responsible-main-name">Менеджер: {{ $company->owner->name }}</p>
+                        <div class="contact-socials">
+                            <a href="#">
+                                <div class="social-round">
+                                    <img src="{{ asset('assets/img/icons/eye-w.svg') }}" alt="telegram">
+                                </div>
+                            </a>
+                            <a href="#">
+                                <div class="social-round">
+                                    <img src="{{ asset('assets/img/icons/telegram.svg') }}" alt="telegram">
+                                </div>
+                            </a>
+                            <a href="#">
+                                <div class="social-round">
+                                    <img src="{{ asset('assets/img/icons/whatsapp.svg') }}" alt="telegram">
+                                </div>
+                            </a>
                         </div>
-                        @endif
-                    </td>
-                </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+                    </div>
+                    @endif
+                </td>
+
+                <td>
+                    @if($company->addresses->isNotEmpty())
+                        <p class="address-main">{{ $company->addresses->first()->address }}</p>
+                    @endif
+                </td>
+                
+                <td>
+                    <p class="info-main">{{ $company->common_info }}</p>
+                </td>
+
+                <td>
+                    <p class="date-main">{{ now()->format('d.m.Y H:i:s') }}</p>
+                    <p>Вывести текст действия</p>
+                </td>
+
+                <td>
+                    @if($company->status)
+                    <div class="status-item" style="background-color: {{ $company->status->color }}">
+                        <span class="status-main">{{ $company->status->name }}</span>
+                    </div>
+                    @endif
+                </td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
+</div>
 
 
 

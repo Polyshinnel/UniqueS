@@ -39,7 +39,7 @@
 
                 <li>
                     <div class="menu-block-item {{ request()->is('products*') ? 'menu-block-item__active' : '' }}">
-                        <a href="/products"><img src="{{ asset('assets/img/icons/machines.svg') }}" alt="events"></a>
+                        <a href="/product"><img src="{{ asset('assets/img/icons/machines.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
