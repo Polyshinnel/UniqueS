@@ -10,4 +10,14 @@ class ProductCategories extends Model
     use HasFactory;
 
     protected $guarded = false;
+    
+    protected $fillable = [
+        'name',
+        'parent_id',
+        'active'
+    ];
+    
+    protected $casts = [
+        'active' => 'boolean'
+    ];
 }

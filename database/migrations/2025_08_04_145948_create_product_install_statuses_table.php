@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ProductInstallStatuses;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,7 +12,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_price_types', function (Blueprint $table) {
+        Schema::create('product_install_statuses', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->timestamps();
@@ -19,23 +20,22 @@ return new class extends Migration
 
         $dataItems = [
             [
-                'name' => 'Наличные'
+                'name' => 'Поставщиком'
             ],
             [
-                'name' => 'без НДС'
+                'name' => 'Поставщиком (за доп.плату)'
             ],
             [
-                'name' => 'с НДС'
-            ],
-            [
-                'name' => 'Комбинированная'
+                'name' => 'Клиентом'
             ],
             [
                 'name' => 'Другое'
             ],
         ];
-
-
+        foreach ($dataItems as $item)
+        {
+            ProductInstallStatuses::create($item);
+        }
     }
 
     /**
@@ -43,6 +43,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_price_types');
+        Schema::dropIfExists('product_install_statuses');
     }
 };

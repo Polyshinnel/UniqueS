@@ -357,7 +357,7 @@ window.onclick = function(event) {
 }
 
 .advertisements-table th {
-    background: #133E71;
+    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
     color: white;
     padding: 16px 12px;
     text-align: left;

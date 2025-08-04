@@ -20,11 +20,17 @@ return new class extends Migration
             $table->unsignedBigInteger('owner_id');
             $table->unsignedBigInteger('regional_id');
             $table->unsignedBigInteger('status_id');
-            $table->text('main_chars');
-            $table->text('mark');
-            $table->text('complectation');
-            $table->text('price_comment');
-            $table->decimal('add_expenses');
+            $table->string('product_address');
+
+            $table->text('main_chars')->nullable();
+            $table->text('mark')->nullable();
+            $table->text('complectation')->nullable();
+            $table->decimal('add_expenses', 12 ,2);
+
+            $table->string('main_payment_method')->nullable();
+            $table->decimal('purchase_price', 12, 2)->nullable();
+            $table->text('payment_comment')->nullable();
+
             $table->timestamps();
 
             $table->foreign('company_id')->references('id')->on('companies');

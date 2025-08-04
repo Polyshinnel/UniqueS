@@ -56,19 +56,28 @@ Route::get('/guide', [GuidesMain::class, 'index']);
 Route::get('/guide/users', [GuidesUsers::class, 'index'])->name('users.index');
 Route::get('/guide/regions', [GuidesRegions::class, 'index'])->name('regions.index');
 Route::post('/guide/regions', [GuidesRegions::class, 'store'])->name('regions.store');
-Route::delete('/guide/regions/{region}', [GuidesRegions::class, 'destroy'])->name('regions.destroy');
+Route::get('/guide/regions/{region}/edit', [GuidesRegions::class, 'edit'])->name('regions.edit');
+Route::put('/guide/regions/{region}', [GuidesRegions::class, 'update'])->name('regions.update');
 
 Route::get('/guide/sources', [GuidesSources::class, 'index']);
 Route::post('/guide/sources', [GuidesSources::class, 'store'])->name('sources.store');
+Route::get('/guide/sources/{source}/edit', [GuidesSources::class, 'edit'])->name('sources.edit');
+Route::put('/guide/sources/{source}', [GuidesSources::class, 'update'])->name('sources.update');
 Route::delete('/guide/sources/{source}', [GuidesSources::class, 'destroy'])->name('sources.destroy');
 
 Route::get('/guide/categories', [GuidesCategories::class, 'index']);
 Route::post('/guide/categories', [GuidesCategories::class, 'store'])->name('categories.store');
+Route::get('/guide/categories/{category}/edit', [GuidesCategories::class, 'edit'])->name('categories.edit');
+Route::put('/guide/categories/{category}', [GuidesCategories::class, 'update'])->name('categories.update');
 Route::delete('/guide/categories/{category}', [GuidesCategories::class, 'destroy'])->name('categories.destroy');
 
 Route::get('/guide/warehouses', [GuidesWarehouses::class, 'index'])->name('warehouses.index');
 Route::post('/guide/warehouses', [GuidesWarehouses::class, 'store'])->name('warehouses.store');
+Route::get('/guide/warehouses/{warehouse}/edit', [GuidesWarehouses::class, 'edit'])->name('warehouses.edit');
+Route::put('/guide/warehouses/{warehouse}', [GuidesWarehouses::class, 'update'])->name('warehouses.update');
 Route::delete('/guide/warehouses/{warehouse}', [GuidesWarehouses::class, 'destroy'])->name('warehouses.destroy');
 
 Route::post('/guide/users', [GuidesUsers::class, 'store'])->name('users.store');
+Route::get('/guide/users/{user}/edit', [GuidesUsers::class, 'edit'])->name('users.edit');
+Route::put('/guide/users/{user}', [GuidesUsers::class, 'update'])->name('users.update');
 Route::delete('/guide/users/{user}', [GuidesUsers::class, 'destroy'])->name('users.destroy');

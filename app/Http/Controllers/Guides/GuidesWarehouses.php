@@ -21,12 +21,13 @@ class GuidesWarehouses extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'region_id' => 'required|exists:regions,id'
+            'region_id' => 'required|exists:regions,id',
+            'active' => 'required|boolean'
         ]);
 
         $warehouse = Warehouses::create([
             'name' => $request->name,
-            'active' => true
+            'active' => $request->active
         ]);
 
         WarehousesToRegions::create([
@@ -35,6 +36,42 @@ class GuidesWarehouses extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Склад успешно создан');
+    }
+
+    public function edit(Warehouses $warehouse)
+    {
+        $warehouse->load('regions');
+        $region = $warehouse->regions->first();
+        
+        return response()->json([
+            'id' => $warehouse->id,
+            'name' => $warehouse->name,
+            'active' => $warehouse->active,
+            'region_id' => $region ? $region->id : null
+        ]);
+    }
+
+    public function update(Request $request, Warehouses $warehouse)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'region_id' => 'required|exists:regions,id',
+            'active' => 'required|boolean'
+        ]);
+
+        $warehouse->update([
+            'name' => $request->name,
+            'active' => $request->active
+        ]);
+
+        // Обновляем связь с регионом
+        WarehousesToRegions::where('warehouse_id', $warehouse->id)->delete();
+        WarehousesToRegions::create([
+            'warehouse_id' => $warehouse->id,
+            'region_id' => $request->region_id
+        ]);
+
+        return redirect()->back()->with('success', 'Склад успешно обновлен');
     }
 
     public function destroy(Warehouses $warehouse)

@@ -15,12 +15,14 @@ body {
 
 .sidebar {
     width: 120px;
-    background-color: #133E71;
+    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
     color: white;
     height: 100vh;
     position: fixed;
     left: 0;
     top: 0;
+    box-shadow: 4px 0 20px rgba(19, 62, 113, 0.15);
+    z-index: 1000;
 }
 
 .main-container {
@@ -374,9 +376,13 @@ body {
 }
 
 .table th {
-    background-color: #133E71;
+    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
     color: white;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 13px;
+    border-bottom: 2px solid #0f2d56;
 }
 
 .table tr:last-child td {

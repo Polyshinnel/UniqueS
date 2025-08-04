@@ -16,6 +16,7 @@ return new class extends Migration
             $table->unsignedBigInteger('product_id');
             $table->unsignedBigInteger('price_type_id');
             $table->decimal('price', 8, 2)->default(0);
+            $table->text('price_comment');
             $table->timestamps();
 
             $table->foreign('product_id')->references('id')->on('products');

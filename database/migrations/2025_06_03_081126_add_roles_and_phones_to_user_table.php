@@ -16,9 +16,8 @@ return new class extends Migration
             $table->unsignedBigInteger('role_id')->nullable()->after('phone');
             $table->boolean('has_whatsapp')->default(false)->after('role_id');
             $table->boolean('has_telegram')->default(false)->after('has_whatsapp');
-            $table->boolean('active')->default(true);
 
-            $table->foreign('role_id', 'user-role_id_foreign')->references('id')->on('role_lists');
+            $table->foreign('role_id')->references('id')->on('role_lists');
         });
     }
 
@@ -27,13 +26,13 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('user', function (Blueprint $table) {
+        Schema::table('users', function (Blueprint $table) {
             $table->dropColumn('phone');
             $table->dropColumn('role_id');
             $table->dropColumn('has_whatsapp');
             $table->dropColumn('has_telegram');
 
-            $table->dropForeign('user-role_id_foreign');
+            $table->dropForeign(['role_id']);
         });
     }
 };

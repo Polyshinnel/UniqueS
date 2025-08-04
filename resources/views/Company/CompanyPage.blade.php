@@ -32,7 +32,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($companies as $company)
+                @forelse($companies as $company)
                 <tr class="company-row">
                     <td class="company-info-cell">
                         <div class="company-info">
@@ -171,7 +171,18 @@
                         @endif
                     </td>
                 </tr>
-                @endforeach
+                @empty
+                <tr>
+                    <td colspan="7" class="empty-state">
+                        <div class="empty-content">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 7L10 17L5 12"></path>
+                            </svg>
+                            <p>Компании не найдены</p>
+                        </div>
+                    </td>
+                </tr>
+                @endforelse
             </tbody>
         </table>
     </div>
@@ -201,7 +212,7 @@
 }
 
 .companies-table th {
-    background: #133E71;
+    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
     color: white;
     padding: 16px 12px;
     text-align: left;
@@ -522,6 +533,29 @@
 .status-3 { background-color: #e8f5e8 !important; color: #388e3c !important; }
 .status-4 { background-color: #fce4ec !important; color: #c2185b !important; }
 .status-unknown { background-color: #f5f5f5 !important; color: #666 !important; }
+
+/* Стили для пустого состояния */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px !important;
+}
+
+.empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    color: #666;
+}
+
+.empty-content svg {
+    color: #ccc;
+}
+
+.empty-content p {
+    font-size: 16px;
+    margin: 0;
+}
 
 /* Адаптивность */
 @media (max-width: 1200px) {
