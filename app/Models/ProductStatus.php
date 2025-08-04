@@ -8,4 +8,24 @@ use Illuminate\Database\Eloquent\Model;
 class ProductStatus extends Model
 {
     use HasFactory;
+
+    protected $fillable = [
+        'name',
+        'color',
+        'active'
+    ];
+
+    protected $casts = [
+        'active' => 'boolean'
+    ];
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'status_id');
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('active', true);
+    }
 }

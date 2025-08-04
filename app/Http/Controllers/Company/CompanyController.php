@@ -39,10 +39,22 @@ class CompanyController extends Controller
         return view('Company.CompanyPage', compact('companies', 'warehouses', 'sources', 'regionals', 'regions'));
     }
 
+    public function create()
+    {
+        $warehouses = Warehouses::all();
+        $sources = Sources::all();
+        $regionals = User::where('role_id', 3)
+            ->where('active', true)
+            ->get();
+        $regions = \App\Models\Regions::all();
+
+        return view('Company.CompanyCreatePage', compact('warehouses', 'sources', 'regionals', 'regions'));
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'sku' => 'required|string',
+            'sku' => 'nullable|string',
             'warehouse_id' => 'required|exists:warehouses,id',
             'source_id' => 'required|exists:sources,id',
             'region_id' => 'required|exists:users,id',
@@ -66,8 +78,15 @@ class CompanyController extends Controller
         ]);
 
         try {
+            // Генерируем артикул, если он не заполнен
+            $sku = $validated['sku'];
+            if (empty($sku)) {
+                $warehouse = Warehouses::find($validated['warehouse_id']);
+                $sku = $this->generateUniqueSku($warehouse->name);
+            }
+
             $company = Company::create([
-                'sku' => $validated['sku'],
+                'sku' => $sku,
                 'name' => $validated['name'],
                 'inn' => $validated['inn'],
                 'source_id' => $validated['source_id'],
@@ -122,6 +141,50 @@ class CompanyController extends Controller
         }
     }
 
+    /**
+     * Генерирует уникальный артикул для компании
+     */
+    private function generateUniqueSku($warehouseName)
+    {
+        // Очищаем название склада от лишних символов
+        $cleanWarehouseName = preg_replace('/[^A-ZА-Я]/u', '', strtoupper($warehouseName));
+        
+        // Если название пустое, используем "COMP"
+        if (empty($cleanWarehouseName)) {
+            $cleanWarehouseName = 'COMP';
+        }
+        
+        // Ищем последний артикул с таким префиксом
+        $lastCompany = Company::where('sku', 'LIKE', $cleanWarehouseName . '-%')
+            ->orderByRaw('CAST(SUBSTRING_INDEX(sku, "-", -1) AS UNSIGNED) DESC')
+            ->first();
+        
+        if ($lastCompany) {
+            // Извлекаем номер из последнего артикула
+            $lastNumber = (int) substr($lastCompany->sku, strrpos($lastCompany->sku, '-') + 1);
+            $nextNumber = $lastNumber + 1;
+        } else {
+            $nextNumber = 1;
+        }
+        
+        // Форматируем номер с ведущими нулями
+        $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        
+        return $cleanWarehouseName . '-' . $formattedNumber;
+    }
+
+    /**
+     * Получает следующий доступный номер артикула для склада
+     */
+    public function getNextSku($warehouseName)
+    {
+        $nextSku = $this->generateUniqueSku($warehouseName);
+        
+        return response()->json([
+            'next_sku' => $nextSku
+        ]);
+    }
+
     public function show(Company $company)
     {
         $company->load([
@@ -136,6 +199,27 @@ class CompanyController extends Controller
             'source'
         ]);
 
-        return view('Company.CompanyShowPage', compact('company'));
+        $statuses = \App\Models\CompanyStatus::all();
+
+        return view('Company.CompanyShowPage', compact('company', 'statuses'));
+    }
+
+    public function updateStatus(Request $request, Company $company)
+    {
+        $validated = $request->validate([
+            'status_id' => 'required|exists:company_statuses,id'
+        ]);
+
+        $company->update([
+            'company_status_id' => $validated['status_id']
+        ]);
+
+        $company->load('status');
+
+        return response()->json([
+            'success' => true,
+            'status' => $company->status,
+            'message' => 'Статус успешно обновлен'
+        ]);
     }
 }

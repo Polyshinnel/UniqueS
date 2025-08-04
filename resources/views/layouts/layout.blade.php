@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Сайт')</title>
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     @yield('styles')
+    @stack('styles')
 </head>
 <body>
     <div class="sidebar">
@@ -38,14 +40,14 @@
                 </li>
 
                 <li>
-                    <div class="menu-block-item {{ request()->is('products*') ? 'menu-block-item__active' : '' }}">
+                    <div class="menu-block-item {{ request()->is('product*') ? 'menu-block-item__active' : '' }}">
                         <a href="/product"><img src="{{ asset('assets/img/icons/machines.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
                 <li>
-                    <div class="menu-block-item {{ request()->is('adv*') ? 'menu-block-item__active' : '' }}">
-                        <a href="/adv"><img src="{{ asset('assets/img/icons/adv.svg') }}" alt="events"></a>
+                    <div class="menu-block-item {{ request()->is('advertisements*') ? 'menu-block-item__active' : '' }}">
+                        <a href="/advertisements"><img src="{{ asset('assets/img/icons/adv.svg') }}" alt="events"></a>
                     </div>
                 </li>
 
@@ -63,7 +65,7 @@
             @section('header-title')
                 <!-- Содержимое шапки по умолчанию -->
                 <h1 class="header-title">Заголовок страницы</h1>
-                
+
             @show
 
             @section('search-filter')
@@ -83,7 +85,7 @@
                 </button>
             </div>
             @show
-            
+
             @section('header-action-btn')
             <div class="add-org-container header-btn">
                 <img src="{{ asset('assets/img/icons/plus.svg') }}" alt="add">

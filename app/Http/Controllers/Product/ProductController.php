@@ -155,4 +155,122 @@ class ProductController extends Controller
         
         return $timestamp . '_' . $randomString . '.' . $extension;
     }
+
+    public function show(Product $product)
+    {
+        $product->load([
+            'category',
+            'company.addresses',
+            'owner',
+            'regional',
+            'status',
+            'warehouse',
+            'mediaOrdered'
+        ]);
+
+        return view('Product.ProductItemPage', compact('product'));
+    }
+
+    public function edit(Product $product)
+    {
+        $product->load(['mediaOrdered']);
+        $warehouses = Warehouses::where('active', true)->get();
+        $companies = Company::with('status')->get();
+        $categories = ProductCategories::all();
+        $statuses = ProductStatus::where('active', true)->get();
+
+        return view('Product.ProductEditPage', compact('product', 'warehouses', 'companies', 'categories', 'statuses'));
+    }
+
+    public function update(Request $request, Product $product)
+    {
+        $request->validate([
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'company_id' => 'required|exists:companies,id',
+            'category_id' => 'required|exists:product_categories,id',
+            'name' => 'required|string|max:255',
+            'status_id' => 'required|exists:product_statuses,id',
+            'main_chars' => 'nullable|string',
+            'mark' => 'nullable|string',
+            'complectation' => 'nullable|string',
+            'status_comment' => 'nullable|string',
+            'loading_type' => 'nullable|string',
+            'loading_comment' => 'nullable|string',
+            'removal_type' => 'nullable|string',
+            'removal_comment' => 'nullable|string',
+            'payment_method' => 'nullable|string',
+            'purchase_price' => 'nullable|numeric|min:0',
+            'payment_comment' => 'nullable|string',
+            'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200', // 50MB max
+            'delete_media' => 'nullable|array',
+            'delete_media.*' => 'exists:product_media,id'
+        ]);
+
+        // Обновляем товар
+        $product->update([
+            'name' => $request->name,
+            'warehouse_id' => $request->warehouse_id,
+            'company_id' => $request->company_id,
+            'category_id' => $request->category_id,
+            'status_id' => $request->status_id,
+            'main_chars' => $request->main_chars,
+            'mark' => $request->mark,
+            'complectation' => $request->complectation,
+            'status_comment' => $request->status_comment,
+            'loading_type' => $request->loading_type,
+            'loading_comment' => $request->loading_comment,
+            'removal_type' => $request->removal_type,
+            'removal_comment' => $request->removal_comment,
+            'payment_method' => $request->payment_method,
+            'purchase_price' => $request->purchase_price,
+            'payment_comment' => $request->payment_comment,
+        ]);
+
+        // Удаляем выбранные медиафайлы
+        if ($request->has('delete_media') && is_array($request->delete_media)) {
+            $mediaToDelete = ProductMedia::where('product_id', $product->id)
+                ->whereIn('id', $request->delete_media)
+                ->get();
+
+            foreach ($mediaToDelete as $media) {
+                // Удаляем файл с диска
+                if (Storage::disk('public')->exists($media->file_path)) {
+                    Storage::disk('public')->delete($media->file_path);
+                }
+                // Удаляем запись из базы
+                $media->delete();
+            }
+        }
+
+        // Обработка новых медиафайлов
+        if ($request->hasFile('media_files')) {
+            $this->handleMediaFiles($request->file('media_files'), $product);
+        }
+
+        return redirect()->route('products.show', $product)->with('success', 'Товар успешно обновлен!');
+    }
+
+    public function updateComment(Request $request, Product $product)
+    {
+        $request->validate([
+            'field' => 'required|in:status_comment,loading_comment,removal_comment,payment_method,purchase_price,payment_comment',
+            'value' => 'nullable|string|max:1000'
+        ]);
+
+        $field = $request->field;
+        $value = $request->value;
+
+        // Специальная обработка для числовых полей
+        if ($field === 'purchase_price') {
+            $value = $value ? (float) $value : null;
+        }
+
+        $product->update([$field => $value]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Данные успешно обновлены',
+            'value' => $value
+        ]);
+    }
 }

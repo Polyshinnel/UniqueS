@@ -1,25 +1,25 @@
 @extends('layouts.layout')
 
-@section('title', 'Товары')
-
-@section('header-title')
-    <h1 class="header-title">Товары</h1>
-@endsection
+@section('title', 'Объявления')
 
 @section('header-action-btn')
-    <a href="{{ route('products.create') }}" class="btn btn-primary">
+    <a href="{{ route('advertisements.create') }}" class="btn btn-primary">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
             <line x1="5" y1="12" x2="19" y2="12"></line>
         </svg>
-        Добавить товар
+        Добавить объявление
     </a>
 @endsection
 
+@section('header-title')
+    <h1 class="header-title">Объявления</h1>
+@endsection
+
 @section('content')
-<div class="products-container">
-    <div class="products-table-wrapper">
-        <table class="products-table">
+<div class="advertisements-container">
+    <div class="advertisements-table-wrapper">
+        <table class="advertisements-table">
             <thead>
                 <tr>
                     <th>Название</th>
@@ -31,22 +31,22 @@
                 </tr>
             </thead>
             <tbody>
-                @forelse($products as $product)
-                <tr class="product-row">
-                    <td class="product-info-cell">
-                        <div class="product-info">
-                            <div class="product-sku">{{ $product->sku }}</div>
-                            <div class="product-name">{{ $product->name }}</div>
-                            <div class="product-image">
-                                <a href="{{ route('products.show', $product) }}">
-                                    @if($product->mainImage)
-                                        <img src="{{ asset('storage/' . $product->mainImage->file_path) }}" alt="{{ $product->name }}">
+                @forelse($advertisements as $advertisement)
+                <tr class="advertisement-row">
+                    <td class="advertisement-info-cell">
+                        <div class="advertisement-info">
+                            <div class="advertisement-sku">{{ $advertisement->product->sku ?? 'КЛГ-001-' . $advertisement->created_at->format('dmy') . '-' . $advertisement->id }}</div>
+                            <div class="advertisement-name">{{ $advertisement->title }}</div>
+                            <div class="advertisement-image">
+                                <a href="{{ route('advertisements.show', $advertisement) }}">
+                                    @if($advertisement->mainImage)
+                                        <img src="{{ asset('storage/' . $advertisement->mainImage->file_path) }}" alt="{{ $advertisement->title }}">
                                     @else
-                                        <img src="{{ asset('assets/img/stanok.png') }}" alt="{{ $product->name }}">
+                                        <img src="{{ asset('assets/img/stanok.png') }}" alt="{{ $advertisement->title }}">
                                     @endif
                                 </a>
                             </div>
-                            <a href="{{ route('products.show', $product) }}" class="product-link">
+                            <a href="{{ route('advertisements.show', $advertisement) }}" class="advertisement-link">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                     <circle cx="12" cy="12" r="3"></circle>
@@ -58,23 +58,23 @@
                 
                     <td class="category-cell">
                         <div class="category-info">
-                            <div class="category-name">{{ $product->category->name ?? 'Не указана' }}</div>
+                            <div class="category-name">{{ $advertisement->category->name ?? 'Не указана' }}</div>
                         </div>
                     </td>
 
                     <td class="supplier-cell">
                         <div class="supplier-info">
                             <div class="supplier-name">
-                                @if($product->company)
-                                    <a href="{{ route('companies.show', $product->company) }}" class="company-link">
-                                        {{ $product->company->name }}
+                                @if($advertisement->product && $advertisement->product->company)
+                                    <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
+                                        {{ $advertisement->product->company->name }}
                                     </a>
                                     <button class="action-btn company-card-btn" title="Просмотр компании" 
-                                        data-company-id="{{ $product->company->id }}"
-                                        data-company-name="{{ $product->company->name }}"
-                                        data-company-sku="{{ $product->company->sku }}"
-                                        data-company-status="{{ $product->company->status->name ?? 'Не указан' }}"
-                                        data-company-info="{{ $product->company->common_info ?? 'Не указано' }}">
+                                        data-company-id="{{ $advertisement->product->company->id }}"
+                                        data-company-name="{{ $advertisement->product->company->name }}"
+                                        data-company-sku="{{ $advertisement->product->company->sku }}"
+                                        data-company-status="{{ $advertisement->product->company->status->name ?? 'Не указан' }}"
+                                        data-company-info="{{ $advertisement->product->company->common_info ?? 'Не указано' }}">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
@@ -84,45 +84,45 @@
                                     Не указана
                                 @endif
                             </div>
-                            @if($product->company && $product->company->addresses->count() > 0)
+                            @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->addresses->count() > 0)
                                 <div class="supplier-address">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                         <circle cx="12" cy="10" r="3"></circle>
                                     </svg>
-                                    <span>{{ $product->company->addresses->first()->address ?? '' }}</span>
+                                    <span>{{ $advertisement->product->company->addresses->first()->address ?? '' }}</span>
                                 </div>
                             @endif
-                            <div class="supplier-region">Регион: {{ $product->warehouse->name ?? 'Не указан' }}</div>
+                            <div class="supplier-region">Регион: {{ $advertisement->product->warehouse->name ?? 'Не указан' }}</div>
                             
-                            @if($product->regional)
+                            @if($advertisement->product && $advertisement->product->regional)
                             <div class="responsible-item">
                                 <div class="responsible-label">Регионал:</div>
-                                <div class="responsible-name">{{ $product->regional->name }}</div>
+                                <div class="responsible-name">{{ $advertisement->product->regional->name }}</div>
                                 <div class="responsible-actions">
                                     <button class="action-btn contact-card-btn" title="Просмотр" 
-                                        data-id="{{ $product->regional->id }}"
-                                        data-name="{{ $product->regional->name }}"
-                                        data-email="{{ $product->regional->email }}"
-                                        data-phone="{{ $product->regional->phone }}"
-                                        data-role="{{ $product->regional->role->name ?? 'Роль не указана' }}"
-                                        data-telegram="{{ $product->regional->has_telegram ? 'true' : 'false' }}"
-                                        data-whatsapp="{{ $product->regional->has_whatsapp ? 'true' : 'false' }}">
+                                        data-id="{{ $advertisement->product->regional->id }}"
+                                        data-name="{{ $advertisement->product->regional->name }}"
+                                        data-email="{{ $advertisement->product->regional->email }}"
+                                        data-phone="{{ $advertisement->product->regional->phone }}"
+                                        data-role="{{ $advertisement->product->regional->role->name ?? 'Роль не указана' }}"
+                                        data-telegram="{{ $advertisement->product->regional->has_telegram ? 'true' : 'false' }}"
+                                        data-whatsapp="{{ $advertisement->product->regional->has_whatsapp ? 'true' : 'false' }}">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
                                     </button>
-                                    @if($product->regional->has_telegram)
-                                    <a href="https://t.me/{{ $product->regional->phone }}" target="_blank" class="action-btn" title="Telegram">
+                                    @if($advertisement->product->regional->has_telegram)
+                                    <a href="https://t.me/{{ $advertisement->product->regional->phone }}" target="_blank" class="action-btn" title="Telegram">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M22 2L11 13"></path>
                                             <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
                                         </svg>
                                     </a>
                                     @endif
-                                    @if($product->regional->has_whatsapp)
-                                    <a href="https://wa.me/{{ $product->regional->phone }}" target="_blank" class="action-btn" title="WhatsApp">
+                                    @if($advertisement->product->regional->has_whatsapp)
+                                    <a href="https://wa.me/{{ $advertisement->product->regional->phone }}" target="_blank" class="action-btn" title="WhatsApp">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                         </svg>
@@ -136,29 +136,23 @@
 
                     <td class="characteristics-cell">
                         <div class="characteristics-info">
-                            @if($product->main_chars)
+                            @if($advertisement->main_characteristics)
                             <div class="char-item">
                                 <span class="char-label">Осн. хар:</span>
-                                <span class="char-value">{{ $product->main_chars }}</span>
+                                <span class="char-value">{{ $advertisement->main_characteristics }}</span>
                             </div>
                             @endif
-                            @if($product->mark)
-                            <div class="char-item">
-                                <span class="char-label">Марка:</span>
-                                <span class="char-value">{{ $product->mark }}</span>
-                            </div>
-                            @endif
-                            @if($product->complectation)
+                            @if($advertisement->complectation)
                             <div class="char-item">
                                 <span class="char-label">Компл:</span>
-                                <span class="char-value">{{ $product->complectation }}</span>
+                                <span class="char-value">{{ $advertisement->complectation }}</span>
                             </div>
                             @endif
-                            @if($product->loading_type)
+                            @if($advertisement->check_data && isset($advertisement->check_data['loading_type']))
                             <div class="char-item">
                                 <span class="char-label">Проверка:</span>
                                 <span class="char-value">
-                                    @switch($product->loading_type)
+                                    @switch($advertisement->check_data['loading_type'])
                                         @case('supplier')
                                             Поставщиком
                                             @break
@@ -172,16 +166,16 @@
                                             Другое
                                             @break
                                         @default
-                                            {{ $product->loading_type }}
+                                            {{ $advertisement->check_data['loading_type'] }}
                                     @endswitch
                                 </span>
                             </div>
                             @endif
-                            @if($product->removal_type)
+                            @if($advertisement->removal_data && isset($advertisement->removal_data['removal_type']))
                             <div class="char-item">
                                 <span class="char-label">Демонтаж:</span>
                                 <span class="char-value">
-                                    @switch($product->removal_type)
+                                    @switch($advertisement->removal_data['removal_type'])
                                         @case('supplier')
                                             Поставщиком
                                             @break
@@ -195,7 +189,7 @@
                                             Другое
                                             @break
                                         @default
-                                            {{ $product->removal_type }}
+                                            {{ $advertisement->removal_data['removal_type'] }}
                                     @endswitch
                                 </span>
                             </div>
@@ -205,35 +199,29 @@
 
                     <td class="action-cell">
                         <div class="action-info">
-                            <div class="action-date">{{ $product->created_at->format('d.m.Y H:i') }}</div>
-                            <div class="action-text">Проверить статус товара</div>
+                            <div class="action-date">{{ $advertisement->created_at->format('d.m.Y H:i') }}</div>
+                            <div class="action-text">Проверить статус объявления</div>
                         </div>
                     </td>
 
                     <td class="status-cell">
                         <div class="status-list">
                             <div class="status-item">
-                                <div class="status-label">Статус единицы</div>
-                                <div class="status-badge status-{{ $product->status->id ?? 'unknown' }}" style="background-color: {{ $product->status->color ?? '#6c757d' }}">
-                                    {{ $product->status->name ?? 'Не указан' }}
-                                </div>
-                            </div>
-                            <div class="status-item">
                                 <div class="status-label">Статус объявления</div>
-                                <div class="status-badge status-active">
-                                    Актив
+                                <div class="status-badge status-{{ $advertisement->status }}">
+                                    {{ $advertisement->status_name }}
                                 </div>
                             </div>
                             <div class="status-item">
                                 <div class="status-label">Статус публикации</div>
-                                <div class="status-badge status-unpublished">
-                                    Не опубл.
+                                <div class="status-badge status-{{ $advertisement->isPublished() ? 'published' : 'unpublished' }}">
+                                    {{ $advertisement->isPublished() ? 'Опубликовано' : 'Не опубл.' }}
                                 </div>
                             </div>
                         </div>
                         <div class="price-info">
                             <div class="price-label">Цена продажи:</div>
-                            <div class="price-value">0 руб</div>
+                            <div class="price-value">{{ $advertisement->product->purchase_price ?? 0 }} руб</div>
                         </div>
                     </td>
                 </tr>
@@ -244,7 +232,7 @@
                             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M20 7L10 17L5 12"></path>
                             </svg>
-                            <p>Товары не найдены</p>
+                            <p>Объявления не найдены</p>
                         </div>
                     </td>
                 </tr>
@@ -349,26 +337,26 @@ window.onclick = function(event) {
 
 @push('styles')
 <style>
-.products-container {
+.advertisements-container {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
 
-.products-table-wrapper {
+.advertisements-table-wrapper {
     background: white;
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     overflow: hidden;
 }
 
-.products-table {
+.advertisements-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 14px;
 }
 
-.products-table th {
+.advertisements-table th {
     background: #133E71;
     color: white;
     padding: 16px 12px;
@@ -380,54 +368,54 @@ window.onclick = function(event) {
     border-bottom: 2px solid #0f2d56;
 }
 
-.products-table th:first-child {
+.advertisements-table th:first-child {
     padding-left: 20px;
 }
 
-.products-table th:last-child {
+.advertisements-table th:last-child {
     padding-right: 20px;
 }
 
-.product-row {
+.advertisement-row {
     border-bottom: 1px solid #f1f3f4;
     transition: all 0.3s ease;
 }
 
-.product-row:hover {
+.advertisement-row:hover {
     background-color: #f8f9fa;
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-.product-row:last-child {
+.advertisement-row:last-child {
     border-bottom: none;
 }
 
-.products-table td {
+.advertisements-table td {
     padding: 16px 12px;
     vertical-align: top;
 }
 
-.products-table td:first-child {
+.advertisements-table td:first-child {
     padding-left: 20px;
 }
 
-.products-table td:last-child {
+.advertisements-table td:last-child {
     padding-right: 20px;
 }
 
-/* Стили для ячейки с информацией о товаре */
-.product-info-cell {
+/* Стили для ячейки с информацией об объявлении */
+.advertisement-info-cell {
     min-width: 200px;
 }
 
-.product-info {
+.advertisement-info {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.product-sku {
+.advertisement-sku {
     font-size: 12px;
     color: #666;
     font-weight: 500;
@@ -438,14 +426,14 @@ window.onclick = function(event) {
     width: fit-content;
 }
 
-.product-name {
+.advertisement-name {
     font-size: 16px;
     font-weight: 600;
     color: #133E71;
     line-height: 1.3;
 }
 
-.product-image {
+.advertisement-image {
     width: 80px;
     height: 60px;
     border-radius: 6px;
@@ -453,13 +441,13 @@ window.onclick = function(event) {
     border: 1px solid #e9ecef;
 }
 
-.product-image img {
+.advertisement-image img {
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
 
-.product-link {
+.advertisement-link {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -474,13 +462,13 @@ window.onclick = function(event) {
     width: fit-content;
 }
 
-.product-link:hover {
+.advertisement-link:hover {
     background: #133E71;
     color: white;
     transform: translateY(-1px);
 }
 
-.product-link svg {
+.advertisement-link svg {
     width: 14px;
     height: 14px;
 }
@@ -665,8 +653,6 @@ window.onclick = function(event) {
     text-align: right;
 }
 
-
-
 /* Стили для ячейки действий */
 .action-cell {
     min-width: 180px;
@@ -730,17 +716,30 @@ window.onclick = function(event) {
     letter-spacing: 0.5px;
 }
 
+.status-draft {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+}
+
 .status-active {
+    background-color: #28a745 !important;
+}
+
+.status-inactive {
+    background-color: #dc3545 !important;
+}
+
+.status-archived {
+    background-color: #6c757d !important;
+}
+
+.status-published {
     background-color: #28a745 !important;
 }
 
 .status-unpublished {
     background-color: #ffc107 !important;
     color: #212529 !important;
-}
-
-.status-unknown {
-    background-color: #6c757d !important;
 }
 
 .price-info {
@@ -790,45 +789,45 @@ window.onclick = function(event) {
 
 /* Адаптивность */
 @media (max-width: 1200px) {
-    .products-table {
+    .advertisements-table {
         font-size: 13px;
     }
     
-    .products-table th,
-    .products-table td {
+    .advertisements-table th,
+    .advertisements-table td {
         padding: 12px 8px;
     }
     
-    .products-table th:first-child,
-    .products-table td:first-child {
+    .advertisements-table th:first-child,
+    .advertisements-table td:first-child {
         padding-left: 15px;
     }
     
-    .products-table th:last-child,
-    .products-table td:last-child {
+    .advertisements-table th:last-child,
+    .advertisements-table td:last-child {
         padding-right: 15px;
     }
 }
 
 @media (max-width: 768px) {
-    .products-container {
+    .advertisements-container {
         padding: 10px;
     }
     
-    .products-table-wrapper {
+    .advertisements-table-wrapper {
         border-radius: 8px;
     }
     
-    .products-table {
+    .advertisements-table {
         font-size: 12px;
     }
     
-    .products-table th,
-    .products-table td {
+    .advertisements-table th,
+    .advertisements-table td {
         padding: 10px 6px;
     }
     
-    .product-name {
+    .advertisement-name {
         font-size: 14px;
     }
     
@@ -860,7 +859,7 @@ window.onclick = function(event) {
     }
 }
 
-.product-row {
+.advertisement-row {
     animation: fadeIn 0.3s ease;
 }
 
@@ -1129,4 +1128,4 @@ window.onclick = function(event) {
             </div>
         </div>
     </div>
-</div>
+</div> 

@@ -20,12 +20,36 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/company', [\App\Http\Controllers\Company\CompanyController::class, 'index'])->name('companies.index');
+Route::get('/company/create', [\App\Http\Controllers\Company\CompanyController::class, 'create'])->name('companies.create');
 Route::post('/company', [\App\Http\Controllers\Company\CompanyController::class, 'store'])->name('companies.store');
 Route::get('/company/{company}', [\App\Http\Controllers\Company\CompanyController::class, 'show'])->name('companies.show');
+Route::patch('/company/{company}/status', [\App\Http\Controllers\Company\CompanyController::class, 'updateStatus'])->name('companies.update-status');
+Route::get('/company/next-sku/{warehouseName}', [\App\Http\Controllers\Company\CompanyController::class, 'getNextSku'])->name('companies.next-sku');
 
 Route::get('/product', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
 Route::get('/product/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
 Route::post('/product', [\App\Http\Controllers\Product\ProductController::class, 'store'])->name('products.store');
+Route::get('/product/{product}', [\App\Http\Controllers\Product\ProductController::class, 'show'])->name('products.show');
+Route::get('/product/{product}/edit', [\App\Http\Controllers\Product\ProductController::class, 'edit'])->name('products.edit');
+Route::put('/product/{product}', [\App\Http\Controllers\Product\ProductController::class, 'update'])->name('products.update');
+Route::patch('/product/{product}/comment', [\App\Http\Controllers\Product\ProductController::class, 'updateComment'])->name('products.update-comment');
+
+
+Route::get('/adv', [\App\Http\Controllers\AdvPageController::class, 'index'])->name('adv.index');
+
+// Роуты для объявлений
+Route::get('/advertisements', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'index'])->name('advertisements.index');
+Route::get('/advertisements/create', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'create'])->name('advertisements.create');
+Route::post('/advertisements', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'store'])->name('advertisements.store');
+Route::get('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'show'])->name('advertisements.show');
+Route::get('/advertisements/{advertisement}/edit', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'edit'])->name('advertisements.edit');
+Route::put('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'update'])->name('advertisements.update');
+Route::delete('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'destroy'])->name('advertisements.destroy');
+Route::post('/advertisements/{advertisement}/publish', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'publish'])->name('advertisements.publish');
+Route::post('/advertisements/copy-from-product', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'copyFromProduct'])->name('advertisements.copy-from-product');
+Route::get('/advertisements/product/{product}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getProductMedia'])->name('advertisements.product-media');
+Route::get('/advertisements/product-statuses', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getProductStatuses'])->name('advertisements.product-statuses');
+Route::delete('/advertisements/{advertisement}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'deleteMedia'])->name('advertisements.delete-media');
 
 
 Route::get('/guide', [GuidesMain::class, 'index']);

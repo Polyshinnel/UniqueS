@@ -94,4 +94,16 @@ class Product extends Model
     {
         return $this->hasOne(ProductMedia::class)->images()->orderBy('sort_order');
     }
+
+    // Связь с объявлениями
+    public function advertisements(): HasMany
+    {
+        return $this->hasMany(Advertisement::class);
+    }
+
+    // Получить активные объявления
+    public function activeAdvertisements(): HasMany
+    {
+        return $this->hasMany(Advertisement::class)->where('status', 'active');
+    }
 }
