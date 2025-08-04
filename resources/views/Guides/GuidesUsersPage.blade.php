@@ -209,7 +209,7 @@
                     <label for="regions">Регионы *</label>
                     <div class="multiselect-wrapper">
                         <div class="multiselect-input" id="regions_multiselect" tabindex="0">
-                            <span class="multiselect-placeholder">Выберите регионы</span>
+                            <span class="multiselect-placeholder">Выберите регионы *</span>
                             <svg class="multiselect-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="6,9 12,15 18,9"></polyline>
                             </svg>
@@ -222,7 +222,7 @@
                                 <!-- Опции будут заполнены JavaScript -->
                             </div>
                         </div>
-                        <select name="regions[]" id="regions" class="form-control @error('regions') is-invalid @enderror" required multiple style="display: none;">
+                        <select name="regions[]" id="regions" class="form-control @error('regions') is-invalid @enderror" multiple style="display: none;">
                             @foreach($regions as $region)
                                 <option value="{{ $region->id }}" {{ in_array($region->id, old('regions', [])) ? 'selected' : '' }}>
                                     {{ $region->name }}
@@ -331,7 +331,7 @@
                     <label for="edit_regions">Регионы *</label>
                     <div class="multiselect-wrapper">
                         <div class="multiselect-input" id="edit_regions_multiselect" tabindex="0">
-                            <span class="multiselect-placeholder">Выберите регионы</span>
+                            <span class="multiselect-placeholder">Выберите регионы *</span>
                             <svg class="multiselect-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="6,9 12,15 18,9"></polyline>
                             </svg>
@@ -344,7 +344,7 @@
                                 <!-- Опции будут заполнены JavaScript -->
                             </div>
                         </div>
-                        <select name="regions[]" id="edit_regions" class="form-control" required multiple style="display: none;">
+                        <select name="regions[]" id="edit_regions" class="form-control" multiple style="display: none;">
                             @foreach($regions as $region)
                                 <option value="{{ $region->id }}">{{ $region->name }}</option>
                             @endforeach
@@ -1316,6 +1316,8 @@ function resetForm() {
         values.style.display = 'none';
     }
     placeholder.style.display = 'block';
+    // Восстанавливаем placeholder с звездочкой
+    placeholder.textContent = 'Выберите регионы *';
 }
 
 // Функция инициализации мультиселекта
@@ -1330,6 +1332,13 @@ function initializeMultiSelect(multiselectId, selectId, options, preSelectedValu
     
     let isOpen = false;
     let selectedValues = preSelectedValues.map(item => item.id.toString());
+    
+    console.log('Инициализация мультиселекта:', {
+        multiselectId: multiselectId,
+        selectId: selectId,
+        preSelectedValues: preSelectedValues,
+        selectedValues: selectedValues
+    });
     
     // Создаем контейнер для выбранных значений
     const valuesContainer = document.createElement('div');
@@ -1387,6 +1396,10 @@ function initializeMultiSelect(multiselectId, selectId, options, preSelectedValu
         if (selectedValues.length === 0) {
             placeholder.style.display = 'block';
             values.style.display = 'none';
+            // Убеждаемся, что placeholder содержит звездочку
+            if (!placeholder.textContent.includes('*')) {
+                placeholder.textContent = placeholder.textContent.replace('Выберите регионы', 'Выберите регионы *');
+            }
             return;
         }
         
@@ -1431,6 +1444,12 @@ function initializeMultiSelect(multiselectId, selectId, options, preSelectedValu
             option.value = value;
             option.selected = true;
             hiddenSelect.appendChild(option);
+        });
+        
+        console.log('Обновление скрытого select:', {
+            selectedValues: selectedValues,
+            optionsCount: hiddenSelect.options.length,
+            selectedOptionsCount: hiddenSelect.selectedOptions.length
         });
     }
     
@@ -1510,6 +1529,7 @@ function initializeMultiSelect(multiselectId, selectId, options, preSelectedValu
     
     if (selectedValues.length > 0) {
         updateSelectedValues();
+        updateHiddenSelect(); // Обновляем скрытое поле при инициализации
     }
 }
 
@@ -1536,6 +1556,7 @@ function openEditModal(userId) {
                 id: region.id,
                 name: region.name
             }));
+            console.log('Выбранные регионы для редактирования:', selectedRegions);
             initializeMultiSelect('edit_regions_multiselect', 'edit_regions', @json($regions), selectedRegions);
             
             // Открываем модальное окно
@@ -1547,6 +1568,41 @@ function openEditModal(userId) {
             alert('Ошибка загрузки данных пользователя');
         });
 }
+
+// Добавляем валидацию форм
+document.addEventListener('DOMContentLoaded', function() {
+    // Валидация формы добавления пользователя
+    const addForm = document.querySelector('#userModal form');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            const regionsSelect = document.getElementById('regions');
+            if (!regionsSelect || regionsSelect.selectedOptions.length === 0) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите хотя бы один регион');
+                return false;
+            }
+        });
+    }
+    
+    // Валидация формы редактирования пользователя
+    const editForm = document.getElementById('editUserForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            const regionsSelect = document.getElementById('edit_regions');
+            console.log('Валидация регионов:', {
+                selectExists: !!regionsSelect,
+                selectedOptions: regionsSelect ? regionsSelect.selectedOptions.length : 0,
+                allOptions: regionsSelect ? regionsSelect.options.length : 0
+            });
+            
+            if (!regionsSelect || regionsSelect.selectedOptions.length === 0) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите хотя бы один регион');
+                return false;
+            }
+        });
+    }
+});
 
 function closeEditModal() {
     document.getElementById('editUserModal').classList.remove('active');
@@ -1578,6 +1634,8 @@ function resetEditForm() {
         }
         if (placeholder) {
             placeholder.style.display = 'block';
+            // Восстанавливаем placeholder с звездочкой
+            placeholder.textContent = 'Выберите регионы *';
         }
     }
 }

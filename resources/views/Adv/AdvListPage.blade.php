@@ -103,4 +103,46 @@
             </tbody>
         </table>
     </div>
+
+    <x-right-sidebar>
+        <div class="source-form">
+            <h2>Добавление объявления</h2>
+            <form action="{{ route('advertisements.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="form-group">
+                    <label for="title">Название объявления</label>
+                    <input type="text" name="title" id="title" value="{{ old('title') }}" class="form-control" required>
+                    @error('title')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="form-group">
+                    <label for="description">Описание</label>
+                    <textarea name="description" id="description" class="form-control" rows="4">{{ old('description') }}</textarea>
+                    @error('description')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="form-group">
+                    <label for="price">Цена</label>
+                    <input type="number" name="price" id="price" value="{{ old('price') }}" class="form-control" required>
+                    @error('price')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <div class="form-group">
+                    <label for="images">Изображения</label>
+                    <input type="file" name="images[]" id="images" class="form-control" multiple accept="image/*">
+                    @error('images')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+                <button type="submit" class="btn btn-primary">Добавить объявление</button>
+            </form>
+        </div>
+    </x-right-sidebar>
 @endsection
+
+@push('scripts')
+<script src="{{ asset('assets/js/side-panel.js') }}"></script>
+@endpush

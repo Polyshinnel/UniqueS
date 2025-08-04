@@ -250,6 +250,76 @@ document.addEventListener('DOMContentLoaded', function() {
         phonesContainer.appendChild(phoneBlock);
     }
 
+    // Фильтрация региональных представителей при выборе региона
+    const regionSelect = document.getElementById('region');
+    const regionalSelect = document.getElementById('region_id');
+
+    if (regionSelect && regionalSelect) {
+        // Функция для загрузки региональных представителей
+        function loadRegionals(regionId, selectedRegionalId = null) {
+            regionalSelect.innerHTML = '<option value="">Загрузка...</option>';
+            regionalSelect.disabled = true;
+            
+            if (regionId) {
+                fetch(`/company/regionals/${regionId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        regionalSelect.innerHTML = '<option value="">Выберите регионала</option>';
+                        regionalSelect.disabled = false;
+                        
+                        if (data.length > 0) {
+                            data.forEach(regional => {
+                                const option = document.createElement('option');
+                                option.value = regional.id;
+                                option.textContent = regional.name;
+                                if (selectedRegionalId && regional.id == selectedRegionalId) {
+                                    option.selected = true;
+                                }
+                                regionalSelect.appendChild(option);
+                            });
+                        } else {
+                            const option = document.createElement('option');
+                            option.value = '';
+                            option.textContent = 'Нет доступных региональных представителей';
+                            option.disabled = true;
+                            regionalSelect.appendChild(option);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при получении региональных представителей:', error);
+                        regionalSelect.innerHTML = '<option value="">Ошибка загрузки данных</option>';
+                        regionalSelect.disabled = true;
+                    });
+            } else {
+                regionalSelect.innerHTML = '<option value="">Сначала выберите регион</option>';
+                regionalSelect.disabled = false;
+            }
+        }
+
+        // Обработчик изменения региона
+        regionSelect.addEventListener('change', function() {
+            const selectedRegionId = this.value;
+            // Очищаем выбор регионала при смене региона
+            regionalSelect.value = '';
+            
+            if (selectedRegionId) {
+                loadRegionals(selectedRegionId);
+            } else {
+                // Если регион не выбран, показываем сообщение
+                regionalSelect.innerHTML = '<option value="">Сначала выберите регион</option>';
+                regionalSelect.disabled = false;
+            }
+        });
+
+        // При загрузке страницы, если есть выбранный регион (например, при ошибках валидации)
+        const selectedRegionId = regionSelect.value;
+        const oldRegionalId = document.getElementById('old_region_id') ? document.getElementById('old_region_id').value : null;
+        
+        if (selectedRegionId) {
+            loadRegionals(selectedRegionId, oldRegionalId);
+        }
+    }
+
     // Инициализация
     showStep(1);
 }); 

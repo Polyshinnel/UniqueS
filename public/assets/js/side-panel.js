@@ -3,12 +3,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidePanel = document.querySelector('.side-panel');
     const closeBtn = document.querySelector('.side-panel-close');
 
+    // Если элементы не найдены, просто завершаем выполнение без ошибок
     if (!addSourceBtn || !sidePanel || !closeBtn) {
-        console.error('Не найдены необходимые элементы:', {
-            addSourceBtn: !!addSourceBtn,
-            sidePanel: !!sidePanel,
-            closeBtn: !!closeBtn
-        });
+        // Тихо завершаем выполнение, так как эти элементы могут отсутствовать на некоторых страницах
         return;
     }
 

@@ -244,7 +244,6 @@
 @endsection
 
 @push('scripts')
-<script src="{{ asset('assets/js/side-panel.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Обработчик для кнопок контактных карточек

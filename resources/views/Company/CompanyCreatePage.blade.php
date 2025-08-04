@@ -106,13 +106,11 @@
                 <div class="form-group">
                     <label for="region_id">ФИО регионала</label>
                     <select name="region_id" id="region_id" class="form-control" required>
-                        <option value="">Выберите регионала</option>
-                        @foreach($regionals as $regional)
-                            <option value="{{ $regional->id }}" {{ old('region_id') == $regional->id ? 'selected' : '' }}>
-                                {{ $regional->name }}
-                            </option>
-                        @endforeach
+                        <option value="">Сначала выберите регион</option>
                     </select>
+                    @if(old('region_id'))
+                        <input type="hidden" id="old_region_id" value="{{ old('region_id') }}">
+                    @endif
                     @error('region_id')
                         <span class="error">{{ $message }}</span>
                     @enderror
@@ -120,14 +118,23 @@
 
                 <div class="form-group">
                     <label for="region">Регион</label>
-                    <select name="region" id="region" class="form-control" required>
-                        <option value="">Выберите регион</option>
-                        @foreach($regions as $region)
-                            <option value="{{ $region->id }}" {{ old('region') == $region->id ? 'selected' : '' }}>
-                                {{ $region->name }}
-                            </option>
-                        @endforeach
-                    </select>
+                    @if($regions->count() > 0)
+                        <select name="region" id="region" class="form-control" required>
+                            <option value="">Выберите регион</option>
+                            @foreach($regions as $region)
+                                <option value="{{ $region->id }}" {{ old('region') == $region->id ? 'selected' : '' }}>
+                                    {{ $region->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    @else
+                        <div class="alert alert-warning">
+                            <strong>Внимание!</strong> У вас нет доступных регионов. Обратитесь к администратору для настройки доступа к регионам.
+                        </div>
+                        <select name="region" id="region" class="form-control" disabled>
+                            <option value="">Нет доступных регионов</option>
+                        </select>
+                    @endif
                     @error('region')
                         <span class="error">{{ $message }}</span>
                     @enderror
@@ -143,7 +150,9 @@
             </div>
 
             <div class="step-actions">
-                <button type="button" class="btn btn-primary next-step">Следующий шаг</button>
+                <button type="button" class="btn btn-primary next-step" {{ $regions->count() == 0 ? 'disabled' : '' }}>
+                    Следующий шаг
+                </button>
             </div>
         </div>
 

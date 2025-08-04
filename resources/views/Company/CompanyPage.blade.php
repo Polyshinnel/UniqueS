@@ -868,7 +868,6 @@
 </div>
 
 @push('scripts')
-<script src="{{ asset('assets/js/side-panel.js') }}"></script>
 <script>
 function showContactCard(id, name, email, phone, role, hasTelegram, hasWhatsapp) {
     document.getElementById('contactName').textContent = name;

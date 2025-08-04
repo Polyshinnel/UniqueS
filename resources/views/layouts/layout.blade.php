@@ -346,6 +346,45 @@
             .search-input {
                 min-width: 120px;
             }
+
+            /* Стили для кнопки выхода */
+            .header-actions {
+                display: flex;
+                align-items: center;
+                gap: 20px;
+            }
+
+            .user-info {
+                font-size: 14px;
+                color: #666;
+                font-weight: 500;
+            }
+
+            .logout-btn {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                background: #f8f9fa;
+                border: 2px solid #e9ecef;
+                border-radius: 8px;
+                padding: 8px 16px;
+                color: #666;
+                font-size: 14px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+            }
+
+            .logout-btn:hover {
+                background: #e9ecef;
+                border-color: #dee2e6;
+                color: #495057;
+            }
+
+            .logout-btn svg {
+                width: 16px;
+                height: 16px;
+            }
         }
     </style>
 </head>
@@ -426,9 +465,21 @@
             @show
 
             @section('header-action-btn')
-            <div class="add-org-container header-btn">
-                <img src="{{ asset('assets/img/icons/plus.svg') }}" alt="add">
-                <span>Добавить организацию</span>
+            <div class="header-actions">
+                <div class="user-info">
+                    <span>{{ Auth::user()->name ?? 'Пользователь' }}</span>
+                </div>
+                <form method="POST" action="{{ route('logout') }}" style="display: inline;">
+                    @csrf
+                    <button type="submit" class="logout-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16,17 21,12 16,7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                        <span>Выйти</span>
+                    </button>
+                </form>
             </div>
             @show
         </div>

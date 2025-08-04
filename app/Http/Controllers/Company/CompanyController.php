@@ -7,10 +7,12 @@ use App\Models\Company;
 use App\Models\CompanyAddress;
 use App\Models\CompanyContacts;
 use App\Models\CompanyContactsPhones;
+use App\Models\Regions;
 use App\Models\Sources;
 use App\Models\User;
 use App\Models\Warehouses;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CompanyController extends Controller
 {
@@ -34,7 +36,7 @@ class CompanyController extends Controller
         $regionals = User::where('role_id', 3)
             ->where('active', true)
             ->get();
-        $regions = \App\Models\Regions::all();
+        $regions = $this->getUserRegions();
 
         return view('Company.CompanyPage', compact('companies', 'warehouses', 'sources', 'regionals', 'regions'));
     }
@@ -43,10 +45,10 @@ class CompanyController extends Controller
     {
         $warehouses = Warehouses::all();
         $sources = Sources::all();
-        $regionals = User::where('role_id', 3)
-            ->where('active', true)
-            ->get();
-        $regions = \App\Models\Regions::all();
+        // Не загружаем всех региональных представителей, они будут загружены через AJAX
+        $regionals = collect();
+        
+        $regions = $this->getUserRegions();
 
         return view('Company.CompanyCreatePage', compact('warehouses', 'sources', 'regionals', 'regions'));
     }
@@ -76,6 +78,29 @@ class CompanyController extends Controller
             'site' => 'required|url',
             'common_info' => 'required|string',
         ]);
+
+        // Проверяем, что выбранный регион доступен пользователю
+        $userRegions = $this->getUserRegions()->pluck('id')->toArray();
+        if (!empty($userRegions) && !in_array($validated['region'], $userRegions)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['region' => 'Выбранный регион недоступен для вашего пользователя']);
+        }
+
+        // Проверяем, что выбранный региональный представитель прикреплен к выбранному региону
+        $regional = User::where('id', $validated['region_id'])
+            ->where('role_id', 3)
+            ->where('active', true)
+            ->whereHas('regions', function($query) use ($validated) {
+                $query->where('regions.id', $validated['region']);
+            })
+            ->first();
+
+        if (!$regional) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['region_id' => 'Выбранный региональный представитель не прикреплен к данному региону']);
+        }
 
         try {
             // Генерируем артикул, если он не заполнен
@@ -221,5 +246,47 @@ class CompanyController extends Controller
             'status' => $company->status,
             'message' => 'Статус успешно обновлен'
         ]);
+    }
+
+    /**
+     * Получает региональных представителей для выбранного региона
+     */
+    public function getRegionalsByRegion($regionId)
+    {
+        $regionals = User::where('role_id', 3)
+            ->where('active', true)
+            ->whereHas('regions', function($query) use ($regionId) {
+                $query->where('regions.id', $regionId);
+            })
+            ->get(['id', 'name']);
+
+        return response()->json($regionals);
+    }
+
+    /**
+     * Получает регионы, доступные авторизованному пользователю
+     */
+    private function getUserRegions()
+    {
+        $user = auth()->user();
+        
+        // Если пользователь не авторизован, показываем пустой список
+        if (!$user) {
+            return collect();
+        }
+        
+        // Проверяем роль пользователя - администраторы видят все регионы
+        if ($user->role_id === 1) { // Предполагаем, что role_id = 1 это администратор
+            return Regions::where('active', true)->get();
+        } else {
+            // Обычные пользователи видят только свои регионы
+            return Regions::where('active', true)
+                ->whereIn('id', function($query) use ($user) {
+                    $query->select('region_id')
+                          ->from('users_to_regions')
+                          ->where('user_id', $user->id);
+                })
+                ->get();
+        }
     }
 }
