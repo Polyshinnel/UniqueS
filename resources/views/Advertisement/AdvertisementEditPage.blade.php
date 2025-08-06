@@ -38,6 +38,10 @@
         </div>
         <div class="step" data-step="6">
             <span class="step-number">6</span>
+            <span class="step-title">Оплата</span>
+        </div>
+        <div class="step" data-step="7">
+            <span class="step-number">7</span>
             <span class="step-title">Медиафайлы</span>
         </div>
     </div>
@@ -127,9 +131,9 @@
                 <label for="check_status_id">Статус проверки</label>
                 <select name="check_status_id" id="check_status_id" class="form-control">
                     <option value="">Выберите статус</option>
-                    @foreach($productStatuses as $status)
+                    @foreach($checkStatuses as $status)
                         <option value="{{ $status->id }}" 
-                            {{ (isset($advertisement->check_data['status_id']) && $advertisement->check_data['status_id'] == $status->id) ? 'selected' : '' }}>
+                            {{ ($advertisement->check_data && $advertisement->check_data['status_id'] == $status->id) ? 'selected' : '' }}>
                             {{ $status->name }}
                         </option>
                     @endforeach
@@ -138,7 +142,7 @@
 
             <div class="form-group">
                 <label for="check_comment">Комментарий по проверке</label>
-                <textarea name="check_comment" id="check_comment" class="form-control" rows="4">{{ $advertisement->check_data['status_comment'] ?? '' }}</textarea>
+                <textarea name="check_comment" id="check_comment" class="form-control" rows="4">{{ $advertisement->check_data ? $advertisement->check_data['comment'] : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -152,19 +156,21 @@
             <h2>Погрузка</h2>
 
             <div class="form-group">
-                <label for="loading_type">Тип погрузки</label>
-                <select name="loading_type" id="loading_type" class="form-control">
-                    <option value="">Выберите тип погрузки</option>
-                    <option value="supplier" {{ (isset($advertisement->loading_data['loading_type']) && $advertisement->loading_data['loading_type'] == 'supplier') ? 'selected' : '' }}>Поставщиком</option>
-                    <option value="supplier_paid" {{ (isset($advertisement->loading_data['loading_type']) && $advertisement->loading_data['loading_type'] == 'supplier_paid') ? 'selected' : '' }}>Поставщиком (за доп. плату)</option>
-                    <option value="client" {{ (isset($advertisement->loading_data['loading_type']) && $advertisement->loading_data['loading_type'] == 'client') ? 'selected' : '' }}>Клиентом</option>
-                    <option value="other" {{ (isset($advertisement->loading_data['loading_type']) && $advertisement->loading_data['loading_type'] == 'other') ? 'selected' : '' }}>Другое</option>
+                <label for="loading_status_id">Статус погрузки</label>
+                <select name="loading_status_id" id="loading_status_id" class="form-control">
+                    <option value="">Выберите статус</option>
+                    @foreach($installStatuses as $status)
+                        <option value="{{ $status->id }}" 
+                            {{ ($advertisement->loading_data && $advertisement->loading_data['status_id'] == $status->id) ? 'selected' : '' }}>
+                            {{ $status->name }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="loading_comment">Комментарий по погрузке</label>
-                <textarea name="loading_comment" id="loading_comment" class="form-control" rows="4">{{ $advertisement->loading_data['loading_comment'] ?? '' }}</textarea>
+                <textarea name="loading_comment" id="loading_comment" class="form-control" rows="4">{{ $advertisement->loading_data ? $advertisement->loading_data['comment'] : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -178,19 +184,21 @@
             <h2>Демонтаж</h2>
 
             <div class="form-group">
-                <label for="removal_type">Тип демонтажа</label>
-                <select name="removal_type" id="removal_type" class="form-control">
-                    <option value="">Выберите тип демонтажа</option>
-                    <option value="supplier" {{ (isset($advertisement->removal_data['removal_type']) && $advertisement->removal_data['removal_type'] == 'supplier') ? 'selected' : '' }}>Поставщиком</option>
-                    <option value="supplier_paid" {{ (isset($advertisement->removal_data['removal_type']) && $advertisement->removal_data['removal_type'] == 'supplier_paid') ? 'selected' : '' }}>Поставщиком (за доп. плату)</option>
-                    <option value="client" {{ (isset($advertisement->removal_data['removal_type']) && $advertisement->removal_data['removal_type'] == 'client') ? 'selected' : '' }}>Клиентом</option>
-                    <option value="other" {{ (isset($advertisement->removal_data['removal_type']) && $advertisement->removal_data['removal_type'] == 'other') ? 'selected' : '' }}>Другое</option>
+                <label for="removal_status_id">Статус демонтажа</label>
+                <select name="removal_status_id" id="removal_status_id" class="form-control">
+                    <option value="">Выберите статус</option>
+                    @foreach($installStatuses as $status)
+                        <option value="{{ $status->id }}" 
+                            {{ ($advertisement->removal_data && $advertisement->removal_data['status_id'] == $status->id) ? 'selected' : '' }}>
+                            {{ $status->name }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="removal_comment">Комментарий по демонтажу</label>
-                <textarea name="removal_comment" id="removal_comment" class="form-control" rows="4">{{ $advertisement->removal_data['removal_comment'] ?? '' }}</textarea>
+                <textarea name="removal_comment" id="removal_comment" class="form-control" rows="4">{{ $advertisement->removal_data ? $advertisement->removal_data['comment'] : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -199,8 +207,45 @@
             </div>
         </div>
 
-        <!-- Шаг 6: Медиафайлы -->
+        <!-- Шаг 6: Оплата -->
         <div class="step-content" id="step-6">
+            <h2>Оплата</h2>
+
+            <div class="form-group">
+                <label>Варианты оплаты</label>
+                <div class="payment-types-grid">
+                    @foreach($priceTypes as $priceType)
+                        <div class="payment-type-item">
+                            <input type="checkbox" name="payment_types[]" id="payment_type_{{ $priceType->id }}" 
+                                   value="{{ $priceType->id }}" class="payment-type-checkbox"
+                                   {{ $advertisement->product->paymentVariants->where('price_type', $priceType->id)->count() > 0 ? 'checked' : '' }}>
+                            <label for="payment_type_{{ $priceType->id }}" class="payment-type-label">
+                                {{ $priceType->name }}
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="purchase_price">Цена покупки</label>
+                <input type="number" name="purchase_price" id="purchase_price" class="form-control" 
+                       step="0.01" min="0" value="{{ $advertisement->product->purchase_price }}">
+            </div>
+
+            <div class="form-group">
+                <label for="payment_comment">Комментарий по оплате</label>
+                <textarea name="payment_comment" id="payment_comment" class="form-control" rows="4">{{ $advertisement->product->payment_comment }}</textarea>
+            </div>
+
+            <div class="step-actions">
+                <button type="button" class="btn btn-secondary prev-step">Предыдущий шаг</button>
+                <button type="button" class="btn btn-primary next-step">Следующий шаг</button>
+            </div>
+        </div>
+
+        <!-- Шаг 7: Медиафайлы -->
+        <div class="step-content" id="step-7">
             <h2>Медиафайлы</h2>
 
             <!-- Текущие медиафайлы -->
@@ -403,6 +448,45 @@
     opacity: 0.8;
     font-size: 11px;
 }
+
+.payment-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.payment-type-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.payment-type-item:hover {
+    border-color: #133E71;
+    background-color: #f8f9fa;
+}
+
+.payment-type-item.selected {
+    border-color: #133E71;
+    background-color: #e3f2fd;
+}
+
+.payment-type-checkbox {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.payment-type-label {
+    cursor: pointer;
+    font-weight: 500;
+    margin: 0;
+}
 </style>
 
 <script>
@@ -449,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
     nextButtons.forEach(button => {
         button.addEventListener('click', function() {
             if (validateStep(currentStep)) {
-                if (currentStep < 6) {
+                if (currentStep < 7) {
                     showStep(currentStep + 1);
                 }
             }
@@ -460,6 +544,18 @@ document.addEventListener('DOMContentLoaded', function() {
         button.addEventListener('click', function() {
             if (currentStep > 1) {
                 showStep(currentStep - 1);
+            }
+        });
+    });
+
+    // Обработчики для чекбоксов типов оплаты
+    document.querySelectorAll('.payment-type-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const item = this.closest('.payment-type-item');
+            if (this.checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
             }
         });
     });

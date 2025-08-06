@@ -37,6 +37,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/product/{product}/edit', [\App\Http\Controllers\Product\ProductController::class, 'edit'])->name('products.edit');
     Route::put('/product/{product}', [\App\Http\Controllers\Product\ProductController::class, 'update'])->name('products.update');
     Route::patch('/product/{product}/comment', [\App\Http\Controllers\Product\ProductController::class, 'updateComment'])->name('products.update-comment');
+    Route::patch('/product/{product}/loading-status', [\App\Http\Controllers\Product\ProductController::class, 'updateLoadingStatus'])->name('products.update-loading-status');
+    Route::patch('/product/{product}/removal-status', [\App\Http\Controllers\Product\ProductController::class, 'updateRemovalStatus'])->name('products.update-removal-status');
+    Route::patch('/product/{product}/check-status', [\App\Http\Controllers\Product\ProductController::class, 'updateCheckStatus'])->name('products.update-check-status');
+    Route::patch('/product/{product}/payment-variants', [\App\Http\Controllers\Product\ProductController::class, 'updatePaymentVariants'])->name('products.update-payment-variants');
+    Route::patch('/product/{product}/status', [\App\Http\Controllers\Product\ProductController::class, 'updateStatus'])->name('products.update-status');
 
     Route::get('/adv', [\App\Http\Controllers\AdvPageController::class, 'index'])->name('adv.index');
 
@@ -53,6 +58,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/advertisements/product/{product}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getProductMedia'])->name('advertisements.product-media');
     Route::get('/advertisements/product-statuses', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getProductStatuses'])->name('advertisements.product-statuses');
     Route::delete('/advertisements/{advertisement}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'deleteMedia'])->name('advertisements.delete-media');
+    Route::patch('/advertisements/{advertisement}/comment', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateComment'])->name('advertisements.update-comment');
+    Route::patch('/advertisements/{advertisement}/payment-info', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updatePaymentInfo'])->name('advertisements.update-payment-info');
 
     Route::get('/guide', [GuidesMain::class, 'index']);
 });

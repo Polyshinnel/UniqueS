@@ -46,6 +46,37 @@
                                     @endif
                                 </a>
                             </div>
+                            
+                            <!-- Цена покупки под фото -->
+                            <div class="purchase-price-info">
+                                @if($product->purchase_price)
+                                    <div class="purchase-price-value">{{ number_format($product->purchase_price, 0, ',', ' ') }} ₽</div>
+                                @else
+                                    <div class="no-purchase-price">Цена не указана</div>
+                                @endif
+                            </div>
+                            
+                            <!-- Адрес станка под фото -->
+                            <div class="machine-address-info">
+                                @if($product->product_address)
+                                    <div class="machine-address-value">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        {{ Str::limit($product->product_address, 50) }}
+                                    </div>
+                                @else
+                                    <div class="no-machine-address">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        Адрес не указан
+                                    </div>
+                                @endif
+                            </div>
+                            
                             <a href="{{ route('products.show', $product) }}" class="product-link">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -139,64 +170,49 @@
                             @if($product->main_chars)
                             <div class="char-item">
                                 <span class="char-label">Осн. хар:</span>
-                                <span class="char-value">{{ $product->main_chars }}</span>
+                                <span class="char-value">{{ Str::limit($product->main_chars, 50) }}</span>
                             </div>
                             @endif
                             @if($product->mark)
                             <div class="char-item">
-                                <span class="char-label">Марка:</span>
-                                <span class="char-value">{{ $product->mark }}</span>
+                                <span class="char-label">Оценка:</span>
+                                <span class="char-value">{{ Str::limit($product->mark, 50) }}</span>
                             </div>
                             @endif
                             @if($product->complectation)
                             <div class="char-item">
                                 <span class="char-label">Компл:</span>
-                                <span class="char-value">{{ $product->complectation }}</span>
+                                <span class="char-value">{{ Str::limit($product->complectation, 50) }}</span>
                             </div>
                             @endif
-                            @if($product->loading_type)
+                            @if($product->check->count() > 0)
                             <div class="char-item">
                                 <span class="char-label">Проверка:</span>
-                                <span class="char-value">
-                                    @switch($product->loading_type)
-                                        @case('supplier')
-                                            Поставщиком
-                                            @break
-                                        @case('supplier_paid')
-                                            Поставщиком (за доп. плату)
-                                            @break
-                                        @case('client')
-                                            Клиентом
-                                            @break
-                                        @case('other')
-                                            Другое
-                                            @break
-                                        @default
-                                            {{ $product->loading_type }}
-                                    @endswitch
-                                </span>
+                                <span class="char-value">{{ $product->check->first()->checkStatus->name ?? 'Не указана' }}</span>
                             </div>
                             @endif
-                            @if($product->removal_type)
+                            @if($product->loading->count() > 0)
+                            <div class="char-item">
+                                <span class="char-label">Погрузка:</span>
+                                <span class="char-value">{{ $product->loading->first()->installStatus->name ?? 'Не указана' }}</span>
+                            </div>
+                            @endif
+                            @if($product->removal->count() > 0)
                             <div class="char-item">
                                 <span class="char-label">Демонтаж:</span>
+                                <span class="char-value">{{ $product->removal->first()->installStatus->name ?? 'Не указан' }}</span>
+                            </div>
+                            @endif
+                            @if($product->paymentVariants->count() > 0)
+                            <div class="char-item">
+                                <span class="char-label">Оплата:</span>
                                 <span class="char-value">
-                                    @switch($product->removal_type)
-                                        @case('supplier')
-                                            Поставщиком
-                                            @break
-                                        @case('supplier_paid')
-                                            Поставщиком (за доп. плату)
-                                            @break
-                                        @case('client')
-                                            Клиентом
-                                            @break
-                                        @case('other')
-                                            Другое
-                                            @break
-                                        @default
-                                            {{ $product->removal_type }}
-                                    @endswitch
+                                    @foreach($product->paymentVariants->take(2) as $variant)
+                                        {{ $variant->priceType->name }}{{ !$loop->last ? ', ' : '' }}
+                                    @endforeach
+                                    @if($product->paymentVariants->count() > 2)
+                                        +{{ $product->paymentVariants->count() - 2 }}
+                                    @endif
                                 </span>
                             </div>
                             @endif
@@ -628,6 +644,139 @@ window.onclick = function(event) {
 .action-btn svg {
     width: 14px;
     height: 14px;
+}
+
+/* Стили для ячейки адреса станка */
+.address-cell {
+    min-width: 150px;
+}
+
+.address-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.address-text {
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.no-address {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+/* Стили для цены покупки под фото */
+.purchase-price-info {
+    margin-top: 8px;
+    text-align: left;
+}
+
+.purchase-price-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #28a745;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: inline-block;
+}
+
+.no-purchase-price {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: inline-block;
+}
+
+/* Стили для адреса станка под фото */
+.machine-address-info {
+    margin-top: 6px;
+    text-align: left;
+}
+
+.machine-address-value {
+    font-size: 13px;
+    color: #333;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.machine-address-value svg {
+    color: #133E71;
+    flex-shrink: 0;
+}
+
+.no-machine-address {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.no-machine-address svg {
+    color: #6c757d;
+    flex-shrink: 0;
+}
+
+/* Стили для ячейки цены покупки */
+.price-cell {
+    min-width: 120px;
+}
+
+.price-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.price-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #28a745;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    text-align: center;
+}
+
+.no-price {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    padding: 8px 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    text-align: center;
 }
 
 /* Стили для ячейки характеристик */

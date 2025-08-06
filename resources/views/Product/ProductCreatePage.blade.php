@@ -13,6 +13,178 @@
 @endsection
 
 @section('content')
+<style>
+/* Стили для multiselect */
+.multiselect-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.multiselect-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    min-height: 38px;
+    position: relative;
+}
+
+.multiselect-input:hover {
+    border-color: #133E71;
+}
+
+.multiselect-input:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.2);
+}
+
+.multiselect-input.active {
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.2);
+}
+
+.multiselect-placeholder {
+    color: #6c757d;
+    flex: 1;
+}
+
+.multiselect-values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+}
+
+.multiselect-tag {
+    background: #133E71;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.multiselect-tag-remove {
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.multiselect-tag-remove:hover {
+    opacity: 0.8;
+}
+
+.multiselect-arrow {
+    transition: transform 0.2s;
+    color: #6c757d;
+}
+
+.multiselect-input.active .multiselect-arrow {
+    transform: rotate(180deg);
+}
+
+.multiselect-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    display: none;
+    max-height: 200px;
+    overflow: hidden;
+}
+
+.multiselect-dropdown.active {
+    display: block;
+    animation: multiselectFadeIn 0.15s ease-out;
+}
+
+@keyframes multiselectFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.multiselect-search {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+}
+
+.multiselect-search-input {
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.multiselect-search-input:focus {
+    outline: none;
+    border-color: #133E71;
+}
+
+.multiselect-options {
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.multiselect-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s;
+}
+
+.multiselect-option:hover {
+    background-color: #f8f9fa;
+}
+
+.multiselect-option.selected {
+    background-color: #e3f2fd;
+    color: #133E71;
+}
+
+.multiselect-checkbox {
+    margin: 0;
+}
+
+.multiselect-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.multiselect-options::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.multiselect-options::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.multiselect-options::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+</style>
+
 <div class="product-create-container">
     <!-- Индикатор шагов -->
     <div class="steps-indicator">
@@ -69,7 +241,7 @@
                     <select name="company_id" id="company_id" class="form-control" required>
                         <option value="">Выберите поставщика</option>
                         @foreach($companies as $company)
-                            <option value="{{ $company->id }}">{{ $company->name }}</option>
+                            <option value="{{ $company->id }}" data-sku="{{ $company->sku }}">{{ $company->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -89,6 +261,18 @@
                 <div class="form-group">
                     <label for="name">Название станка</label>
                     <input type="text" name="name" id="name" class="form-control" required>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="product_address">Адрес станка</label>
+                    <input type="text" name="product_address" id="product_address" class="form-control" placeholder="Например: Цех 1, участок А, позиция 5">
+                </div>
+
+                <div class="form-group">
+                    <label for="sku">Артикул</label>
+                    <input type="text" name="sku" id="sku" class="form-control" placeholder="Оставьте пустым для автоматической генерации (артикул_поставщика-дата_время)">
                 </div>
             </div>
 
@@ -130,23 +314,23 @@
             </div>
         </div>
 
-        <!-- Шаг 3: Статус -->
+        <!-- Шаг 3: Проверка -->
         <div class="step-content" id="step-3">
             <h2>Проверка</h2>
 
             <div class="form-group">
-                <label for="status_id">Статус</label>
-                <select name="status_id" id="status_id" class="form-control" required>
-                    <option value="">Выберите статус</option>
-                    @foreach($statuses as $status)
+                <label for="check_status_id">Статус проверки</label>
+                <select name="check_status_id" id="check_status_id" class="form-control">
+                    <option value="">Выберите статус проверки</option>
+                    @foreach($checkStatuses as $status)
                         <option value="{{ $status->id }}">{{ $status->name }}</option>
                     @endforeach
                 </select>
             </div>
 
             <div class="form-group">
-                <label for="status_comment">Комментарий</label>
-                <textarea name="status_comment" id="status_comment" class="form-control" rows="4"></textarea>
+                <label for="check_comment">Комментарий к проверке</label>
+                <textarea name="check_comment" id="check_comment" class="form-control" rows="4"></textarea>
             </div>
 
             <div class="step-actions">
@@ -160,13 +344,12 @@
             <h2>Погрузка</h2>
 
             <div class="form-group">
-                <label for="loading_type">Тип погрузки</label>
-                <select name="loading_type" id="loading_type" class="form-control" required>
-                    <option value="">Выберите тип погрузки</option>
-                    <option value="supplier">Поставщиком</option>
-                    <option value="supplier_paid">Поставщиком (за доп. плату)</option>
-                    <option value="client">Клиентом</option>
-                    <option value="other">Другое</option>
+                <label for="loading_status_id">Статус погрузки</label>
+                <select name="loading_status_id" id="loading_status_id" class="form-control">
+                    <option value="">Выберите статус погрузки</option>
+                    @foreach($installStatuses as $status)
+                        <option value="{{ $status->id }}">{{ $status->name }}</option>
+                    @endforeach
                 </select>
             </div>
 
@@ -194,13 +377,12 @@
             <h2>Демонтаж</h2>
 
             <div class="form-group">
-                <label for="removal_type">Тип демонтажа</label>
-                <select name="removal_type" id="removal_type" class="form-control" required>
-                    <option value="">Выберите тип демонтажа</option>
-                    <option value="supplier">Поставщиком</option>
-                    <option value="supplier_paid">Поставщиком (за доп. плату)</option>
-                    <option value="client">Клиентом</option>
-                    <option value="other">Другое</option>
+                <label for="removal_status_id">Статус демонтажа</label>
+                <select name="removal_status_id" id="removal_status_id" class="form-control">
+                    <option value="">Выберите статус демонтажа</option>
+                    @foreach($installStatuses as $status)
+                        <option value="{{ $status->id }}">{{ $status->name }}</option>
+                    @endforeach
                 </select>
             </div>
 
@@ -228,15 +410,28 @@
             <h2>Оплата</h2>
 
             <div class="form-group">
-                <label for="payment_method">Приоритетный способ оплаты</label>
-                <select name="payment_method" id="payment_method" class="form-control" required>
-                    <option value="">Выберите способ оплаты</option>
-                    <option value="cash">Наличные</option>
-                    <option value="cashless_with_vat">Безнал с НДС</option>
-                    <option value="cashless_without_vat">Безнал без НДС</option>
-                    <option value="combined">Комбинированная</option>
-                    <option value="other">Другое</option>
-                </select>
+                <label for="payment_types">Варианты оплаты</label>
+                <div class="multiselect-wrapper">
+                    <div class="multiselect-input" id="payment_types_multiselect" tabindex="0">
+                        <span class="multiselect-placeholder">Выберите варианты оплаты</span>
+                        <svg class="multiselect-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="6,9 12,15 18,9"></polyline>
+                        </svg>
+                    </div>
+                    <div class="multiselect-dropdown" id="payment_types_multiselect_dropdown">
+                        <div class="multiselect-search">
+                            <input type="text" id="payment_types_multiselect_search" placeholder="Поиск вариантов оплаты..." class="multiselect-search-input">
+                        </div>
+                        <div class="multiselect-options" id="payment_types_multiselect_options">
+                            <!-- Опции будут заполнены JavaScript -->
+                        </div>
+                    </div>
+                    <select name="payment_types[]" id="payment_types" class="form-control" multiple style="display: none;">
+                        @foreach($priceTypes as $priceType)
+                            <option value="{{ $priceType->id }}">{{ $priceType->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
@@ -522,6 +717,207 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Инициализация
     showStep(1);
+    
+    // Инициализация multiselect для вариантов оплаты
+    initializeMultiSelect('payment_types_multiselect', 'payment_types', @json($priceTypes));
+    
+    // Автоматическая подстановка артикула поставщика при выборе поставщика
+    const companySelect = document.getElementById('company_id');
+    const skuInput = document.getElementById('sku');
+
+    if (companySelect && skuInput) {
+        companySelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            if (selectedOption.value && !skuInput.value.trim()) {
+                // Получаем артикул поставщика из выбранной опции
+                const supplierSku = selectedOption.getAttribute('data-sku') || '000';
+                const date = new Date();
+                const dateStr = date.getDate().toString().padStart(2, '0') + 
+                               (date.getMonth() + 1).toString().padStart(2, '0') + 
+                               date.getFullYear().toString() + 
+                               date.getHours().toString().padStart(2, '0') + 
+                               date.getMinutes().toString().padStart(2, '0');
+                
+                const generatedSku = supplierSku + dateStr;
+                skuInput.value = generatedSku;
+            }
+        });
+
+        // Обрабатываем случай, когда пользователь очищает поле артикула
+        skuInput.addEventListener('blur', function() {
+            if (!this.value.trim() && companySelect.value) {
+                const selectedOption = companySelect.options[companySelect.selectedIndex];
+                const supplierSku = selectedOption.getAttribute('data-sku') || '000';
+                const date = new Date();
+                const dateStr = date.getDate().toString().padStart(2, '0') + 
+                               (date.getMonth() + 1).toString().padStart(2, '0') + 
+                               date.getFullYear().toString() + 
+                               date.getHours().toString().padStart(2, '0') + 
+                               date.getMinutes().toString().padStart(2, '0');
+                
+                const generatedSku = supplierSku + dateStr;
+                skuInput.value = generatedSku;
+            }
+        });
+    }
 });
+
+// Функция инициализации мультиселекта
+function initializeMultiSelect(multiselectId, selectId, options, preSelectedValues = []) {
+    const multiselectInput = document.getElementById(multiselectId);
+    const multiselectDropdown = document.getElementById(multiselectId + '_dropdown');
+    const multiselectOptions = document.getElementById(multiselectId + '_options');
+    const multiselectSearch = document.getElementById(multiselectId + '_search');
+    const hiddenSelect = document.getElementById(selectId);
+    
+    if (!multiselectInput || !multiselectDropdown || !multiselectOptions || !hiddenSelect) return;
+    
+    let isOpen = false;
+    let selectedValues = preSelectedValues.map(item => item.id.toString());
+    
+    // Создаем контейнер для выбранных значений
+    const valuesContainer = document.createElement('div');
+    valuesContainer.className = 'multiselect-values';
+    valuesContainer.style.display = 'none';
+    multiselectInput.insertBefore(valuesContainer, multiselectInput.querySelector('.multiselect-arrow'));
+    
+    // Обновляем опции
+    function updateOptions(filteredOptions = null) {
+        const optionsToUse = filteredOptions || options;
+        
+        let html = '';
+        optionsToUse.forEach(option => {
+            const isSelected = selectedValues.includes(option.id.toString());
+            html += `<div class="multiselect-option ${isSelected ? 'selected' : ''}" data-value="${option.id}">
+                <input type="checkbox" class="multiselect-checkbox" ${isSelected ? 'checked' : ''}>
+                <span>${option.name}</span>
+            </div>`;
+        });
+        
+        multiselectOptions.innerHTML = html;
+        attachOptionEvents();
+    }
+    
+    // Привязываем события к опциям
+    function attachOptionEvents() {
+        const optionElements = multiselectOptions.querySelectorAll('.multiselect-option');
+        optionElements.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.dataset.value;
+                const checkbox = this.querySelector('.multiselect-checkbox');
+                
+                if (selectedValues.includes(value)) {
+                    selectedValues = selectedValues.filter(v => v !== value);
+                    checkbox.checked = false;
+                    this.classList.remove('selected');
+                } else {
+                    selectedValues.push(value);
+                    checkbox.checked = true;
+                    this.classList.add('selected');
+                }
+                
+                updateSelectedValues();
+                updateHiddenSelect();
+            });
+        });
+    }
+    
+    // Обновляем отображение выбранных значений
+    function updateSelectedValues() {
+        const placeholder = multiselectInput.querySelector('.multiselect-placeholder');
+        const values = multiselectInput.querySelector('.multiselect-values');
+        
+        if (selectedValues.length === 0) {
+            placeholder.style.display = 'block';
+            values.style.display = 'none';
+        } else {
+            placeholder.style.display = 'none';
+            values.style.display = 'block';
+            
+            let html = '';
+            selectedValues.forEach(value => {
+                const option = options.find(opt => opt.id.toString() === value);
+                if (option) {
+                    html += `<div class="multiselect-tag">
+                        <span>${option.name}</span>
+                        <span class="multiselect-tag-remove" data-value="${value}">&times;</span>
+                    </div>`;
+                }
+            });
+            values.innerHTML = html;
+            
+            // Привязываем события к кнопкам удаления
+            const removeButtons = values.querySelectorAll('.multiselect-tag-remove');
+            removeButtons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const value = this.dataset.value;
+                    selectedValues = selectedValues.filter(v => v !== value);
+                    updateSelectedValues();
+                    updateOptions();
+                    updateHiddenSelect();
+                });
+            });
+        }
+    }
+    
+    // Обновляем скрытый select
+    function updateHiddenSelect() {
+        const options = hiddenSelect.querySelectorAll('option');
+        options.forEach(option => {
+            if (selectedValues.includes(option.value)) {
+                option.selected = true;
+            } else {
+                option.selected = false;
+            }
+        });
+    }
+    
+    // Переключение выпадающего списка
+    function toggleDropdown() {
+        if (isOpen) {
+            multiselectInput.classList.remove('active');
+            multiselectDropdown.classList.remove('active');
+            isOpen = false;
+        } else {
+            multiselectInput.classList.add('active');
+            multiselectDropdown.classList.add('active');
+            isOpen = true;
+            multiselectSearch.focus();
+        }
+    }
+    
+    // Закрытие при клике вне элемента
+    document.addEventListener('click', function(e) {
+        if (!multiselectInput.contains(e.target) && !multiselectDropdown.contains(e.target)) {
+            multiselectInput.classList.remove('active');
+            multiselectDropdown.classList.remove('active');
+            isOpen = false;
+        }
+    });
+    
+    // Обработка поиска
+    multiselectSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        const filteredOptions = options.filter(option => 
+            option.name.toLowerCase().includes(searchTerm)
+        );
+        updateOptions(filteredOptions);
+    });
+    
+    // Привязываем события
+    multiselectInput.addEventListener('click', toggleDropdown);
+    multiselectInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleDropdown();
+        }
+    });
+    
+    // Инициализация
+    updateOptions();
+    updateSelectedValues();
+}
 </script>
 @endsection

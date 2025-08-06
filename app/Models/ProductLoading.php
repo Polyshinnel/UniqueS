@@ -4,10 +4,21 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ProductLoading extends Model
 {
     use HasFactory;
 
     protected $guarded = false;
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
+
+    public function installStatus(): BelongsTo
+    {
+        return $this->belongsTo(ProductInstallStatuses::class, 'install_status_id');
+    }
 }

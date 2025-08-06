@@ -122,6 +122,27 @@
         <!-- Основная информация о товаре -->
         <div class="product-info-section">
             <div class="info-block">
+                <h3>Статус товара</h3>
+                <div class="status-container">
+                    <div class="status-selector">
+                        <div class="status-badge clickable" onclick="toggleProductStatusDropdown()" style="background-color: {{ $product->status->color ?? '#6c757d' }}; color: white;">
+                            {{ $product->status->name ?? 'Не указан' }}
+                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="status-dropdown" id="productStatusDropdown">
+                            @foreach($statuses as $status)
+                                <div class="status-option" onclick="changeProductStatus({{ $status->id }}, '{{ $status->name }}', '{{ $status->color }}')">
+                                    <div class="status-badge" style="background-color: {{ $status->color }}; color: white;">{{ $status->name }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-block">
                 <h3>Основная информация</h3>
                 <div class="info-grid">
                     <div class="info-item">
@@ -131,6 +152,10 @@
                     <div class="info-item">
                         <span class="label">Склад:</span>
                         <span class="value">{{ $product->warehouse->name ?? 'Не указан' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Адрес станка:</span>
+                        <span class="value">{{ $product->product_address ?? 'Не указан' }}</span>
                     </div>
                     <div class="info-item">
                         <span class="label">Организация:</span>
@@ -148,7 +173,7 @@
                         <span class="label">Владелец:</span>
                         <span class="value">
                             @if($product->owner)
-                                <button class="contact-link" onclick="showContactCard({{ $product->owner->id }}, '{{ $product->owner->name }}', '{{ $product->owner->email }}', '{{ $product->owner->phone }}', '{{ $product->owner->role->name ?? 'Роль не указана' }}', {{ $product->owner->has_telegram ? 'true' : 'false' }}, {{ $product->owner->has_whatsapp ? 'true' : 'false' }})">
+                                <button class="contact-link" onclick="showContactCard({{ $product->owner->id }}, '{{ $product->owner->name }}', '{{ $product->owner->email }}', '{{ $product->owner->phone }}', '{{ $product->owner->role->name ?? 'Роль не указана' }}', {{ $product->owner->has_telegram ? 'true' : 'false' }}, {{ $product->regional->has_whatsapp ? 'true' : 'false' }})">
                                     {{ $product->owner->name }}
                                 </button>
                             @else
@@ -168,50 +193,11 @@
                             @endif
                         </span>
                     </div>
-                    @if($product->mark)
-                        <div class="info-item">
-                            <span class="label">Оценка:</span>
-                            <span class="value">{{ $product->mark }}</span>
-                        </div>
-                    @endif
+
                 </div>
             </div>
 
-            <div class="info-block">
-                <h3>Статус товара</h3>
-                <div class="status-container">
-                    <div class="status-badge status-{{ $product->status->id ?? 'unknown' }}">
-                        {{ $product->status->name ?? 'Не указан' }}
-                    </div>
-                    <div class="comment-section" data-field="status_comment">
-                        <div class="comment-header">
-                            <strong>Комментарий к статусу:</strong>
-                            <button class="edit-comment-btn" onclick="editComment('status_comment')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                                Редактировать
-                            </button>
-                        </div>
-                        <div class="comment-content" id="status_comment_content">
-                            @if($product->status_comment)
-                                <p>{{ $product->status_comment }}</p>
-                            @else
-                                <p class="no-comment">Комментарий не указан</p>
-                            @endif
-                        </div>
-                        <div class="comment-edit" id="status_comment_edit" style="display: none;">
-                            <textarea class="comment-textarea" id="status_comment_textarea" rows="3">{{ $product->status_comment }}</textarea>
-                            <div class="comment-actions">
-                                <button class="btn btn-primary btn-sm" onclick="saveComment('status_comment')">Сохранить</button>
-                                <button class="btn btn-secondary btn-sm" onclick="cancelEdit('status_comment')">Отмена</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            @if($product->main_chars || $product->complectation)
+            @if($product->main_chars || $product->complectation || $product->mark)
                 <div class="info-block">
                     <h3>Характеристики</h3>
                     @if($product->main_chars)
@@ -226,111 +212,89 @@
                             <p>{{ $product->complectation }}</p>
                         </div>
                     @endif
+                    @if($product->mark)
+                        <div class="chars-item">
+                            <strong>Оценка:</strong>
+                            <p>{{ $product->mark }}</p>
+                        </div>
+                    @endif
                 </div>
             @endif
 
-            @if($product->loading_type || $product->loading_comment)
+            @if($product->loading->count() > 0)
                 <div class="info-block">
                     <h3>Информация о погрузке</h3>
-                    @if($product->loading_type)
-                        <div class="loading-item">
-                            <strong>Тип загрузки:</strong>
-                            <span>
-                                @switch($product->loading_type)
-                                    @case('supplier')
-                                        Поставщиком
-                                        @break
-                                    @case('supplier_paid')
-                                        Поставщиком (за доп. плату)
-                                        @break
-                                    @case('client')
-                                        Клиентом
-                                        @break
-                                    @case('other')
-                                        Другое
-                                        @break
-                                    @default
-                                        {{ $product->loading_type }}
-                                @endswitch
+                    @php $loading = $product->loading->first(); @endphp
+                    <div class="loading-container">
+                        <div class="loading-status">
+                            <strong>Статус погрузки:</strong>
+                            <span class="status-badge">
+                                {{ $loading->installStatus->name ?? 'Не указан' }}
                             </span>
                         </div>
-                    @endif
-                    <div class="comment-section" data-field="loading_comment">
-                        <div class="comment-header">
-                            <strong>Комментарий по погрузке:</strong>
-                            <button class="edit-comment-btn" onclick="editComment('loading_comment')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                                Редактировать
-                            </button>
-                        </div>
-                        <div class="comment-content" id="loading_comment_content">
-                            @if($product->loading_comment)
-                                <p>{{ $product->loading_comment }}</p>
-                            @else
-                                <p class="no-comment">Комментарий не указан</p>
-                            @endif
-                        </div>
-                        <div class="comment-edit" id="loading_comment_edit" style="display: none;">
-                            <textarea class="comment-textarea" id="loading_comment_textarea" rows="3">{{ $product->loading_comment }}</textarea>
-                            <div class="comment-actions">
-                                <button class="btn btn-primary btn-sm" onclick="saveComment('loading_comment')">Сохранить</button>
-                                <button class="btn btn-secondary btn-sm" onclick="cancelEdit('loading_comment')">Отмена</button>
+                        <div class="comment-section" data-field="loading_comment">
+                            <div class="comment-header">
+                                <strong>Комментарий по погрузке:</strong>
+                                <button class="edit-comment-btn" onclick="editComment('loading_comment')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                    </svg>
+                                    Редактировать
+                                </button>
+                            </div>
+                            <div class="comment-content" id="loading_comment_content">
+                                @if($loading->comment)
+                                    <p>{{ $loading->comment }}</p>
+                                @else
+                                    <p class="no-comment">Комментарий не указан</p>
+                                @endif
+                            </div>
+                            <div class="comment-edit" id="loading_comment_edit" style="display: none;">
+                                <textarea class="comment-textarea" id="loading_comment_textarea" rows="3">{{ $loading->comment }}</textarea>
+                                <div class="comment-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="saveComment('loading_comment')">Сохранить</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('loading_comment')">Отмена</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             @endif
 
-            @if($product->removal_type || $product->removal_comment)
+            @if($product->removal->count() > 0)
                 <div class="info-block">
-                    <h3>Информация о вывозе</h3>
-                    @if($product->removal_type)
-                        <div class="removal-item">
-                            <strong>Тип вывоза:</strong>
-                            <span>
-                                @switch($product->removal_type)
-                                    @case('supplier')
-                                        Поставщиком
-                                        @break
-                                    @case('supplier_paid')
-                                        Поставщиком (за доп. плату)
-                                        @break
-                                    @case('client')
-                                        Клиентом
-                                        @break
-                                    @case('other')
-                                        Другое
-                                        @break
-                                    @default
-                                        {{ $product->removal_type }}
-                                @endswitch
+                    <h3>Информация о демонтаже</h3>
+                    @php $removal = $product->removal->first(); @endphp
+                    <div class="removal-container">
+                        <div class="removal-status">
+                            <strong>Статус демонтажа:</strong>
+                            <span class="status-badge">
+                                {{ $removal->installStatus->name ?? 'Не указан' }}
                             </span>
                         </div>
-                    @endif
-                    <div class="comment-section" data-field="removal_comment">
-                        <div class="comment-header">
-                            <strong>Комментарий по вывозу:</strong>
-                            <button class="edit-comment-btn" onclick="editComment('removal_comment')">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                </svg>
-                                Редактировать
-                            </button>
-                        </div>
-                        <div class="comment-content" id="removal_comment_content">
-                            @if($product->removal_comment)
-                                <p>{{ $product->removal_comment }}</p>
-                            @else
-                                <p class="no-comment">Комментарий не указан</p>
-                            @endif
-                        </div>
-                        <div class="comment-edit" id="removal_comment_edit" style="display: none;">
-                            <textarea class="comment-textarea" id="removal_comment_textarea" rows="3">{{ $product->removal_comment }}</textarea>
-                            <div class="comment-actions">
-                                <button class="btn btn-primary btn-sm" onclick="saveComment('removal_comment')">Сохранить</button>
-                                <button class="btn btn-secondary btn-sm" onclick="cancelEdit('removal_comment')">Отмена</button>
+                        <div class="comment-section" data-field="removal_comment">
+                            <div class="comment-header">
+                                <strong>Комментарий по демонтажу:</strong>
+                                <button class="edit-comment-btn" onclick="editComment('removal_comment')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                    </svg>
+                                    Редактировать
+                                </button>
+                            </div>
+                            <div class="comment-content" id="removal_comment_content">
+                                @if($removal->comment)
+                                    <p>{{ $removal->comment }}</p>
+                                @else
+                                    <p class="no-comment">Комментарий не указан</p>
+                                @endif
+                            </div>
+                            <div class="comment-edit" id="removal_comment_edit" style="display: none;">
+                                <textarea class="comment-textarea" id="removal_comment_textarea" rows="3">{{ $removal->comment }}</textarea>
+                                <div class="comment-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="saveComment('removal_comment')">Сохранить</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('removal_comment')">Отмена</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -348,44 +312,58 @@
                     </button>
                 </div>
                 
-                <!-- Способ оплаты -->
+                <!-- Варианты оплаты -->
                 <div class="payment-item">
-                    <strong>Способ оплаты:</strong>
+                    <strong>Варианты оплаты:</strong>
                     <div class="payment-content" id="payment_method_content">
-                        @if($product->payment_method)
-                            <span>
-                                @switch($product->payment_method)
-                                    @case('cash')
-                                        Наличные
-                                        @break
-                                    @case('cashless_with_vat')
-                                        Безнал с НДС
-                                        @break
-                                    @case('cashless_without_vat')
-                                        Безнал без НДС
-                                        @break
-                                    @case('combined')
-                                        Комбинированная
-                                        @break
-                                    @case('other')
-                                        Другое
-                                        @break
-                                    @default
-                                        {{ $product->payment_method }}
-                                @endswitch
-                            </span>
+                        @if($product->paymentVariants->count() > 0)
+                            <div class="payment-variants">
+                                @foreach($product->paymentVariants as $variant)
+                                    <span class="payment-variant">{{ $variant->priceType->name }}</span>
+                                @endforeach
+                            </div>
+                        @else
+                            <span class="no-value">Не указаны</span>
+                        @endif
+                    </div>
+                    <div class="payment-edit" id="payment_method_edit" style="display: none;">
+                        @php
+                            $priceTypes = \App\Models\ProductPriceType::all();
+                            $selectedTypes = $product->paymentVariants->pluck('price_type')->toArray();
+                        @endphp
+                        <div class="payment-checkboxes">
+                            @foreach($priceTypes as $priceType)
+                                <label class="payment-checkbox">
+                                    <input type="checkbox" name="payment_types[]" value="{{ $priceType->id }}" 
+                                           {{ in_array($priceType->id, $selectedTypes) ? 'checked' : '' }}>
+                                    <span>{{ $priceType->name }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Основной способ оплаты -->
+                <div class="payment-item">
+                    <strong>Основной способ оплаты:</strong>
+                    <div class="payment-content" id="main_payment_method_content">
+                        @if($product->main_payment_method)
+                            <span>{{ $product->mainPaymentMethod->name ?? $product->main_payment_method }}</span>
                         @else
                             <span class="no-value">Не указан</span>
                         @endif
                     </div>
-                    <div class="payment-edit" id="payment_method_edit" style="display: none;">
-                        <select class="payment-select" id="payment_method_select">
+                    <div class="payment-edit" id="main_payment_method_edit" style="display: none;">
+                        @php
+                            $priceTypes = \App\Models\ProductPriceType::all();
+                        @endphp
+                        <select name="main_payment_method" id="main_payment_method_select" class="payment-select">
                             <option value="">Выберите способ оплаты</option>
-                            <option value="cash" {{ $product->payment_method === 'cash' ? 'selected' : '' }}>Наличные</option>
-                            <option value="cashless_with_vat" {{ $product->payment_method === 'cashless_with_vat' ? 'selected' : '' }}>Безнал с НДС</option>
-                            <option value="cashless_without_vat" {{ $product->payment_method === 'cashless_without_vat' ? 'selected' : '' }}>Безнал без НДС</option>
-                            <option value="combined" {{ $product->payment_method === 'combined' ? 'selected' : '' }}>Комбинированная</option>
-                            <option value="other" {{ $product->payment_method === 'other' ? 'selected' : '' }}>Другое</option>
+                            @foreach($priceTypes as $priceType)
+                                <option value="{{ $priceType->id }}" {{ $product->main_payment_method == $priceType->id ? 'selected' : '' }}>
+                                    {{ $priceType->name }}
+                                </option>
+                            @endforeach
                         </select>
                     </div>
                 </div>
@@ -426,6 +404,47 @@
                     <button class="btn btn-primary" onclick="savePaymentBlock()">Сохранить все изменения</button>
                     <button class="btn btn-secondary" onclick="cancelPaymentEdit()">Отмена</button>
                 </div>
+            </div>
+            <div class="info-block">
+                <h3>Проверка</h3>
+                @if($product->check->count() > 0)
+                    @php $check = $product->check->first(); @endphp
+                    <div class="check-container">
+                        <div class="check-status">
+                            <strong>Статус проверки:</strong>
+                            <span class="status-badge" style="background-color: {{ $check->checkStatus->color ?? '#6c757d' }}; color: white;">
+                                {{ $check->checkStatus->name ?? 'Не указан' }}
+                            </span>
+                        </div>
+                        <div class="comment-section" data-field="check_comment">
+                            <div class="comment-header">
+                                <strong>Комментарий к проверке:</strong>
+                                <button class="edit-comment-btn" onclick="editComment('check_comment')">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                    </svg>
+                                    Редактировать
+                                </button>
+                            </div>
+                            <div class="comment-content" id="check_comment_content">
+                                @if($check->comment)
+                                    <p>{{ $check->comment }}</p>
+                                @else
+                                    <p class="no-comment">Комментарий не указан</p>
+                                @endif
+                            </div>
+                            <div class="comment-edit" id="check_comment_edit" style="display: none;">
+                                <textarea class="comment-textarea" id="check_comment_textarea" rows="3">{{ $check->comment }}</textarea>
+                                <div class="comment-actions">
+                                    <button class="btn btn-primary btn-sm" onclick="saveComment('check_comment')">Сохранить</button>
+                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('check_comment')">Отмена</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @else
+                    <p class="no-data">Информация о проверке не указана</p>
+                @endif
             </div>
         </div>
     </div>
@@ -791,8 +810,79 @@
 
 .status-container {
     display: flex;
-    flex-direction: column;
+    align-items: center;
     gap: 15px;
+}
+
+.status-selector {
+    position: relative;
+    display: inline-block;
+}
+
+.status-badge.clickable {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+.status-badge.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dropdown-arrow {
+    transition: transform 0.3s ease;
+}
+
+.status-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: none;
+    min-width: 150px;
+    margin-top: 5px;
+}
+
+.status-dropdown.show {
+    display: block;
+    animation: fadeInDown 0.3s ease;
+}
+
+.status-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.status-option:hover {
+    background-color: #f8f9fa;
+}
+
+.status-option:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.status-option:last-child {
+    border-radius: 0 0 8px 8px;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .status-badge {
@@ -804,11 +894,7 @@
     width: fit-content;
 }
 
-.status-1 { background-color: #e3f2fd; color: #1976d2; }
-.status-2 { background-color: #fff3e0; color: #f57c00; }
-.status-3 { background-color: #e8f5e8; color: #388e3c; }
-.status-4 { background-color: #fce4ec; color: #c2185b; }
-.status-unknown { background-color: #f5f5f5; color: #666; }
+
 
 .comment-section {
     margin-top: 15px;
@@ -1016,6 +1102,37 @@
     outline: none;
     border-color: #133E71;
     box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.2);
+}
+
+.payment-checkboxes {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.payment-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+}
+
+.payment-checkbox:hover {
+    background-color: #f8f9fa;
+}
+
+.payment-checkbox input[type="checkbox"] {
+    margin: 0;
+    cursor: pointer;
+}
+
+.payment-checkbox span {
+    font-size: 14px;
+    color: #495057;
 }
 
 .payment-actions {
@@ -1339,6 +1456,48 @@
         font-style: italic;
         font-size: 13px;
     }
+
+/* Стили для новых элементов */
+.check-container, .loading-container, .removal-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.check-status, .loading-status, .removal-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.payment-variants {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.payment-variant {
+    background: #133E71;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.no-data {
+    color: #6c757d;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
 
 /* Адаптивность */
 @media (max-width: 768px) {
@@ -1693,23 +1852,31 @@ document.addEventListener('DOMContentLoaded', function() {
         input.setAttribute('data-original', input.value);
     });
     
-    const paymentSelects = document.querySelectorAll('.payment-select');
+    const paymentSelects = document.querySelectorAll('.payment-select, select[name="main_payment_method"]');
     paymentSelects.forEach(select => {
         select.setAttribute('data-original', select.value);
+    });
+    
+    // Инициализация чекбоксов для вариантов оплаты
+    const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]');
+    paymentCheckboxes.forEach(checkbox => {
+        checkbox.setAttribute('data-original', checkbox.checked);
     });
 });
 
 // Функции для редактирования блока оплаты
 function editPaymentBlock() {
     // Скрываем все контенты и показываем формы редактирования
-    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
+    const fields = ['payment_method', 'main_payment_method', 'purchase_price', 'payment_comment'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
         const edit = document.getElementById(field + '_edit');
         
-        content.style.display = 'none';
-        edit.style.display = 'block';
+        if (content && edit) {
+            content.style.display = 'none';
+            edit.style.display = 'block';
+        }
     });
     
     // Показываем общие кнопки действий
@@ -1727,29 +1894,50 @@ function editPaymentBlock() {
 
 function cancelPaymentEdit() {
     // Восстанавливаем все оригинальные значения
-    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
+    const fields = ['payment_method', 'main_payment_method', 'purchase_price', 'payment_comment'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
         const edit = document.getElementById(field + '_edit');
         
-        // Восстанавливаем оригинальное значение
-        if (field === 'payment_method') {
-            const select = document.getElementById(field + '_select');
-            const originalValue = select.getAttribute('data-original') || '';
-            select.value = originalValue;
-        } else if (field === 'purchase_price') {
-            const input = document.getElementById(field + '_input');
-            const originalValue = input.getAttribute('data-original') || '';
-            input.value = originalValue;
-        } else if (field === 'payment_comment') {
-            const textarea = document.getElementById(field + '_textarea');
-            const originalValue = textarea.getAttribute('data-original') || '';
-            textarea.value = originalValue;
+        if (content && edit) {
+            // Восстанавливаем оригинальное значение
+            if (field === 'payment_method') {
+                const select = document.getElementById(field + '_select');
+                if (select) {
+                    const originalValue = select.getAttribute('data-original') || '';
+                    select.value = originalValue;
+                }
+            } else if (field === 'main_payment_method') {
+                const select = document.getElementById(field + '_select');
+                if (select) {
+                    const originalValue = select.getAttribute('data-original') || '';
+                    select.value = originalValue;
+                }
+            } else if (field === 'purchase_price') {
+                const input = document.getElementById(field + '_input');
+                if (input) {
+                    const originalValue = input.getAttribute('data-original') || '';
+                    input.value = originalValue;
+                }
+            } else if (field === 'payment_comment') {
+                const textarea = document.getElementById(field + '_textarea');
+                if (textarea) {
+                    const originalValue = textarea.getAttribute('data-original') || '';
+                    textarea.value = originalValue;
+                }
+            }
+            
+            // Восстанавливаем состояние чекбоксов для вариантов оплаты
+            const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]');
+            paymentCheckboxes.forEach(checkbox => {
+                const originalState = checkbox.getAttribute('data-original') === 'true';
+                checkbox.checked = originalState;
+            });
+            
+            content.style.display = 'block';
+            edit.style.display = 'none';
         }
-        
-        content.style.display = 'block';
-        edit.style.display = 'none';
     });
     
     // Скрываем общие кнопки действий
@@ -1760,27 +1948,37 @@ function cancelPaymentEdit() {
 }
 
 function savePaymentBlock() {
-    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
-    const updates = {};
+    // Собираем данные для отправки
+    const paymentData = {
+        payment_types: [],
+        main_payment_method: null,
+        purchase_price: null,
+        payment_comment: null
+    };
     
-    // Собираем все значения
-    fields.forEach(field => {
-        let value;
-        let element;
-        
-        if (field === 'payment_method') {
-            element = document.getElementById(field + '_select');
-            value = element.value;
-        } else if (field === 'purchase_price') {
-            element = document.getElementById(field + '_input');
-            value = element.value.trim();
-        } else if (field === 'payment_comment') {
-            element = document.getElementById(field + '_textarea');
-            value = element.value.trim();
-        }
-        
-        updates[field] = value;
+    // Получаем выбранные варианты оплаты
+    const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]:checked');
+    paymentCheckboxes.forEach(checkbox => {
+        paymentData.payment_types.push(checkbox.value);
     });
+    
+    // Получаем основной способ оплаты
+    const mainPaymentSelect = document.getElementById('main_payment_method_select');
+    if (mainPaymentSelect) {
+        paymentData.main_payment_method = mainPaymentSelect.value;
+    }
+    
+    // Получаем закупочную цену
+    const purchasePriceInput = document.getElementById('purchase_price_input');
+    if (purchasePriceInput) {
+        paymentData.purchase_price = purchasePriceInput.value.trim();
+    }
+    
+    // Получаем комментарий по оплате
+    const paymentCommentTextarea = document.getElementById('payment_comment_textarea');
+    if (paymentCommentTextarea) {
+        paymentData.payment_comment = paymentCommentTextarea.value.trim();
+    }
     
     // Показываем индикатор загрузки
     const saveBtn = document.querySelector('#payment_actions .btn-primary');
@@ -1788,87 +1986,99 @@ function savePaymentBlock() {
     saveBtn.textContent = 'Сохранение...';
     saveBtn.disabled = true;
     
-    // Отправляем AJAX запросы для каждого поля
-    const promises = Object.entries(updates).map(([field, value]) => {
-        return fetch(`/product/{{ $product->id }}/comment`, {
-            method: 'PATCH',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                field: field,
-                value: value
-            })
-        }).then(response => response.json());
-    });
-    
-    Promise.all(promises)
-        .then(results => {
-            const allSuccess = results.every(result => result.success);
-            
-            if (allSuccess) {
-                // Обновляем отображение всех полей
-                fields.forEach(field => {
-                    const content = document.getElementById(field + '_content');
-                    const value = updates[field];
-                    
-                    if (field === 'payment_method') {
-                        let displayText = 'Не указан';
-                        if (value) {
-                            switch(value) {
-                                case 'cash': displayText = 'Наличные'; break;
-                                case 'cashless_with_vat': displayText = 'Безнал с НДС'; break;
-                                case 'cashless_without_vat': displayText = 'Безнал без НДС'; break;
-                                case 'combined': displayText = 'Комбинированная'; break;
-                                case 'other': displayText = 'Другое'; break;
-                                default: displayText = value;
-                            }
-                        }
-                        content.innerHTML = value ? `<span>${displayText}</span>` : '<span class="no-value">Не указан</span>';
-                    } else if (field === 'purchase_price') {
-                        if (value) {
-                            const formattedPrice = new Intl.NumberFormat('ru-RU').format(parseFloat(value));
-                            content.innerHTML = `<span class="price">${formattedPrice} ₽</span>`;
-                        } else {
-                            content.innerHTML = '<span class="no-value">Не указана</span>';
-                        }
-                    } else if (field === 'payment_comment') {
-                        content.innerHTML = value ? `<p>${value}</p>` : '<p class="no-comment">Комментарий не указан</p>';
-                    }
-                    
-                    // Сохраняем новое значение как оригинальное
-                    const element = document.getElementById(field + '_select') || 
-                                   document.getElementById(field + '_input') || 
-                                   document.getElementById(field + '_textarea');
-                    element.setAttribute('data-original', value);
-                    
-                    // Показываем контент и скрываем форму редактирования
-                    content.style.display = 'block';
-                    document.getElementById(field + '_edit').style.display = 'none';
+    // Отправляем AJAX запрос
+    fetch(`/product/{{ $product->id }}/payment-variants`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(paymentData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение вариантов оплаты
+            const paymentMethodContent = document.getElementById('payment_method_content');
+            if (paymentData.payment_types.length > 0) {
+                let variantsHtml = '<div class="payment-variants">';
+                paymentData.payment_types.forEach(typeId => {
+                    // Получаем название типа оплаты из соответствующего чекбокса
+                    const checkbox = document.querySelector(`input[name="payment_types[]"][value="${typeId}"]`);
+                    const typeName = checkbox ? checkbox.nextElementSibling.textContent : `Тип ${typeId}`;
+                    variantsHtml += `<span class="payment-variant">${typeName}</span>`;
                 });
-                
-                // Скрываем общие кнопки действий
-                document.getElementById('payment_actions').style.display = 'none';
-                
-                // Показываем кнопку редактирования
-                document.querySelector('.edit-payment-btn').style.display = 'flex';
-                
-                // Показываем уведомление об успехе
-                showNotification('Все данные успешно обновлены', 'success');
+                variantsHtml += '</div>';
+                paymentMethodContent.innerHTML = variantsHtml;
             } else {
-                throw new Error('Ошибка при сохранении некоторых данных');
+                paymentMethodContent.innerHTML = '<span class="no-value">Не указаны</span>';
             }
-        })
-        .catch(error => {
-            console.error('Ошибка:', error);
-            showNotification('Ошибка при сохранении данных', 'error');
-        })
-        .finally(() => {
-            // Восстанавливаем кнопку
-            saveBtn.textContent = originalText;
-            saveBtn.disabled = false;
-        });
+            
+            // Обновляем основной способ оплаты
+            const mainPaymentContent = document.getElementById('main_payment_method_content');
+            if (paymentData.main_payment_method) {
+                const select = document.getElementById('main_payment_method_select');
+                const selectedOption = select ? select.options[select.selectedIndex] : null;
+                const typeName = selectedOption ? selectedOption.textContent : `Тип ${paymentData.main_payment_method}`;
+                mainPaymentContent.innerHTML = `<span>${typeName}</span>`;
+            } else {
+                mainPaymentContent.innerHTML = '<span class="no-value">Не указан</span>';
+            }
+            
+            // Обновляем закупочную цену
+            const purchasePriceContent = document.getElementById('purchase_price_content');
+            if (paymentData.purchase_price) {
+                const formattedPrice = new Intl.NumberFormat('ru-RU').format(parseFloat(paymentData.purchase_price));
+                purchasePriceContent.innerHTML = `<span class="price">${formattedPrice} ₽</span>`;
+            } else {
+                purchasePriceContent.innerHTML = '<span class="no-value">Не указана</span>';
+            }
+            
+            // Обновляем комментарий по оплате
+            const paymentCommentContent = document.getElementById('payment_comment_content');
+            if (paymentData.payment_comment) {
+                paymentCommentContent.innerHTML = `<p>${paymentData.payment_comment}</p>`;
+            } else {
+                paymentCommentContent.innerHTML = '<p class="no-comment">Комментарий не указан</p>';
+            }
+            
+            // Сохраняем новые значения как оригинальные
+            if (mainPaymentSelect) mainPaymentSelect.setAttribute('data-original', paymentData.main_payment_method);
+            if (purchasePriceInput) purchasePriceInput.setAttribute('data-original', paymentData.purchase_price);
+            if (paymentCommentTextarea) paymentCommentTextarea.setAttribute('data-original', paymentData.payment_comment);
+            
+            // Сохраняем состояние чекбоксов
+            const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]');
+            paymentCheckboxes.forEach(checkbox => {
+                const isChecked = paymentData.payment_types.includes(checkbox.value);
+                checkbox.setAttribute('data-original', isChecked.toString());
+            });
+            
+            // Скрываем формы редактирования и показываем контент
+            document.querySelectorAll('.payment-edit').forEach(edit => edit.style.display = 'none');
+            document.querySelectorAll('.payment-content').forEach(content => content.style.display = 'block');
+            
+            // Скрываем общие кнопки действий
+            document.getElementById('payment_actions').style.display = 'none';
+            
+            // Показываем кнопку редактирования
+            document.querySelector('.edit-payment-btn').style.display = 'flex';
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация об оплате успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации об оплате', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
 }
 
 // Функции для модального окна контакта
@@ -1907,6 +2117,79 @@ window.onclick = function(event) {
         closeContactCard();
     }
 }
+
+// Функции для работы с выпадающим списком статусов товара
+function toggleProductStatusDropdown() {
+    const dropdown = document.getElementById('productStatusDropdown');
+    const arrow = document.querySelector('.status-badge.clickable .dropdown-arrow');
+    
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        dropdown.classList.add('show');
+        arrow.style.transform = 'rotate(180deg)';
+    }
+}
+
+function changeProductStatus(statusId, statusName, statusColor) {
+    // Показываем индикатор загрузки
+    const statusBadge = document.querySelector('.status-badge.clickable');
+    const originalContent = statusBadge.innerHTML;
+    const originalStyle = statusBadge.getAttribute('style');
+    statusBadge.innerHTML = '<span>Обновление...</span>';
+    
+    // Отправляем запрос на сервер
+    fetch(`/product/{{ $product->id }}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            status_id: statusId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение статуса с цветом из базы данных
+            statusBadge.className = 'status-badge clickable';
+            statusBadge.style.cssText = `background-color: ${statusColor}; color: white;`;
+            statusBadge.innerHTML = `
+                ${statusName}
+                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                </svg>
+            `;
+            
+            // Закрываем выпадающий список
+            toggleProductStatusDropdown();
+            
+            // Показываем уведомление об успехе
+            showNotification('Статус товара успешно обновлен', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при обновлении статуса');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Возвращаем оригинальное содержимое при ошибке
+        statusBadge.innerHTML = originalContent;
+        statusBadge.setAttribute('style', originalStyle);
+        showNotification('Ошибка при обновлении статуса товара', 'error');
+    });
+}
+
+// Закрытие выпадающего списка статусов при клике вне его
+document.addEventListener('click', function(event) {
+    const statusSelector = document.querySelector('.status-selector');
+    const dropdown = document.getElementById('productStatusDropdown');
+    
+    if (!statusSelector.contains(event.target) && dropdown && dropdown.classList.contains('show')) {
+        toggleProductStatusDropdown();
+    }
+});
 </script>
 
 <!-- Всплывающее окно для карточки контакта -->

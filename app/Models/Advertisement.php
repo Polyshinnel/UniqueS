@@ -28,10 +28,10 @@ class Advertisement extends Model
     ];
 
     protected $casts = [
+        'published_at' => 'datetime',
         'check_data' => 'array',
         'loading_data' => 'array',
         'removal_data' => 'array',
-        'published_at' => 'datetime',
     ];
 
     // Связь с товаром
@@ -85,21 +85,6 @@ class Advertisement extends Model
     // Скопировать данные из товара
     public function copyFromProduct(Product $product): void
     {
-        $this->check_data = [
-            'status_id' => $product->status_id,
-            'status_comment' => $product->status_comment,
-        ];
-
-        $this->loading_data = [
-            'loading_type' => $product->loading_type,
-            'loading_comment' => $product->loading_comment,
-        ];
-
-        $this->removal_data = [
-            'removal_type' => $product->removal_type,
-            'removal_comment' => $product->removal_comment,
-        ];
-
         // Копируем основные характеристики
         $this->main_characteristics = $product->main_chars;
         $this->complectation = $product->complectation;
@@ -107,6 +92,33 @@ class Advertisement extends Model
 
         if (!$this->title) {
             $this->title = $product->name;
+        }
+
+        // Копируем данные проверки
+        $check = $product->check->first();
+        if ($check) {
+            $this->check_data = [
+                'status_id' => $check->check_status_id,
+                'comment' => $check->comment,
+            ];
+        }
+
+        // Копируем данные погрузки
+        $loading = $product->loading->first();
+        if ($loading) {
+            $this->loading_data = [
+                'status_id' => $loading->install_status_id,
+                'comment' => $loading->comment,
+            ];
+        }
+
+        // Копируем данные демонтажа
+        $removal = $product->removal->first();
+        if ($removal) {
+            $this->removal_data = [
+                'status_id' => $removal->install_status_id,
+                'comment' => $removal->comment,
+            ];
         }
     }
 
@@ -138,6 +150,66 @@ class Advertisement extends Model
     {
         $this->status = 'active';
         $this->published_at = now();
+        $this->save();
+    }
+
+    // Методы для работы с данными проверки
+    public function getCheckStatusId()
+    {
+        return $this->check_data['status_id'] ?? null;
+    }
+
+    public function getCheckComment()
+    {
+        return $this->check_data['comment'] ?? null;
+    }
+
+    public function setCheckData($statusId, $comment = null)
+    {
+        $this->check_data = [
+            'status_id' => $statusId,
+            'comment' => $comment,
+        ];
+        $this->save();
+    }
+
+    // Методы для работы с данными погрузки
+    public function getLoadingStatusId()
+    {
+        return $this->loading_data['status_id'] ?? null;
+    }
+
+    public function getLoadingComment()
+    {
+        return $this->loading_data['comment'] ?? null;
+    }
+
+    public function setLoadingData($statusId, $comment = null)
+    {
+        $this->loading_data = [
+            'status_id' => $statusId,
+            'comment' => $comment,
+        ];
+        $this->save();
+    }
+
+    // Методы для работы с данными демонтажа
+    public function getRemovalStatusId()
+    {
+        return $this->removal_data['status_id'] ?? null;
+    }
+
+    public function getRemovalComment()
+    {
+        return $this->removal_data['comment'] ?? null;
+    }
+
+    public function setRemovalData($statusId, $comment = null)
+    {
+        $this->removal_data = [
+            'status_id' => $statusId,
+            'comment' => $comment,
+        ];
         $this->save();
     }
 }

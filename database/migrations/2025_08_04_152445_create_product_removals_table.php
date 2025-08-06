@@ -13,9 +13,13 @@ return new class extends Migration
     {
         Schema::create('product_removals', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('product_id');
             $table->unsignedBigInteger('install_status_id');
             $table->text('comment');
             $table->timestamps();
+
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade');
+            $table->foreign('install_status_id')->references('id')->on('product_install_statuses');
         });
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\ProductPriceType;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -35,7 +36,9 @@ return new class extends Migration
             ],
         ];
 
-
+        foreach ($dataItems as $item) {
+            ProductPriceType::create($item);
+        }
     }
 
     /**

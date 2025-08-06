@@ -38,6 +38,10 @@
         </div>
         <div class="step" data-step="6">
             <span class="step-number">6</span>
+            <span class="step-title">Оплата</span>
+        </div>
+        <div class="step" data-step="7">
+            <span class="step-number">7</span>
             <span class="step-title">Медиафайлы</span>
         </div>
     </div>
@@ -126,8 +130,8 @@
                 <label for="check_status_id">Статус проверки</label>
                 <select name="check_status_id" id="check_status_id" class="form-control">
                     <option value="">Выберите статус</option>
-                    @foreach($productStatuses as $status)
-                        <option value="{{ $status->id }}" {{ $product && $product->status_id == $status->id ? 'selected' : '' }}>
+                    @foreach($checkStatuses as $status)
+                        <option value="{{ $status->id }}" {{ $product && $product->check->first() && $product->check->first()->check_status_id == $status->id ? 'selected' : '' }}>
                             {{ $status->name }}
                         </option>
                     @endforeach
@@ -136,7 +140,7 @@
 
             <div class="form-group">
                 <label for="check_comment">Комментарий по проверке</label>
-                <textarea name="check_comment" id="check_comment" class="form-control" rows="4"></textarea>
+                <textarea name="check_comment" id="check_comment" class="form-control" rows="4">{{ $product && $product->check->first() ? $product->check->first()->comment : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -150,19 +154,20 @@
             <h2>Погрузка</h2>
 
             <div class="form-group">
-                <label for="loading_type">Тип погрузки</label>
-                <select name="loading_type" id="loading_type" class="form-control">
-                    <option value="">Выберите тип погрузки</option>
-                    <option value="supplier">Поставщиком</option>
-                    <option value="supplier_paid">Поставщиком (за доп. плату)</option>
-                    <option value="client">Клиентом</option>
-                    <option value="other">Другое</option>
+                <label for="loading_status_id">Статус погрузки</label>
+                <select name="loading_status_id" id="loading_status_id" class="form-control">
+                    <option value="">Выберите статус</option>
+                    @foreach($installStatuses as $status)
+                        <option value="{{ $status->id }}" {{ $product && $product->loading->first() && $product->loading->first()->install_status_id == $status->id ? 'selected' : '' }}>
+                            {{ $status->name }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="loading_comment">Комментарий по погрузке</label>
-                <textarea name="loading_comment" id="loading_comment" class="form-control" rows="4"></textarea>
+                <textarea name="loading_comment" id="loading_comment" class="form-control" rows="4">{{ $product && $product->loading->first() ? $product->loading->first()->comment : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -176,19 +181,20 @@
             <h2>Демонтаж</h2>
 
             <div class="form-group">
-                <label for="removal_type">Тип демонтажа</label>
-                <select name="removal_type" id="removal_type" class="form-control">
-                    <option value="">Выберите тип демонтажа</option>
-                    <option value="supplier">Поставщиком</option>
-                    <option value="supplier_paid">Поставщиком (за доп. плату)</option>
-                    <option value="client">Клиентом</option>
-                    <option value="other">Другое</option>
+                <label for="removal_status_id">Статус демонтажа</label>
+                <select name="removal_status_id" id="removal_status_id" class="form-control">
+                    <option value="">Выберите статус</option>
+                    @foreach($installStatuses as $status)
+                        <option value="{{ $status->id }}" {{ $product && $product->removal->first() && $product->removal->first()->install_status_id == $status->id ? 'selected' : '' }}>
+                            {{ $status->name }}
+                        </option>
+                    @endforeach
                 </select>
             </div>
 
             <div class="form-group">
                 <label for="removal_comment">Комментарий по демонтажу</label>
-                <textarea name="removal_comment" id="removal_comment" class="form-control" rows="4"></textarea>
+                <textarea name="removal_comment" id="removal_comment" class="form-control" rows="4">{{ $product && $product->removal->first() ? $product->removal->first()->comment : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -197,8 +203,45 @@
             </div>
         </div>
 
-        <!-- Шаг 6: Медиафайлы -->
+        <!-- Шаг 6: Оплата -->
         <div class="step-content" id="step-6">
+            <h2>Оплата</h2>
+
+            <div class="form-group">
+                <label>Варианты оплаты</label>
+                <div class="payment-types-grid">
+                    @foreach($priceTypes as $priceType)
+                        <div class="payment-type-item">
+                            <input type="checkbox" name="payment_types[]" id="payment_type_{{ $priceType->id }}" 
+                                   value="{{ $priceType->id }}" class="payment-type-checkbox"
+                                   {{ $product && $product->paymentVariants->where('price_type', $priceType->id)->count() > 0 ? 'checked' : '' }}>
+                            <label for="payment_type_{{ $priceType->id }}" class="payment-type-label">
+                                {{ $priceType->name }}
+                            </label>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="purchase_price">Цена покупки</label>
+                <input type="number" name="purchase_price" id="purchase_price" class="form-control" 
+                       step="0.01" min="0" value="{{ $product ? $product->purchase_price : '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="payment_comment">Комментарий по оплате</label>
+                <textarea name="payment_comment" id="payment_comment" class="form-control" rows="4">{{ $product ? $product->payment_comment : '' }}</textarea>
+            </div>
+
+            <div class="step-actions">
+                <button type="button" class="btn btn-secondary prev-step">Предыдущий шаг</button>
+                <button type="button" class="btn btn-primary next-step">Следующий шаг</button>
+            </div>
+        </div>
+
+        <!-- Шаг 7: Медиафайлы -->
+        <div class="step-content" id="step-7">
             <h2>Медиафайлы</h2>
 
             <!-- Выбор медиафайлов из товара -->
@@ -323,6 +366,45 @@
     opacity: 0.8;
     font-size: 11px;
 }
+
+.payment-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 10px;
+}
+
+.payment-type-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.payment-type-item:hover {
+    border-color: #133E71;
+    background-color: #f8f9fa;
+}
+
+.payment-type-item.selected {
+    border-color: #133E71;
+    background-color: #e3f2fd;
+}
+
+.payment-type-checkbox {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.payment-type-label {
+    cursor: pointer;
+    font-weight: 500;
+    margin: 0;
+}
 </style>
 
 <script>
@@ -354,8 +436,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
         currentStep = stepNumber;
 
-        // Загружаем медиафайлы товара на 6 шаге
-        if (stepNumber === 6) {
+        // Загружаем медиафайлы товара на 7 шаге
+        if (stepNumber === 7) {
             loadProductMedia();
         }
     }
@@ -376,7 +458,7 @@ document.addEventListener('DOMContentLoaded', function() {
     nextButtons.forEach(button => {
         button.addEventListener('click', function() {
             if (validateStep(currentStep)) {
-                if (currentStep < 6) {
+                if (currentStep < 7) {
                     showStep(currentStep + 1);
                 }
             }
@@ -417,19 +499,40 @@ document.addEventListener('DOMContentLoaded', function() {
             // Заполняем данные проверки
             if (data.check_data) {
                 document.getElementById('check_status_id').value = data.check_data.status_id || '';
-                document.getElementById('check_comment').value = data.check_data.status_comment || '';
+                document.getElementById('check_comment').value = data.check_data.comment || '';
             }
             
             // Заполняем данные погрузки
             if (data.loading_data) {
-                document.getElementById('loading_type').value = data.loading_data.loading_type || '';
-                document.getElementById('loading_comment').value = data.loading_data.loading_comment || '';
+                document.getElementById('loading_status_id').value = data.loading_data.status_id || '';
+                document.getElementById('loading_comment').value = data.loading_data.comment || '';
             }
             
             // Заполняем данные демонтажа
             if (data.removal_data) {
-                document.getElementById('removal_type').value = data.removal_data.removal_type || '';
-                document.getElementById('removal_comment').value = data.removal_data.removal_comment || '';
+                document.getElementById('removal_status_id').value = data.removal_data.status_id || '';
+                document.getElementById('removal_comment').value = data.removal_data.comment || '';
+            }
+            
+            // Заполняем данные оплаты
+            if (data.payment_data) {
+                document.getElementById('purchase_price').value = data.payment_data.purchase_price || '';
+                document.getElementById('payment_comment').value = data.payment_data.payment_comment || '';
+                
+                // Снимаем все чекбоксы
+                document.querySelectorAll('.payment-type-checkbox').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Отмечаем выбранные типы оплаты
+                if (data.payment_data.types && Array.isArray(data.payment_data.types)) {
+                    data.payment_data.types.forEach(typeId => {
+                        const checkbox = document.getElementById(`payment_type_${typeId}`);
+                        if (checkbox) {
+                            checkbox.checked = true;
+                        }
+                    });
+                }
             }
             
             alert('Данные успешно скопированы из товара!');
@@ -437,6 +540,18 @@ document.addEventListener('DOMContentLoaded', function() {
         .catch(error => {
             console.error('Error:', error);
             alert('Ошибка при копировании данных');
+        });
+    });
+
+    // Обработчики для чекбоксов типов оплаты
+    document.querySelectorAll('.payment-type-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            const item = this.closest('.payment-type-item');
+            if (this.checked) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
         });
     });
 
@@ -634,8 +749,6 @@ document.addEventListener('DOMContentLoaded', function() {
         const i = Math.floor(Math.log(bytes) / Math.log(k));
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
-
-
 
     // Инициализация
     showStep(1);
