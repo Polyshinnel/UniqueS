@@ -212,15 +212,15 @@
 }
 
 .companies-table th {
-    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
-    color: white;
+    background: linear-gradient(180deg, #ffff00 0%, #ffeb3b 100%);
+    color: #333;
     padding: 16px 12px;
     text-align: left;
     font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #0f2d56;
+    border-bottom: 2px solid #f57f17;
 }
 
 .companies-table th:first-child {
@@ -384,6 +384,8 @@
     font-style: italic;
     font-size: 13px;
 }
+
+
 
 /* Стили для ячейки ответственных */
 .responsible-cell {

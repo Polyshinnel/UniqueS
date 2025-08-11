@@ -202,6 +202,15 @@
                             </div>
                         </div>
                         
+                        <div class="emails-container">
+                            <div class="email-block">
+                                <div class="email-input-group">
+                                    <input type="email" name="contact_emails[0][]" class="form-control" placeholder="Email">
+                                    <button type="button" class="btn btn-secondary add-email">+</button>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <input type="text" name="position[]" class="form-control" placeholder="Должность" required>
                         @error('position.0')
                             <span class="error">{{ $message }}</span>
@@ -229,19 +238,42 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="email">Email организации</label>
-                    <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control" required>
+                    <input type="email" name="email" id="email" value="{{ old('email') }}" class="form-control">
                     @error('email')
                         <span class="error">{{ $message }}</span>
                     @enderror
                 </div>
 
                 <div class="form-group">
+                    <label for="phone">Телефон компании</label>
+                    <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" class="form-control" placeholder="+7 (999) 123-45-67">
+                    @error('phone')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
                     <label for="site">Сайт</label>
-                    <input type="url" name="site" id="site" value="{{ old('site') }}" class="form-control" required>
+                    <input type="url" name="site" id="site" value="{{ old('site') }}" class="form-control" placeholder="https://example.com">
                     @error('site')
                         <span class="error">{{ $message }}</span>
                     @enderror
                 </div>
+            </div>
+
+            <div class="form-group">
+                <label>Дополнительные email организации</label>
+                <div id="company-emails-container">
+                    <div class="company-email-block">
+                        <div class="email-input-group">
+                            <input type="email" name="company_emails[]" class="form-control" placeholder="Дополнительный email">
+                            <button type="button" class="btn btn-secondary add-company-email">+</button>
+                        </div>
+                    </div>
+                </div>
+                <small class="form-text text-muted">Можно добавить дополнительные email адреса для организации</small>
             </div>
 
             <div class="form-group">

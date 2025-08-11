@@ -32,4 +32,9 @@ class CompanyContacts extends Model
     {
         return $this->hasMany(CompanyContactsPhones::class, 'company_contact_id');
     }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(CompanyContactsEmail::class, 'company_contact_id');
+    }
 }

@@ -32,10 +32,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/product', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
     Route::get('/product/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
-    Route::post('/product', [\App\Http\Controllers\Product\ProductController::class, 'store'])->name('products.store');
+    Route::post('/product', [\App\Http\Controllers\Product\ProductController::class, 'store'])
+        ->middleware('large.file.upload')
+        ->name('products.store');
     Route::get('/product/{product}', [\App\Http\Controllers\Product\ProductController::class, 'show'])->name('products.show');
     Route::get('/product/{product}/edit', [\App\Http\Controllers\Product\ProductController::class, 'edit'])->name('products.edit');
-    Route::put('/product/{product}', [\App\Http\Controllers\Product\ProductController::class, 'update'])->name('products.update');
+    Route::put('/product/{product}', [\App\Http\Controllers\Product\ProductController::class, 'update'])
+        ->middleware('large.file.upload')
+        ->name('products.update');
     Route::patch('/product/{product}/comment', [\App\Http\Controllers\Product\ProductController::class, 'updateComment'])->name('products.update-comment');
     Route::patch('/product/{product}/loading-status', [\App\Http\Controllers\Product\ProductController::class, 'updateLoadingStatus'])->name('products.update-loading-status');
     Route::patch('/product/{product}/removal-status', [\App\Http\Controllers\Product\ProductController::class, 'updateRemovalStatus'])->name('products.update-removal-status');
@@ -48,10 +52,14 @@ Route::middleware(['auth'])->group(function () {
     // Роуты для объявлений
     Route::get('/advertisements', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'index'])->name('advertisements.index');
     Route::get('/advertisements/create', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'create'])->name('advertisements.create');
-    Route::post('/advertisements', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'store'])->name('advertisements.store');
+    Route::post('/advertisements', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'store'])
+        ->middleware('large.file.upload')
+        ->name('advertisements.store');
     Route::get('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'show'])->name('advertisements.show');
     Route::get('/advertisements/{advertisement}/edit', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'edit'])->name('advertisements.edit');
-    Route::put('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'update'])->name('advertisements.update');
+    Route::put('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'update'])
+        ->middleware('large.file.upload')
+        ->name('advertisements.update');
     Route::delete('/advertisements/{advertisement}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'destroy'])->name('advertisements.destroy');
     Route::post('/advertisements/{advertisement}/publish', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'publish'])->name('advertisements.publish');
     Route::post('/advertisements/copy-from-product', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'copyFromProduct'])->name('advertisements.copy-from-product');

@@ -356,15 +356,15 @@ window.onclick = function(event) {
 }
 
 .advertisements-table th {
-    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
-    color: white;
+    background: linear-gradient(180deg, #d9e2f3 0%, #c5d1e8 100%);
+    color: #2c3e50;
     padding: 16px 12px;
     text-align: left;
     font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #0f2d56;
+    border-bottom: 2px solid #a8b8d1;
 }
 
 .advertisements-table th:first-child {

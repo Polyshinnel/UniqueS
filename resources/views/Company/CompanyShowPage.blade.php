@@ -82,6 +82,22 @@
                             <span class="value">{{ $company->email }}</span>
                         </div>
                     @endif
+                    @if($company->phone)
+                        <div class="contact-item">
+                            <span class="label">Телефон компании:</span>
+                            <span class="value">
+                                <a href="tel:{{ $company->phone }}" class="link">{{ $company->phone }}</a>
+                            </span>
+                        </div>
+                    @endif
+                    @if($company->emails->count() > 0)
+                        @foreach($company->emails as $email)
+                            <div class="contact-item">
+                                <span class="label">Дополнительный email:</span>
+                                <span class="value">{{ $email->email }}</span>
+                            </div>
+                        @endforeach
+                    @endif
                     @if($company->site)
                         <div class="contact-item">
                             <span class="label">Сайт:</span>
@@ -133,6 +149,32 @@
                                                     <a href="tel:{{ $phone->phone }}" class="action-btn" title="Позвонить">
                                                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                                             <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                                        </svg>
+                                                    </a>
+                                                    <a href="#" class="action-btn" title="Просмотр">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                            <circle cx="12" cy="12" r="3"></circle>
+                                                        </svg>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                @endif
+                                @if($contact->emails->count() > 0)
+                                    <div class="contact-emails">
+                                        @foreach($contact->emails as $email)
+                                            <div class="email-item">
+                                                <span class="email-address">{{ $email->email }}</span>
+                                                @if($email->is_primary)
+                                                    <span class="primary-badge">Основной</span>
+                                                @endif
+                                                <div class="contact-actions">
+                                                    <a href="mailto:{{ $email->email }}" class="action-btn" title="Написать письмо">
+                                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                                                            <polyline points="22,6 12,13 2,6"></polyline>
                                                         </svg>
                                                     </a>
                                                     <a href="#" class="action-btn" title="Просмотр">
@@ -553,6 +595,40 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.contact-emails {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.email-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.email-address {
+    font-weight: 500;
+    color: #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.primary-badge {
+    background: #28a745;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
 }
 
 .phone-item {

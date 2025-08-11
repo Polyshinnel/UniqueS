@@ -39,8 +39,8 @@
                             <div class="product-name">{{ $product->name }}</div>
                             <div class="product-image">
                                 <a href="{{ route('products.show', $product) }}">
-                                    @if($product->mainImage)
-                                        <img src="{{ asset('storage/' . $product->mainImage->file_path) }}" alt="{{ $product->name }}">
+                                    @if($product->main_image)
+                                        <img src="{{ asset('storage/' . $product->main_image->file_path) }}" alt="{{ $product->name }}">
                                     @else
                                         <img src="{{ asset('assets/img/stanok.png') }}" alt="{{ $product->name }}">
                                     @endif
@@ -384,15 +384,15 @@ window.onclick = function(event) {
 }
 
 .products-table th {
-    background: linear-gradient(180deg, #133E71 0%, #1C5BA4 100%);
-    color: white;
+    background: linear-gradient(180deg, #c5e0b3 0%, #a8d08a 100%);
+    color: #2d5016;
     padding: 16px 12px;
     text-align: left;
     font-weight: 600;
     font-size: 13px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    border-bottom: 2px solid #0f2d56;
+    border-bottom: 2px solid #8fbc8f;
 }
 
 .products-table th:first-child {
@@ -523,7 +523,8 @@ window.onclick = function(event) {
 
 /* Стили для ячейки поставщика */
 .supplier-cell {
-    min-width: 200px;
+    min-width: 250px;
+    max-width: 300px;
 }
 
 .supplier-info {
@@ -558,6 +559,20 @@ window.onclick = function(event) {
     display: flex;
     align-items: center;
     gap: 8px;
+}
+
+.supplier-name .company-link {
+    min-width: 120px;
+    max-width: 180px;
+    flex-shrink: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
 .company-card-btn {

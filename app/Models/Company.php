@@ -21,6 +21,7 @@ class Company extends Model
         'regional_user_id',
         'owner_user_id',
         'email',
+        'phone',
         'site',
         'common_info',
         'company_status_id',
@@ -64,5 +65,10 @@ class Company extends Model
     public function warehouses(): BelongsToMany
     {
         return $this->belongsToMany(Warehouses::class, 'company_to_warehouses', 'company_id', 'warehouse_id');
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(CompanyEmails::class);
     }
 }

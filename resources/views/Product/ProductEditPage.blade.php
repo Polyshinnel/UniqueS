@@ -44,6 +44,10 @@
             <span class="step-number">7</span>
             <span class="step-title">Фото</span>
         </div>
+        <div class="step" data-step="8">
+            <span class="step-number">8</span>
+            <span class="step-title">Комментарий</span>
+        </div>
     </div>
 
     <form id="productForm" method="POST" action="{{ route('products.update', $product) }}" enctype="multipart/form-data">
@@ -326,6 +330,22 @@
 
             <div class="step-actions">
                 <button type="button" class="btn btn-secondary prev-step">Предыдущий шаг</button>
+                <button type="button" class="btn btn-primary next-step">Следующий шаг</button>
+            </div>
+        </div>
+
+        <!-- Шаг 8: Общий комментарий -->
+        <div class="step-content" id="step-8">
+            <h2>Общий комментарий</h2>
+
+            <div class="form-group">
+                <label for="common_commentary_after">Общий комментарий после осмотра</label>
+                <textarea name="common_commentary_after" id="common_commentary_after" class="form-control" rows="6" placeholder="Введите общий комментарий после осмотра товара...">{{ $product->common_commentary_after }}</textarea>
+                <small class="form-text text-muted">Дополнительная информация о товаре после осмотра</small>
+            </div>
+
+            <div class="step-actions">
+                <button type="button" class="btn btn-secondary prev-step">Предыдущий шаг</button>
                 <button type="submit" class="btn btn-success">Сохранить изменения</button>
             </div>
         </div>
@@ -379,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
     nextButtons.forEach(button => {
         button.addEventListener('click', function() {
             if (validateStep(currentStep)) {
-                if (currentStep < 7) {
+                if (currentStep < 8) {
                     showStep(currentStep + 1);
                 }
             }

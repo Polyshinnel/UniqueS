@@ -2,6 +2,15 @@
 
 @section('content')
 <div class="product-item-container">
+    @if(session('success'))
+        <div style="margin-bottom: 20px; padding: 15px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px; vertical-align: middle;">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22,4 12,14.01 9,11.01"></polyline>
+            </svg>
+            {{ session('success') }}
+        </div>
+    @endif
     <div class="product-header">
         <div class="breadcrumb">
             <a href="{{ route('products.index') }}">Товары</a> / {{ $product->name }}
@@ -141,6 +150,33 @@
                     </div>
                 </div>
             </div>
+
+            @if($product->common_commentary_after)
+                <div class="info-block">
+                    <h3>Общий комментарий после осмотра</h3>
+                    <div class="comment-section" data-field="common_commentary_after">
+                        <div class="comment-header">
+                            <strong>Комментарий:</strong>
+                            <button class="edit-comment-btn" onclick="editComment('common_commentary_after')">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                                Редактировать
+                            </button>
+                        </div>
+                        <div class="comment-content" id="common_commentary_after_content">
+                            <p>{{ $product->common_commentary_after }}</p>
+                        </div>
+                        <div class="comment-edit" id="common_commentary_after_edit" style="display: none;">
+                            <textarea class="comment-textarea" id="common_commentary_after_textarea" rows="6">{{ $product->common_commentary_after }}</textarea>
+                            <div class="comment-actions">
+                                <button class="btn btn-primary btn-sm" onclick="saveComment('common_commentary_after')">Сохранить</button>
+                                <button class="btn btn-secondary btn-sm" onclick="cancelEdit('common_commentary_after')">Отмена</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             <div class="info-block">
                 <h3>Основная информация</h3>
@@ -446,6 +482,8 @@
                     <p class="no-data">Информация о проверке не указана</p>
                 @endif
             </div>
+
+            
         </div>
     </div>
 

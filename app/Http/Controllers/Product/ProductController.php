@@ -31,7 +31,7 @@ class ProductController extends Controller
             'status', 
             'warehouse', 
             'regional',
-            'mainImage',
+            'mediaOrdered',
             'check.checkStatus',
             'loading.installStatus',
             'removal.installStatus',
@@ -70,7 +70,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
-        $request->validate([
+        $validator = \Validator::make($request->all(), [
             'warehouse_id' => 'required|exists:warehouses,id',
             'company_id' => 'required|exists:companies,id',
             'category_id' => 'required|exists:product_categories,id',
@@ -88,18 +88,73 @@ class ProductController extends Controller
             'removal_comment' => 'nullable|string',
             'payment_types' => 'nullable|array',
             'payment_types.*' => 'exists:product_price_types,id',
+            'main_payment_method' => 'nullable|exists:product_price_types,id',
             'purchase_price' => 'nullable|numeric|min:0',
             'payment_comment' => 'nullable|string',
-            'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200', // 50MB max
+            'common_commentary_after' => 'nullable|string',
+            'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:1024000', // 1000MB max per file
         ]);
+
+        if ($validator->fails()) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+            
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        // Дополнительная проверка общего размера файлов
+        if ($request->hasFile('media_files')) {
+            $files = $request->file('media_files');
+            $totalSize = 0;
+            
+            foreach ($files as $file) {
+                if ($file && $file->isValid()) {
+                    $totalSize += $file->getSize();
+                }
+            }
+            
+            // Максимальный общий размер файлов: 1000MB
+            $maxTotalSize = 1000 * 1024 * 1024; // 1000MB в байтах
+            
+            if ($totalSize > $maxTotalSize) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Общий размер файлов превышает лимит в 1000MB. Пожалуйста, загрузите файлы по частям.',
+                        'total_size' => $totalSize,
+                        'max_size' => $maxTotalSize
+                    ], 413);
+                }
+                
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors(['media_files' => 'Общий размер файлов превышает лимит в 1000MB. Пожалуйста, загрузите файлы по частям.']);
+            }
+        }
+
+        $validated = $validator->validated();
 
         // Проверяем, что выбранная компания принадлежит авторизованному пользователю
         $currentUserId = auth()->id() ?? 1;
-        $company = Company::where('id', $request->company_id)
+        $company = Company::where('id', $validated['company_id'])
             ->where('owner_user_id', $currentUserId)
             ->first();
 
         if (!$company) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Выбранная компания недоступна для вашего пользователя'
+                ], 422);
+            }
+            
             return redirect()->back()
                 ->withInput()
                 ->withErrors(['company_id' => 'Выбранная компания недоступна для вашего пользователя']);
@@ -109,58 +164,59 @@ class ProductController extends Controller
         $regionalUserId = $company->regional_user_id ?? 1;
 
         // Генерируем SKU для товара, если не указан
-        $sku = $request->sku ?: $this->generateSku($request->company_id);
+        $sku = $validated['sku'] ?: $this->generateSku($validated['company_id']);
 
         // Создаем товар со статусом "В работе" (id = 1)
         $product = Product::create([
-            'name' => $request->name,
+            'name' => $validated['name'],
             'sku' => $sku,
-            'warehouse_id' => $request->warehouse_id,
-            'company_id' => $request->company_id,
-            'category_id' => $request->category_id,
+            'warehouse_id' => $validated['warehouse_id'],
+            'company_id' => $validated['company_id'],
+            'category_id' => $validated['category_id'],
             'owner_id' => $currentUserId, // Владелец товара - авторизованный пользователь
             'regional_id' => $regionalUserId, // Региональный представитель из выбранной компании
             'status_id' => 1, // Статус "В работе"
-            'product_address' => $request->product_address ?? '',
-            'main_chars' => $request->main_chars,
-            'mark' => $request->mark,
-            'complectation' => $request->complectation,
-            'main_payment_method' => $request->payment_types[0] ?? null, // Первый выбранный тип оплаты
-            'purchase_price' => $request->purchase_price,
-            'payment_comment' => $request->payment_comment,
+            'product_address' => $validated['product_address'] ?? '',
+            'main_chars' => $validated['main_chars'],
+            'mark' => $validated['mark'],
+            'complectation' => $validated['complectation'],
+            'main_payment_method' => $validated['main_payment_method'], // Основной способ оплаты
+            'purchase_price' => $validated['purchase_price'],
+            'payment_comment' => $validated['payment_comment'],
+            'common_commentary_after' => $validated['common_commentary_after'],
             'add_expenses' => 0, // Временно 0
         ]);
 
         // Создаем запись о проверке
-        if ($request->check_status_id) {
+        if (isset($validated['check_status_id']) && $validated['check_status_id']) {
             ProductCheck::create([
                 'product_id' => $product->id,
-                'check_status_id' => $request->check_status_id,
-                'comment' => $request->check_comment ?? '',
+                'check_status_id' => $validated['check_status_id'],
+                'comment' => $validated['check_comment'] ?? '',
             ]);
         }
 
         // Создаем запись о погрузке
-        if ($request->loading_status_id) {
+        if (isset($validated['loading_status_id']) && $validated['loading_status_id']) {
             ProductLoading::create([
                 'product_id' => $product->id,
-                'install_status_id' => $request->loading_status_id,
-                'comment' => $request->loading_comment ?? '',
+                'install_status_id' => $validated['loading_status_id'],
+                'comment' => $validated['loading_comment'] ?? '',
             ]);
         }
 
         // Создаем запись о демонтаже
-        if ($request->removal_status_id) {
+        if (isset($validated['removal_status_id']) && $validated['removal_status_id']) {
             ProductRemoval::create([
                 'product_id' => $product->id,
-                'install_status_id' => $request->removal_status_id,
-                'comment' => $request->removal_comment ?? '',
+                'install_status_id' => $validated['removal_status_id'],
+                'comment' => $validated['removal_comment'] ?? '',
             ]);
         }
 
         // Создаем записи о вариантах оплаты
-        if ($request->payment_types && is_array($request->payment_types)) {
-            foreach ($request->payment_types as $priceTypeId) {
+        if (isset($validated['payment_types']) && is_array($validated['payment_types'])) {
+            foreach ($validated['payment_types'] as $priceTypeId) {
                 ProductPaymentVariants::create([
                     'product_id' => $product->id,
                     'price_type' => $priceTypeId,
@@ -173,16 +229,50 @@ class ProductController extends Controller
             $this->handleMediaFiles($request->file('media_files'), $product);
         }
 
-        return redirect()->route('products.index')->with('success', 'Товар успешно создан!');
+        // Проверяем, является ли запрос AJAX
+        \Log::info('Product store request', [
+            'is_ajax' => $request->ajax(),
+            'headers' => $request->headers->all(),
+            'product_id' => $product->id
+        ]);
+        
+        if ($request->ajax()) {
+            try {
+                $redirectUrl = route('products.show', $product);
+                \Log::info('AJAX response', ['redirect' => $redirectUrl]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Товар успешно создан!',
+                    'redirect' => $redirectUrl
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Error generating redirect URL', [
+                    'error' => $e->getMessage(),
+                    'product_id' => $product->id
+                ]);
+                // Используем прямой URL как fallback
+                $redirectUrl = '/product/' . $product->id;
+                \Log::info('Using fallback URL', ['redirect' => $redirectUrl]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Товар успешно создан!',
+                    'redirect' => $redirectUrl
+                ]);
+            }
+        }
+
+        return redirect()->route('products.show', $product)->with('success', 'Товар успешно создан!');
     }
 
     private function generateSku($companyId)
     {
         $company = Company::find($companyId);
         $supplierSku = $company->sku ?? '000'; // Получаем артикул поставщика из компании
-        $date = now()->format('dmYHi'); // Форматируем дату и время: день, месяц, год, час, минуты
+        $date = now()->format('dmY'); // День и месяц
+        $year = now()->format('Y'); // Год
+        $time = now()->format('Hi'); // Час и минуты
 
-        return $supplierSku . $date;
+        return $supplierSku . '-' . $date.$year . '-' . $time;
     }
 
     private function handleMediaFiles($files, Product $product)
@@ -287,7 +377,8 @@ class ProductController extends Controller
             'payment_method' => 'nullable|string',
             'purchase_price' => 'nullable|numeric|min:0',
             'payment_comment' => 'nullable|string',
-            'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200', // 50MB max
+            'common_commentary_after' => 'nullable|string',
+            'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:102400', // 100MB max per file
             'delete_media' => 'nullable|array',
             'delete_media.*' => 'exists:products_media,id'
         ]);
@@ -310,6 +401,7 @@ class ProductController extends Controller
             'payment_method' => $request->payment_method,
             'purchase_price' => $request->purchase_price,
             'payment_comment' => $request->payment_comment,
+            'common_commentary_after' => $request->common_commentary_after,
         ]);
 
         // Удаляем выбранные медиафайлы
@@ -339,7 +431,7 @@ class ProductController extends Controller
     public function updateComment(Request $request, Product $product)
     {
         $request->validate([
-            'field' => 'required|in:loading_comment,removal_comment,check_comment,purchase_price,payment_comment',
+            'field' => 'required|in:loading_comment,removal_comment,check_comment,purchase_price,payment_comment,common_commentary_after',
             'value' => 'nullable|string|max:1000'
         ]);
 
@@ -390,6 +482,8 @@ class ProductController extends Controller
                 ]);
             }
         } elseif ($field === 'payment_comment') {
+            $product->update([$field => $value]);
+        } elseif ($field === 'common_commentary_after') {
             $product->update([$field => $value]);
         }
 

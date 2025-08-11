@@ -49,9 +49,9 @@ class Product extends Model
         return $this->hasMany(ProductMedia::class)->orderBy('sort_order');
     }
 
-    public function mainImage(): BelongsTo
+    public function getMainImageAttribute()
     {
-        return $this->belongsTo(ProductMedia::class)->where('sort_order', 0);
+        return $this->mediaOrdered->where('file_type', 'image')->first();
     }
 
     // Новые связи

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Company;
 use App\Models\CompanyAddress;
 use App\Models\CompanyContacts;
+use App\Models\CompanyContactsEmail;
 use App\Models\CompanyContactsPhones;
 use App\Models\Regions;
 use App\Models\Sources;
@@ -18,7 +19,8 @@ class CompanyController extends Controller
 {
     public function index()
     {
-        $companies = Company::with([
+        $user = auth()->user();
+        $query = Company::with([
             'contacts' => function($query) {
                 $query->where('main_contact', true);
             },
@@ -29,7 +31,28 @@ class CompanyController extends Controller
             'regional',
             'owner',
             'status'
-        ])->get();
+        ]);
+
+        // Фильтрация компаний в зависимости от роли пользователя
+        if ($user && $user->role) {
+            $canViewCompanies = $user->role->can_view_companies;
+            
+            if ($canViewCompanies === 1) {
+                // Показываем только компании, где пользователь является владельцем
+                $query->where('owner_user_id', $user->id);
+            } elseif ($canViewCompanies === 3) {
+                // Показываем все компании (без дополнительных ограничений)
+                // Query остается без изменений
+            } else {
+                // Для других значений (0, 2) показываем пустой список
+                $query->whereRaw('1 = 0'); // Всегда false
+            }
+        } else {
+            // Если пользователь не авторизован или у него нет роли, показываем пустой список
+            $query->whereRaw('1 = 0'); // Всегда false
+        }
+
+        $companies = $query->get();
 
         $warehouses = Warehouses::all();
         $sources = Sources::all();
@@ -55,6 +78,14 @@ class CompanyController extends Controller
 
     public function store(Request $request)
     {
+        // Проверяем права пользователя на создание компаний
+        $user = auth()->user();
+        if (!$user || !$user->role || $user->role->can_view_companies < 1) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['error' => 'У вас нет прав на создание компаний']);
+        }
+
         $validated = $request->validate([
             'sku' => 'nullable|string',
             'warehouse_id' => 'required|exists:warehouses,id',
@@ -71,11 +102,17 @@ class CompanyController extends Controller
             'phones' => 'required|array',
             'phones.*' => 'required|array',
             'phones.*.*' => 'required|string',
+            'contact_emails' => 'array',
+            'contact_emails.*' => 'array',
+            'contact_emails.*.*' => 'nullable|email',
             'position' => 'required|array',
             'position.*' => 'required|string',
             'main_contact' => 'array',
-            'email' => 'required|email',
-            'site' => 'required|url',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string',
+            'company_emails' => 'array',
+            'company_emails.*' => 'nullable|email',
+            'site' => 'nullable|url',
             'common_info' => 'required|string',
         ]);
 
@@ -117,8 +154,9 @@ class CompanyController extends Controller
                 'source_id' => $validated['source_id'],
                 'region_id' => $validated['region'],
                 'regional_user_id' => $validated['region_id'],
-                'owner_user_id' => 1,
+                'owner_user_id' => auth()->id(),
                 'email' => $validated['email'],
+                'phone' => $validated['phone'],
                 'site' => $validated['site'],
                 'common_info' => $validated['common_info'],
                 'company_status_id' => 1,
@@ -152,6 +190,31 @@ class CompanyController extends Controller
                         CompanyContactsPhones::create([
                             'company_contact_id' => $contact->id,
                             'phone' => $phone,
+                        ]);
+                    }
+                }
+
+                // Сохранение email для каждого контакта
+                if (isset($validated['contact_emails'][$index])) {
+                    foreach ($validated['contact_emails'][$index] as $emailIndex => $email) {
+                        if (!empty($email)) {
+                            CompanyContactsEmail::create([
+                                'company_contact_id' => $contact->id,
+                                'email' => $email,
+                                'is_primary' => $emailIndex === 0, // Первый email считается основным
+                            ]);
+                        }
+                    }
+                }
+            }
+
+            // Сохранение дополнительных email компании
+            if (isset($validated['company_emails'])) {
+                foreach ($validated['company_emails'] as $email) {
+                    if (!empty($email)) {
+                        \App\Models\CompanyEmails::create([
+                            'company_id' => $company->id,
+                            'email' => $email,
                         ]);
                     }
                 }
@@ -212,11 +275,30 @@ class CompanyController extends Controller
 
     public function show(Company $company)
     {
+        // Проверяем права пользователя на просмотр данной компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            abort(403, 'Доступ запрещен');
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                abort(403, 'Доступ запрещен');
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на просмотр компаний
+            abort(403, 'Доступ запрещен');
+        }
+
         $company->load([
             'contacts' => function($query) {
-                $query->with('phones');
+                $query->with(['phones', 'emails']);
             },
             'addresses',
+            'emails',
             'regional',
             'owner',
             'status',
@@ -231,6 +313,33 @@ class CompanyController extends Controller
 
     public function updateStatus(Request $request, Company $company)
     {
+        // Проверяем права пользователя на обновление статуса компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'status_id' => 'required|exists:company_statuses,id'
         ]);
@@ -276,7 +385,7 @@ class CompanyController extends Controller
         }
         
         // Проверяем роль пользователя - администраторы видят все регионы
-        if ($user->role_id === 1) { // Предполагаем, что role_id = 1 это администратор
+        if ($user->role && $user->role->can_view_companies === 3) {
             return Regions::where('active', true)->get();
         } else {
             // Обычные пользователи видят только свои регионы

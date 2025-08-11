@@ -175,6 +175,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                 </div>
+                <div class="emails-container">
+                    <div class="email-block">
+                        <div class="email-input-group">
+                            <input type="email" name="contact_emails[${contactIndex}][]" class="form-control" placeholder="Email">
+                            <button type="button" class="btn btn-secondary add-email">+</button>
+                        </div>
+                    </div>
+                </div>
                 <input type="text" name="position[]" class="form-control" placeholder="Должность" required>
                 <div class="form-check">
                     <input type="checkbox" name="main_contact[]" class="form-check-input" value="1">
@@ -198,6 +206,24 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Обработка удаления телефонов и email через делегирование событий
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('remove-phone')) {
+            const phoneBlock = e.target.closest('.phone-block');
+            phoneBlock.remove();
+        }
+        
+        if (e.target.classList.contains('remove-email')) {
+            const emailBlock = e.target.closest('.email-block');
+            emailBlock.remove();
+        }
+        
+        if (e.target.classList.contains('remove-company-email')) {
+            const emailBlock = e.target.closest('.company-email-block');
+            emailBlock.remove();
+        }
+    });
+
     // Функция для обновления индексов контактов
     function updateContactIndexes() {
         const contactsContainer = document.getElementById('contacts-container');
@@ -218,6 +244,12 @@ document.addEventListener('DOMContentLoaded', function() {
             phoneInputs.forEach(phoneInput => {
                 phoneInput.name = `phones[${index}][]`;
             });
+
+            // Обновляем имена полей email
+            const emailInputs = contactBlock.querySelectorAll('input[name^="contact_emails"]');
+            emailInputs.forEach(emailInput => {
+                emailInput.name = `contact_emails[${index}][]`;
+            });
         });
     }
 
@@ -229,6 +261,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const contactIndex = Array.from(contactsContainer.children).indexOf(contactBlock);
             
             addPhoneToContact(contactBlock, contactIndex);
+        }
+    });
+
+    // Обработка добавления email контактов через делегирование событий
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-email')) {
+            const contactBlock = e.target.closest('.contact-block');
+            const contactsContainer = document.getElementById('contacts-container');
+            const contactIndex = Array.from(contactsContainer.children).indexOf(contactBlock);
+            
+            addEmailToContact(contactBlock, contactIndex);
+        }
+    });
+
+    // Обработка добавления email компании
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('add-company-email')) {
+            addCompanyEmail();
         }
     });
 
@@ -248,6 +298,42 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         phonesContainer.appendChild(phoneBlock);
+    }
+
+    function addEmailToContact(contactBlock, contactIndex) {
+        const emailsContainer = contactBlock.querySelector('.emails-container');
+        const emailBlock = document.createElement('div');
+        emailBlock.className = 'email-block';
+        emailBlock.innerHTML = `
+            <div class="email-input-group">
+                <input type="email" name="contact_emails[${contactIndex}][]" class="form-control" placeholder="Email">
+                <button type="button" class="btn btn-danger remove-email">×</button>
+            </div>
+        `;
+        
+        emailBlock.querySelector('.remove-email').addEventListener('click', function() {
+            emailBlock.remove();
+        });
+        
+        emailsContainer.appendChild(emailBlock);
+    }
+
+    function addCompanyEmail() {
+        const companyEmailsContainer = document.getElementById('company-emails-container');
+        const emailBlock = document.createElement('div');
+        emailBlock.className = 'company-email-block';
+        emailBlock.innerHTML = `
+            <div class="email-input-group">
+                <input type="email" name="company_emails[]" class="form-control" placeholder="Дополнительный email">
+                <button type="button" class="btn btn-danger remove-company-email">×</button>
+            </div>
+        `;
+        
+        emailBlock.querySelector('.remove-company-email').addEventListener('click', function() {
+            emailBlock.remove();
+        });
+        
+        companyEmailsContainer.appendChild(emailBlock);
     }
 
     // Фильтрация региональных представителей при выборе региона
