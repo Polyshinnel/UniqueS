@@ -1,66 +1,400 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Логика выбора категорий товаров
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Описание
 
-## About Laravel
+Реализована новая логика выбора категорий при создании товаров, которая ограничивает выбор только категориями без подкатегорий.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Правила выбора категорий
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### ✅ Доступные для выбора категории:
+1. **Категории без подкатегорий** - любые категории, у которых нет дочерних элементов
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### ❌ Недоступные для выбора категории:
+1. **Категории с подкатегориями** - любые категории, у которых есть дочерние элементы
 
-## Learning Laravel
+## Визуальные индикаторы
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+- **Доступные категории**: отображаются нормально, можно кликать для выбора
+- **Недоступные категории**: отображаются серым цветом с пометкой "(недоступно для выбора)", но можно кликать для разворачивания дерева
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## Пример структуры категорий
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+Металлообработка ❌ (недоступно - есть подкатегории)
+├── Токарные станки ❌ (недоступно - есть подкатегории)
+│   ├── Токарно-винторезные станки ✅ (доступно - без подкатегорий)
+│   ├── Токарно-карусельные станки ✅ (доступно - без подкатегорий)
+│   └── Токарно-револьверные станки ✅ (доступно - без подкатегорий)
+├── Фрезерные станки ❌ (недоступно - есть подкатегории)
+│   ├── Горизонтально-фрезерные станки ✅ (доступно - без подкатегорий)
+│   └── Вертикально-фрезерные станки ✅ (доступно - без подкатегорий)
+└── Шлифовальные станки ✅ (доступно - без подкатегорий)
 
-## Laravel Sponsors
+Деревообработка ❌ (недоступно - есть подкатегории)
+├── Пилы ❌ (недоступно - есть подкатегории)
+│   ├── Ленточные пилы ✅ (доступно - без подкатегорий)
+│   └── Дисковые пилы ✅ (доступно - без подкатегорий)
+└── Рейсмусы ✅ (доступно - без подкатегорий)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+Электроника ❌ (недоступно - есть подкатегории)
+├── Компьютеры ✅ (доступно - без подкатегорий)
+└── Принтеры ✅ (доступно - без подкатегорий)
 
-### Premium Partners
+Шлифовальные станки по дереву ✅ (доступно - без подкатегорий)
+Сверлильные станки ✅ (доступно - без подкатегорий)
+Сварочное оборудование ✅ (доступно - без подкатегорий)
+```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+## Техническая реализация
 
-## Contributing
+### JavaScript функции:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+1. **`isSelectableCategory(categoryId)`** - проверяет, является ли категория выбираемой (без подкатегорий)
+2. **`getSelectableCategories()`** - возвращает список выбираемых категорий
+3. **`selectNode(nodeId, nodeName)`** - обрабатывает выбор категории
+4. **Обработчики событий** - проверяют доступность категории перед выбором и показывают предупреждение для недоступных
 
-## Code of Conduct
+### CSS классы:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `.treeselect-node.disabled` - стили для недоступных категорий
+- `.treeselect-node.disabled:hover` - стили при наведении на недоступные категории
 
-## Security Vulnerabilities
+## Тестирование
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Запуск сидера с тестовыми данными:
 
-## License
+```bash
+php artisan db:seed --class=ProductCategoriesSeeder
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Проверка функциональности:
+
+1. Откройте страницу создания товара
+2. Попробуйте выбрать различные категории
+3. Убедитесь, что:
+   - Категории без подкатегорий можно выбирать
+   - Категории с подкатегориями **нельзя выбрать** (показывается предупреждение)
+   - Недоступные категории отображаются серым цветом
+   - При клике на недоступную категорию с подкатегориями дерево разворачивается
+   - При клике на недоступную категорию без подкатегорий показывается предупреждение
+
+## Файлы, которые были изменены:
+
+1. `resources/views/Product/ProductCreatePage.blade.php` - основная логика выбора категорий
+2. `database/seeders/ProductCategoriesSeeder.php` - сидер для тестирования
+3. `database/seeders/DatabaseSeeder.php` - добавлен новый сидер
+
+## Подсказки для пользователя
+
+- Добавлена иконка с подсказкой рядом с полем "Категория"
+- Добавлен текст-подсказка под полем выбора категории
+- При попытке выбрать недоступную категорию показывается информативное сообщение 
+
+
+# Исправление ошибки 413 (Content Too Large) для загрузки больших файлов
+
+## Проблема
+При загрузке товаров получается ошибка: `Failed to load resource: the server responded with a status of 413 (Content Too Large)`. Общий размер всех загружаемых файлов за один раз может превышать 500 мегабайт.
+
+## Внесенные изменения
+
+### 1. Обновлена конфигурация Nginx (`nginx.conf`)
+- Увеличен `client_max_body_size` с 1000M до 2048M (2GB)
+- Увеличены таймауты с 300s до 600s
+- Увеличены размеры буферов
+- Добавлены пути для временных файлов
+
+### 2. Обновлена конфигурация PHP (`php.ini`)
+- Увеличен `upload_max_filesize` с 1000M до 2048M (2GB)
+- Увеличен `post_max_size` с 1000M до 2048M (2GB)
+- Увеличен `max_execution_time` с 300 до 600 секунд
+- Увеличен `memory_limit` с 512M до 1024M
+- Увеличен `max_file_uploads` с 50 до 100
+
+### 3. Обновлен middleware `LargeFileUploadMiddleware`
+- Увеличены лимиты до 2GB
+- Добавлена поддержка различных полей файлов (`media_files`, `files`, `images`, `photos`, `documents`)
+- Улучшена обработка как массивов файлов, так и одиночных файлов
+
+### 4. Добавлен middleware ко всем маршрутам загрузки файлов
+- `POST /product` (создание товара) - уже был
+- `PUT /product/{product}` (обновление товара) - добавлен
+- `POST /advertisements` (создание объявления) - добавлен
+- `PUT /advertisements/{advertisement}` (обновление объявления) - добавлен
+
+## Необходимые действия для применения изменений
+
+### 1. Перезапуск Nginx
+```bash
+# Для OpenServer
+# Перезапустите OpenServer через панель управления
+
+# Или для обычного nginx
+sudo systemctl restart nginx
+```
+
+### 2. Перезапуск PHP-FPM
+```bash
+# Для OpenServer
+# Перезапустите OpenServer через панель управления
+
+# Или для обычного PHP-FPM
+sudo systemctl restart php8.1-fpm
+```
+
+### 3. Очистка кэша Laravel
+```bash
+php artisan config:clear
+php artisan cache:clear
+php artisan route:clear
+```
+
+### 4. Проверка конфигурации
+Убедитесь, что изменения применились:
+```bash
+# Проверка nginx
+nginx -t
+
+# Проверка PHP
+php -i | grep -E "(upload_max_filesize|post_max_size|max_execution_time|memory_limit)"
+```
+
+## Тестирование
+После применения изменений попробуйте загрузить файлы общим размером до 2GB. Система должна корректно обрабатывать такие запросы.
+
+## Дополнительные рекомендации
+
+### 1. Мониторинг производительности
+При загрузке больших файлов следите за:
+- Использованием памяти сервера
+- Временем выполнения запросов
+- Размером логов
+
+### 2. Альтернативные решения для очень больших файлов
+Если файлы превышают 2GB, рассмотрите:
+- Загрузку файлов по частям (chunked upload)
+- Использование прямых ссылок на облачное хранилище
+- Асинхронную обработку файлов через очереди
+
+### 3. Безопасность
+- Убедитесь, что загружаемые файлы проходят валидацию
+- Ограничьте типы разрешенных файлов
+- Настройте антивирусную проверку
+
+## Логирование
+Для отладки проблем с загрузкой файлов проверьте:
+- Логи Nginx: `/var/log/nginx/error.log`
+- Логи PHP: `/var/log/php/error.log`
+- Логи Laravel: `storage/logs/laravel.log` 
+
+
+# Ограничение доступа к регионам при создании компании
+
+## Описание
+
+Реализована система ограничения доступа к регионам при создании компании. Пользователи могут видеть и выбирать только те регионы, которые им назначены администратором.
+
+## Функциональность
+
+### 1. Ограничение доступа по ролям
+
+- **Администраторы (role_id = 1)**: Видят все активные регионы
+- **Обычные пользователи**: Видят только назначенные им регионы
+
+### 2. Проверка на уровне контроллера
+
+В контроллере `CompanyController` реализованы следующие изменения:
+
+#### Метод `create()`
+- Получает только доступные пользователю регионы
+- Передает их в представление для отображения
+
+#### Метод `store()`
+- Проверяет, что выбранный регион доступен пользователю
+- Возвращает ошибку, если регион недоступен
+
+#### Метод `getUserRegions()`
+- Приватный метод для получения доступных регионов
+- Учитывает роль пользователя и его назначения
+
+### 3. Обновление представления
+
+В представлении `CompanyCreatePage.blade.php`:
+- Показывается предупреждение, если у пользователя нет доступных регионов
+- Кнопка "Следующий шаг" блокируется при отсутствии регионов
+- Селект с регионами отключается при отсутствии доступа
+
+## Структура базы данных
+
+### Таблица `users_to_regions`
+Связующая таблица между пользователями и регионами:
+- `user_id` - ID пользователя
+- `region_id` - ID региона
+- `timestamps` - временные метки
+
+### Связи в моделях
+
+#### User.php
+```php
+public function regions()
+{
+    return $this->belongsToMany(Regions::class, 'users_to_regions', 'user_id', 'region_id')
+        ->withTimestamps();
+}
+```
+
+## Использование
+
+### Назначение регионов пользователю
+
+```php
+// Назначить регион пользователю
+$user->regions()->attach($regionId);
+
+// Назначить несколько регионов
+$user->regions()->attach([$regionId1, $regionId2]);
+
+// Удалить назначение
+$user->regions()->detach($regionId);
+```
+
+### Проверка доступности региона
+
+```php
+// В контроллере
+$userRegions = $this->getUserRegions()->pluck('id')->toArray();
+if (!in_array($requestedRegionId, $userRegions)) {
+    // Регион недоступен
+}
+```
+
+## Тестирование
+
+Создан тест `CompanyCreateRegionsTest.php` с проверками:
+
+1. **test_user_can_only_see_their_assigned_regions()** - проверяет, что пользователь видит только свои регионы
+2. **test_admin_can_see_all_regions()** - проверяет, что администратор видит все регионы
+3. **test_user_cannot_create_company_with_inaccessible_region()** - проверяет блокировку создания компании с недоступным регионом
+
+### Запуск тестов
+
+```bash
+php artisan test tests/Feature/CompanyCreateRegionsTest.php
+```
+
+## Безопасность
+
+- Проверка доступа происходит как на уровне представления, так и на уровне контроллера
+- Двойная проверка в методе `store()` предотвращает обход ограничений
+- Использование прямых SQL-запросов для получения доступных регионов исключает проблемы с кэшированием связей
+
+## Расширение функциональности
+
+Для добавления новых ролей с особыми правами доступа к регионам:
+
+1. Обновите метод `getUserRegions()` в контроллере
+2. Добавьте соответствующие проверки
+3. Обновите тесты для новых сценариев
+
+## Примеры сообщений об ошибках
+
+- "Выбранный регион недоступен для вашего пользователя" - при попытке создать компанию с недоступным регионом
+- "У вас нет доступных регионов. Обратитесь к администратору для настройки доступа к регионам." - при отсутствии назначенных регионов 
+
+# Настройка загрузки больших файлов
+
+## Проблема
+При загрузке товаров с большими файлами (общий размер более 500MB) возникает ошибка 413 (Content Too Large).
+
+## Решение
+
+### 1. Настройки PHP
+Файл `php.ini` уже настроен правильно:
+```ini
+upload_max_filesize = 1000M
+post_max_size = 1000M
+max_execution_time = 300
+max_input_time = 300
+memory_limit = 512M
+max_file_uploads = 50
+```
+
+### 2. Настройки Apache (.htaccess)
+Файл `public/.htaccess` уже содержит необходимые настройки для Apache.
+
+### 3. Настройки Nginx
+Если используется Nginx, добавьте в конфигурацию сервера:
+```nginx
+client_max_body_size 1000M;
+client_body_timeout 300s;
+client_header_timeout 300s;
+```
+
+### 4. Laravel Middleware
+Создан middleware `LargeFileUploadMiddleware` для обработки больших файлов:
+- Увеличивает лимиты PHP во время выполнения
+- Проверяет общий размер загружаемых файлов
+- Возвращает понятные ошибки при превышении лимитов
+
+### 5. Обновления в коде
+
+#### Контроллер (ProductController.php)
+- Увеличен лимит размера файла с 100MB до 1000MB
+- Добавлена проверка общего размера файлов
+- Улучшена обработка ошибок
+
+#### Представление (ProductCreatePage.blade.php)
+- Обновлены лимиты в JavaScript
+- Добавлена проверка общего размера файлов на клиентской стороне
+- Улучшена обработка ошибок загрузки
+
+#### Маршруты (web.php)
+- Добавлен middleware `large.file.upload` к маршруту создания товара
+
+### 6. Проверка настроек
+
+#### Для Apache:
+1. Убедитесь, что модуль `mod_php` или `mod_fastcgi` включен
+2. Проверьте, что файл `.htaccess` загружается
+
+#### Для Nginx:
+1. Добавьте настройки из файла `nginx.conf`
+2. Перезапустите Nginx: `sudo systemctl restart nginx`
+
+#### Для PHP:
+1. Проверьте текущие настройки: `php -i | grep -E "(upload_max_filesize|post_max_size|memory_limit)"`
+2. Убедитесь, что используется правильный `php.ini`
+
+### 7. Тестирование
+1. Попробуйте загрузить файлы общим размером до 1000MB
+2. Проверьте, что ошибки обрабатываются корректно
+3. Убедитесь, что прогресс-бар работает правильно
+
+### 8. Дополнительные рекомендации
+
+#### Для очень больших файлов (>500MB):
+- Рассмотрите возможность загрузки файлов по частям (chunked upload)
+- Используйте очереди для обработки файлов
+- Настройте временные директории с достаточным местом
+
+#### Мониторинг:
+- Следите за использованием памяти сервера
+- Настройте логирование ошибок загрузки
+- Мониторьте время выполнения запросов
+
+### 9. Устранение неполадок
+
+#### Если ошибка 413 все еще возникает:
+1. Проверьте настройки веб-сервера (Apache/Nginx)
+2. Убедитесь, что middleware применяется
+3. Проверьте логи ошибок сервера
+
+#### Если файлы не загружаются:
+1. Проверьте права доступа к папке `storage/app/public`
+2. Убедитесь, что символическая ссылка создана: `php artisan storage:link`
+3. Проверьте свободное место на диске
+
+#### Если загрузка медленная:
+1. Увеличьте `max_execution_time` и `max_input_time`
+2. Настройте буферы веб-сервера
+3. Рассмотрите использование CDN для статических файлов 
