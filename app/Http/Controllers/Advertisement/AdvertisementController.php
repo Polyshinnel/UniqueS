@@ -31,7 +31,8 @@ class AdvertisementController extends Controller
             'product.regional.role',
             'product.status',
             'creator',
-            'mainImage'
+            'mainImage',
+            'tags'
         ])->get();
 
         return view('Advertisement.AdvertisementListPage', compact('advertisements'));
@@ -81,6 +82,7 @@ class AdvertisementController extends Controller
             'main_characteristics' => 'nullable|string',
             'complectation' => 'nullable|string',
             'technical_characteristics' => 'nullable|string',
+            'main_info' => 'nullable|string',
             'additional_info' => 'nullable|string',
             'check_status_id' => 'nullable|exists:product_check_statuses,id',
             'check_comment' => 'nullable|string',
@@ -88,10 +90,10 @@ class AdvertisementController extends Controller
             'loading_comment' => 'nullable|string',
             'removal_status_id' => 'nullable|exists:product_install_statuses,id',
             'removal_comment' => 'nullable|string',
-            'payment_types' => 'nullable|array',
-            'payment_types.*' => 'exists:product_price_types,id',
-            'purchase_price' => 'nullable|numeric|min:0',
-            'payment_comment' => 'nullable|string',
+            'adv_price' => 'nullable|numeric|min:0',
+            'adv_price_comment' => 'nullable|string',
+            'main_img' => 'nullable|exists:products_media,id',
+            'tags' => 'nullable|string',
             'selected_product_media.*' => 'nullable|exists:products_media,id',
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
         ]);
@@ -136,10 +138,14 @@ class AdvertisementController extends Controller
             'main_characteristics' => $request->main_characteristics,
             'complectation' => $request->complectation,
             'technical_characteristics' => $request->technical_characteristics,
+            'main_info' => $request->main_info,
             'additional_info' => $request->additional_info,
             'check_data' => $checkData,
             'loading_data' => $loadingData,
             'removal_data' => $removalData,
+            'adv_price' => $request->adv_price,
+            'adv_price_comment' => $request->adv_price_comment,
+            'main_img' => $request->main_img,
             'status' => 'draft',
             'created_by' => auth()->id() ?? 1, // Временно используем id=1
         ]);
@@ -154,25 +160,16 @@ class AdvertisementController extends Controller
             $this->handleUploadedMedia($request->file('media_files'), $advertisement);
         }
 
-        // Обновляем цену покупки и комментарий по оплате в товаре
-        if ($request->purchase_price !== null || $request->payment_comment !== null) {
-            $product->update([
-                'purchase_price' => $request->purchase_price,
-                'payment_comment' => $request->payment_comment,
-            ]);
-        }
 
-        // Обновляем варианты оплаты в товаре
-        if ($request->has('payment_types')) {
-            // Удаляем старые варианты
-            $product->paymentVariants()->delete();
-            
-            // Создаем новые варианты
-            if (is_array($request->payment_types)) {
-                foreach ($request->payment_types as $priceTypeId) {
-                    ProductPaymentVariants::create([
-                        'product_id' => $product->id,
-                        'price_type' => $priceTypeId,
+
+        // Обработка тегов
+        if ($request->has('tags') && $request->tags) {
+            $tags = json_decode($request->tags, true);
+            if (is_array($tags)) {
+                foreach ($tags as $tag) {
+                    \App\Models\AdvertisementsTags::create([
+                        'advertisement_id' => $advertisement->id,
+                        'tag' => $tag,
                     ]);
                 }
             }
@@ -188,7 +185,8 @@ class AdvertisementController extends Controller
             'product.company.addresses',
             'product.paymentVariants.priceType',
             'creator',
-            'mediaOrdered'
+            'mediaOrdered',
+            'tags'
         ]);
 
         // Загружаем статусы для отображения
@@ -233,6 +231,7 @@ class AdvertisementController extends Controller
             'main_characteristics' => 'nullable|string',
             'complectation' => 'nullable|string',
             'technical_characteristics' => 'nullable|string',
+            'main_info' => 'nullable|string',
             'additional_info' => 'nullable|string',
             'check_status_id' => 'nullable|exists:product_check_statuses,id',
             'check_comment' => 'nullable|string',
@@ -240,10 +239,10 @@ class AdvertisementController extends Controller
             'loading_comment' => 'nullable|string',
             'removal_status_id' => 'nullable|exists:product_install_statuses,id',
             'removal_comment' => 'nullable|string',
-            'payment_types' => 'nullable|array',
-            'payment_types.*' => 'exists:product_price_types,id',
-            'purchase_price' => 'nullable|numeric|min:0',
-            'payment_comment' => 'nullable|string',
+            'adv_price' => 'nullable|numeric|min:0',
+            'adv_price_comment' => 'nullable|string',
+            'main_img' => 'nullable|exists:products_media,id',
+            'tags' => 'nullable|string',
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
         ]);
 
@@ -278,10 +277,14 @@ class AdvertisementController extends Controller
             'main_characteristics' => $request->main_characteristics,
             'complectation' => $request->complectation,
             'technical_characteristics' => $request->technical_characteristics,
+            'main_info' => $request->main_info,
             'additional_info' => $request->additional_info,
             'check_data' => $checkData,
             'loading_data' => $loadingData,
             'removal_data' => $removalData,
+            'adv_price' => $request->adv_price,
+            'adv_price_comment' => $request->adv_price_comment,
+            'main_img' => $request->main_img,
         ]);
 
         // Обработка загруженных медиафайлов
@@ -289,26 +292,23 @@ class AdvertisementController extends Controller
             $this->handleUploadedMedia($request->file('media_files'), $advertisement);
         }
 
-        // Обновляем цену покупки и комментарий по оплате в товаре
-        if ($request->purchase_price !== null || $request->payment_comment !== null) {
-            $advertisement->product->update([
-                'purchase_price' => $request->purchase_price,
-                'payment_comment' => $request->payment_comment,
-            ]);
-        }
 
-        // Обновляем варианты оплаты в товаре
-        if ($request->has('payment_types')) {
-            // Удаляем старые варианты
-            $advertisement->product->paymentVariants()->delete();
+
+        // Обработка тегов
+        if ($request->has('tags')) {
+            // Удаляем старые теги
+            $advertisement->tags()->delete();
             
-            // Создаем новые варианты
-            if (is_array($request->payment_types)) {
-                foreach ($request->payment_types as $priceTypeId) {
-                    ProductPaymentVariants::create([
-                        'product_id' => $advertisement->product->id,
-                        'price_type' => $priceTypeId,
-                    ]);
+            // Добавляем новые теги
+            if ($request->tags) {
+                $tags = json_decode($request->tags, true);
+                if (is_array($tags)) {
+                    foreach ($tags as $tag) {
+                        \App\Models\AdvertisementsTags::create([
+                            'advertisement_id' => $advertisement->id,
+                            'tag' => $tag,
+                        ]);
+                    }
                 }
             }
         }
@@ -387,9 +387,8 @@ class AdvertisementController extends Controller
             'loading_data' => $loadingData,
             'removal_data' => $removalData,
             'payment_data' => [
-                'types' => $product->paymentVariants->pluck('price_type')->toArray(),
-                'purchase_price' => $product->purchase_price,
-                'payment_comment' => $product->payment_comment,
+                'adv_price' => $product->purchase_price,
+                'adv_price_comment' => $product->payment_comment,
             ],
         ]);
     }
@@ -455,7 +454,7 @@ class AdvertisementController extends Controller
     public function updateComment(Request $request, Advertisement $advertisement)
     {
         $request->validate([
-            'field' => 'required|string|in:technical_characteristics,additional_info,check_comment,loading_comment,removal_comment',
+            'field' => 'required|string|in:technical_characteristics,main_info,additional_info,check_comment,loading_comment,removal_comment',
             'value' => 'nullable|string'
         ]);
 
@@ -465,6 +464,8 @@ class AdvertisementController extends Controller
         try {
             if ($field === 'technical_characteristics') {
                 $advertisement->update(['technical_characteristics' => $value]);
+            } elseif ($field === 'main_info') {
+                $advertisement->update(['main_info' => $value]);
             } elseif ($field === 'additional_info') {
                 $advertisement->update(['additional_info' => $value]);
             } elseif ($field === 'check_comment') {
@@ -493,6 +494,8 @@ class AdvertisementController extends Controller
             'payment_types' => 'nullable|array',
             'payment_types.*' => 'exists:product_price_types,id',
             'purchase_price' => 'nullable|numeric|min:0',
+            'adv_price' => 'nullable|numeric|min:0',
+            'adv_price_comment' => 'nullable|string',
             'payment_comment' => 'nullable|string'
         ]);
 
@@ -521,6 +524,12 @@ class AdvertisementController extends Controller
                     'payment_comment' => $request->payment_comment
                 ]);
             }
+
+            // Обновляем данные в объявлении
+            $advertisement->update([
+                'adv_price' => $request->adv_price,
+                'adv_price_comment' => $request->adv_price_comment
+            ]);
 
             return response()->json(['success' => true, 'message' => 'Информация об оплате успешно обновлена']);
         } catch (\Exception $e) {

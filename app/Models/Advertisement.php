@@ -18,10 +18,14 @@ class Advertisement extends Model
         'main_characteristics',
         'complectation',
         'technical_characteristics',
+        'main_info',
         'additional_info',
         'check_data',
         'loading_data',
         'removal_data',
+        'adv_price',
+        'adv_price_comment',
+        'main_img',
         'status',
         'created_by',
         'published_at',
@@ -80,6 +84,21 @@ class Advertisement extends Model
     public function mainImage()
     {
         return $this->hasOne(AdvertisementMedia::class)->images()->orderBy('sort_order');
+    }
+
+    // Получить главное изображение по полю main_img
+    public function getMainImage()
+    {
+        if ($this->main_img) {
+            return \App\Models\ProductMedia::find($this->main_img);
+        }
+        return null;
+    }
+
+    // Связь с тегами
+    public function tags(): HasMany
+    {
+        return $this->hasMany(AdvertisementsTags::class);
     }
 
     // Скопировать данные из товара

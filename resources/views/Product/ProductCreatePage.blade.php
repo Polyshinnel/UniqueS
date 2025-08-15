@@ -724,7 +724,7 @@
 
                 <div class="form-group">
                     <label for="sku">Артикул</label>
-                    <input type="text" name="sku" id="sku" class="form-control" placeholder="Оставьте пустым для автоматической генерации (артикул_поставщика-дата_время)">
+                    <input type="text" name="sku" id="sku" class="form-control" placeholder="Генерируется автоматически при выборе поставщика (артикул_поставщика-дата_время)">
                 </div>
             </div>
 
@@ -1481,14 +1481,14 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = productUrl;
     }
     
-    // Автоматическая подстановка артикула поставщика при выборе поставщика
+    // Автоматическая генерация артикула при выборе поставщика
     const companySelect = document.getElementById('company_id');
     const skuInput = document.getElementById('sku');
 
     if (companySelect && skuInput) {
         companySelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value && !skuInput.value.trim()) {
+            if (selectedOption.value) {
                 // Получаем артикул поставщика из выбранной опции
                 const supplierSku = selectedOption.getAttribute('data-sku') || '000';
                 const date = new Date();
@@ -1515,7 +1515,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const time = date.getHours().toString().padStart(2, '0') + 
                             date.getMinutes().toString().padStart(2, '0');
                 
-                const generatedSku = supplierSku + '-' + dayMonth + ' ' + year + '-' + time;
+                const generatedSku = supplierSku + '-' + dayMonth + year + '-' + time;
                 skuInput.value = generatedSku;
             }
         });

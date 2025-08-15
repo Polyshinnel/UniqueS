@@ -56,6 +56,15 @@
                                 @endif
                             </div>
                             
+                            <!-- Цена продажи под фото -->
+                            <div class="sale-price-info">
+                                @if($product->activeAdvertisement && $product->activeAdvertisement->adv_price)
+                                    <div class="sale-price-value">{{ number_format($product->activeAdvertisement->adv_price, 0, ',', ' ') }} ₽</div>
+                                @else
+                                    <div class="no-sale-price">Цена продажи не указана</div>
+                                @endif
+                            </div>
+                            
                             <!-- Адрес станка под фото -->
                             <div class="machine-address-info">
                                 @if($product->product_address)

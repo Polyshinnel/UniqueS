@@ -79,4 +79,16 @@ class Product extends Model
     {
         return $this->belongsTo(ProductPriceType::class, 'main_payment_method');
     }
+
+    // Связь с объявлениями
+    public function advertisements(): HasMany
+    {
+        return $this->hasMany(Advertisement::class);
+    }
+
+    // Получить активное объявление
+    public function activeAdvertisement()
+    {
+        return $this->hasOne(Advertisement::class)->where('status', 'active');
+    }
 }

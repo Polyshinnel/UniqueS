@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (warehouseSelect && skuInput) {
         warehouseSelect.addEventListener('change', function() {
             const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value && !skuInput.value.trim()) {
+            if (selectedOption.value) {
                 // Получаем название склада
                 const warehouseName = selectedOption.text.trim();
                 
@@ -79,6 +79,9 @@ document.addEventListener('DOMContentLoaded', function() {
                         const sku = `${warehouseName}-001`;
                         skuInput.value = sku;
                     });
+            } else {
+                // Если склад не выбран, очищаем поле артикула
+                skuInput.value = '';
             }
         });
 
@@ -103,10 +106,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Обрабатываем случай, когда пользователь вводит что-то вручную
+        // Обрабатываем ввод в поле артикула
         skuInput.addEventListener('input', function() {
-            // Если поле пустое и склад выбран, предлагаем автоматический артикул
-            if (!this.value.trim() && warehouseSelect.value) {
+            // Если склад выбран, показываем актуальный предлагаемый артикул
+            if (warehouseSelect.value) {
                 const selectedOption = warehouseSelect.options[warehouseSelect.selectedIndex];
                 const warehouseName = selectedOption.text.trim();
                 
@@ -123,6 +126,30 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
             } else {
                 this.placeholder = "Будет сгенерирован автоматически";
+            }
+
+            // Если поле очищено и склад выбран, автоматически заполняем через 1 секунду
+            if (!this.value.trim() && warehouseSelect.value) {
+                // Небольшая задержка, чтобы пользователь мог закончить ввод
+                setTimeout(() => {
+                    if (!this.value.trim()) {
+                        const selectedOption = warehouseSelect.options[warehouseSelect.selectedIndex];
+                        const warehouseName = selectedOption.text.trim();
+                        
+                        // Получаем следующий доступный номер через API
+                        fetch(`/company/next-sku/${encodeURIComponent(warehouseName)}`)
+                            .then(response => response.json())
+                            .then(data => {
+                                skuInput.value = data.next_sku;
+                            })
+                            .catch(error => {
+                                console.error('Ошибка при получении следующего номера артикула:', error);
+                                // Fallback: используем базовый формат
+                                const sku = `${warehouseName}-001`;
+                                skuInput.value = sku;
+                            });
+                    }
+                }, 1000); // Задержка в 1 секунду
             }
         });
     }

@@ -13,6 +13,70 @@
 @endsection
 
 @section('content')
+<!-- Подключение Quill.js -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+
+<style>
+/* Стили для Quill.js */
+.ql-editor {
+    min-height: 200px !important;
+    max-height: 400px !important;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.ql-container {
+    border: 2px solid #e9ecef !important;
+    border-top: none !important;
+    border-radius: 0 0 8px 8px !important;
+    background-color: #fff !important;
+}
+
+.ql-toolbar {
+    border: 2px solid #e9ecef !important;
+    border-bottom: 1px solid #e9ecef !important;
+    border-radius: 8px 8px 0 0 !important;
+    background-color: #f8f9fa !important;
+}
+
+.ql-toolbar button {
+    color: #495057 !important;
+}
+
+.ql-toolbar button:hover {
+    color: #133E71 !important;
+}
+
+.ql-toolbar button.ql-active {
+    color: #133E71 !important;
+}
+
+.ql-toolbar .ql-stroke {
+    stroke: #495057 !important;
+}
+
+.ql-toolbar .ql-fill {
+    fill: #495057 !important;
+}
+
+.ql-toolbar button:hover .ql-stroke {
+    stroke: #133E71 !important;
+}
+
+.ql-toolbar button:hover .ql-fill {
+    fill: #133E71 !important;
+}
+
+.ql-toolbar button.ql-active .ql-stroke {
+    stroke: #133E71 !important;
+}
+
+.ql-toolbar button.ql-active .ql-fill {
+    fill: #133E71 !important;
+}
+</style>
+
 <div class="product-create-container">
     <!-- Индикатор шагов -->
     <div class="steps-indicator">
@@ -109,12 +173,20 @@
 
             <div class="form-group">
                 <label for="technical_characteristics">Технические характеристики</label>
-                <textarea name="technical_characteristics" id="technical_characteristics" class="form-control" rows="4">{{ $advertisement->technical_characteristics }}</textarea>
+                <div class="editor-container">
+                    <textarea name="technical_characteristics" id="technical_characteristics" class="form-control" style="display: none;">{{ $advertisement->technical_characteristics }}</textarea>
+                    <div id="technical_characteristics_editor"></div>
+                </div>
+                <small class="form-text text-muted">Используйте панель инструментов для форматирования текста</small>
             </div>
 
             <div class="form-group">
                 <label for="additional_info">Дополнительная информация</label>
-                <textarea name="additional_info" id="additional_info" class="form-control" rows="4">{{ $advertisement->additional_info }}</textarea>
+                <div class="editor-container">
+                    <textarea name="additional_info" id="additional_info" class="form-control" style="display: none;">{{ $advertisement->additional_info }}</textarea>
+                    <div id="additional_info_editor"></div>
+                </div>
+                <small class="form-text text-muted">Используйте панель инструментов для форматирования текста</small>
             </div>
 
             <div class="step-actions">
@@ -738,6 +810,82 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Инициализация
     showStep(1);
+    
+    // Инициализация CKEditor для полей с разметкой
+    initializeEditors();
+    
+    // Обработка отправки формы - синхронизация данных редакторов
+    document.getElementById('advertisementForm').addEventListener('submit', function(e) {
+        // Синхронизируем данные из редакторов в скрытые textarea
+        if (technicalEditor) {
+            document.getElementById('technical_characteristics').value = technicalEditor.root.innerHTML;
+        }
+        if (additionalInfoEditor) {
+            document.getElementById('additional_info').value = additionalInfoEditor.root.innerHTML;
+        }
+    });
 });
+
+// Глобальные переменные для редакторов
+let technicalEditor, additionalInfoEditor;
+
+// Функция инициализации Quill.js редакторов
+function initializeEditors() {
+    // Конфигурация редактора
+    const toolbarOptions = [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        ['link', 'blockquote'],
+        ['clean']
+    ];
+
+    // Инициализация редактора технических характеристик
+    const technicalEditorElement = document.getElementById('technical_characteristics_editor');
+    if (technicalEditorElement) {
+        technicalEditor = new Quill(technicalEditorElement, {
+            theme: 'snow',
+            modules: {
+                toolbar: toolbarOptions
+            },
+            placeholder: 'Введите технические характеристики...'
+        });
+        
+        // Устанавливаем начальное значение из скрытого textarea
+        const initialValue = document.getElementById('technical_characteristics').value;
+        if (initialValue) {
+            technicalEditor.root.innerHTML = initialValue;
+        }
+        
+        // Синхронизируем изменения обратно в скрытое поле
+        technicalEditor.on('text-change', function() {
+            document.getElementById('technical_characteristics').value = technicalEditor.root.innerHTML;
+        });
+    }
+
+    // Инициализация редактора дополнительной информации
+    const additionalInfoEditorElement = document.getElementById('additional_info_editor');
+    if (additionalInfoEditorElement) {
+        additionalInfoEditor = new Quill(additionalInfoEditorElement, {
+            theme: 'snow',
+            modules: {
+                toolbar: toolbarOptions
+            },
+            placeholder: 'Введите дополнительную информацию...'
+        });
+        
+        // Устанавливаем начальное значение из скрытого textarea
+        const initialValue = document.getElementById('additional_info').value;
+        if (initialValue) {
+            additionalInfoEditor.root.innerHTML = initialValue;
+        }
+        
+        // Синхронизируем изменения обратно в скрытое поле
+        additionalInfoEditor.on('text-change', function() {
+            document.getElementById('additional_info').value = additionalInfoEditor.root.innerHTML;
+        });
+    }
+}
 </script>
 @endsection 

@@ -35,7 +35,8 @@ class ProductController extends Controller
             'check.checkStatus',
             'loading.installStatus',
             'removal.installStatus',
-            'paymentVariants.priceType'
+            'paymentVariants.priceType',
+            'activeAdvertisement'
         ])->get();
 
         return view('Product.ProductPage', compact('products'));
@@ -339,7 +340,8 @@ class ProductController extends Controller
             'loading.installStatus',
             'removal.installStatus',
             'paymentVariants.priceType',
-            'mainPaymentMethod'
+            'mainPaymentMethod',
+            'activeAdvertisement'
         ]);
 
         $statuses = ProductStatus::all();

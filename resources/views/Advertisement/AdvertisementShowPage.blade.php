@@ -1,6 +1,9 @@
 @extends('layouts.layout')
 
 @section('content')
+<!-- Подключение Quill.js -->
+<link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+<script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
 <div class="advertisement-item-container">
     <div class="advertisement-header">
         <div class="breadcrumb">
@@ -149,9 +152,13 @@
                     <div class="info-item">
                         <span class="label">Товар:</span>
                         <span class="value">
-                            @if($advertisement->product)
-                                <a href="{{ route('products.show', $advertisement->product) }}" class="product-link">
+                            @if($advertisement->product && $advertisement->product->name)
+                                <a href="{{ route('products.show', $advertisement->product) }}" class="company-link">
                                     {{ $advertisement->product->name }}
+                                </a>
+                            @elseif($advertisement->product)
+                                <a href="{{ route('products.show', $advertisement->product) }}" class="company-link">
+                                    Товар #{{ $advertisement->product->id }}
                                 </a>
                             @else
                                 Не указан
@@ -161,9 +168,13 @@
                     <div class="info-item">
                         <span class="label">Организация:</span>
                         <span class="value">
-                            @if($advertisement->product && $advertisement->product->company)
+                            @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->name)
                                 <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
                                     {{ $advertisement->product->company->name }}
+                                </a>
+                            @elseif($advertisement->product && $advertisement->product->company)
+                                <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
+                                    Организация #{{ $advertisement->product->company->id }}
                                 </a>
                             @else
                                 Не указана
@@ -171,7 +182,7 @@
                         </span>
                     </div>
                     <div class="info-item">
-                        <span class="label">Создатель:</span>
+                        <span class="label">Отвественный:</span>
                         <span class="value">
                             @if($advertisement->creator)
                                 <button class="contact-link" onclick="showContactCard({{ $advertisement->creator->id }}, '{{ $advertisement->creator->name }}', '{{ $advertisement->creator->email }}', '{{ $advertisement->creator->phone }}', '{{ $advertisement->creator->role->name ?? 'Роль не указана' }}', {{ $advertisement->creator->has_telegram ? 'true' : 'false' }}, {{ $advertisement->creator->has_whatsapp ? 'true' : 'false' }})">
@@ -226,17 +237,62 @@
                     </div>
                     <div class="comment-content" id="technical_characteristics_content">
                         @if($advertisement->technical_characteristics)
-                            <p>{{ $advertisement->technical_characteristics }}</p>
+                            <div class="html-content">{!! $advertisement->technical_characteristics !!}</div>
                         @else
                             <p class="no-comment">Технические характеристики не указаны</p>
                         @endif
                     </div>
                     <div class="comment-edit" id="technical_characteristics_edit" style="display: none;">
-                        <textarea class="comment-textarea" id="technical_characteristics_textarea" rows="5" data-original="{{ $advertisement->technical_characteristics }}">{{ $advertisement->technical_characteristics }}</textarea>
+                        <div class="editor-container">
+                            <textarea class="comment-textarea" id="technical_characteristics_textarea" rows="5" data-original="{{ $advertisement->technical_characteristics }}" style="display: none;">{{ $advertisement->technical_characteristics }}</textarea>
+                            <div id="technical_characteristics_edit_editor"></div>
+                        </div>
                         <div class="comment-actions">
                             <button class="btn btn-primary btn-sm" onclick="saveComment('technical_characteristics')">Сохранить</button>
                             <button class="btn btn-secondary btn-sm" onclick="cancelEdit('technical_characteristics')">Отмена</button>
                         </div>
+                    </div>
+                </div>
+            @endif
+
+            @if($advertisement->main_info || true)
+                <div class="info-block">
+                    <div class="block-header">
+                        <h3>Основная информация</h3>
+                        <button class="edit-comment-btn" onclick="editComment('main_info')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                    </div>
+                    <div class="comment-content" id="main_info_content">
+                        @if($advertisement->main_info)
+                            <div class="html-content">{!! $advertisement->main_info !!}</div>
+                        @else
+                            <p class="no-comment">Основная информация не указана</p>
+                        @endif
+                    </div>
+                    <div class="comment-edit" id="main_info_edit" style="display: none;">
+                        <div class="editor-container">
+                            <textarea class="comment-textarea" id="main_info_textarea" rows="5" data-original="{{ $advertisement->main_info }}" style="display: none;">{{ $advertisement->main_info }}</textarea>
+                            <div id="main_info_edit_editor"></div>
+                        </div>
+                        <div class="comment-actions">
+                            <button class="btn btn-primary btn-sm" onclick="saveComment('main_info')">Сохранить</button>
+                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit('main_info')">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            @if($advertisement->tags && $advertisement->tags->count() > 0)
+                <div class="info-block">
+                    <h3>Теги</h3>
+                    <div class="tags-container">
+                        @foreach($advertisement->tags as $tag)
+                            <span class="tag">{{ $tag->tag }}</span>
+                        @endforeach
                     </div>
                 </div>
             @endif
@@ -254,13 +310,16 @@
                     </div>
                     <div class="comment-content" id="additional_info_content">
                         @if($advertisement->additional_info)
-                            <p>{{ $advertisement->additional_info }}</p>
+                            <div class="html-content">{!! $advertisement->additional_info !!}</div>
                         @else
                             <p class="no-comment">Дополнительная информация не указана</p>
                         @endif
                     </div>
                     <div class="comment-edit" id="additional_info_edit" style="display: none;">
-                        <textarea class="comment-textarea" id="additional_info_textarea" rows="5" data-original="{{ $advertisement->additional_info }}">{{ $advertisement->additional_info }}</textarea>
+                        <div class="editor-container">
+                            <textarea class="comment-textarea" id="additional_info_textarea" rows="5" data-original="{{ $advertisement->additional_info }}" style="display: none;">{{ $advertisement->additional_info }}</textarea>
+                            <div id="additional_info_edit_editor"></div>
+                        </div>
                         <div class="comment-actions">
                             <button class="btn btn-primary btn-sm" onclick="saveComment('additional_info')">Сохранить</button>
                             <button class="btn btn-secondary btn-sm" onclick="cancelEdit('additional_info')">Отмена</button>
@@ -462,6 +521,41 @@
                         </div>
                     </div>
 
+                    <!-- Цена продажи -->
+                    <div class="payment-item">
+                        <strong>Цена продажи:</strong>
+                        <div class="payment-content" id="adv_price_content">
+                            @if($advertisement->adv_price)
+                                <span class="price">{{ number_format($advertisement->adv_price, 0, ',', ' ') }} ₽</span>
+                            @else
+                                <span class="no-value">Не указана</span>
+                            @endif
+                        </div>
+                        <div class="payment-edit" id="adv_price_edit" style="display: none;">
+                            <input type="number" class="form-control" id="adv_price_input" 
+                                   value="{{ $advertisement->adv_price ?? '' }}" 
+                                   data-original="{{ $advertisement->adv_price ?? '' }}"
+                                   placeholder="Введите цену продажи">
+                        </div>
+                    </div>
+
+                    <!-- Комментарий к продаже -->
+                    <div class="payment-item">
+                        <strong>Комментарий к продаже:</strong>
+                        <div class="payment-content" id="adv_price_comment_content">
+                            @if($advertisement->adv_price_comment)
+                                <p>{{ $advertisement->adv_price_comment }}</p>
+                            @else
+                                <span class="no-value">Не указан</span>
+                            @endif
+                        </div>
+                        <div class="payment-edit" id="adv_price_comment_edit" style="display: none;">
+                            <textarea class="form-control" id="adv_price_comment_textarea" rows="3" 
+                                      data-original="{{ $advertisement->adv_price_comment ?? '' }}"
+                                      placeholder="Введите комментарий к продаже">{{ $advertisement->adv_price_comment ?? '' }}</textarea>
+                        </div>
+                    </div>
+
                     <!-- Комментарий по оплате -->
                     <div class="payment-item">
                         <strong>Комментарий по оплате:</strong>
@@ -549,6 +643,98 @@
 </div>
 
 <style>
+/* Стили для отображения HTML-контента из редактора */
+.html-content {
+    line-height: 1.6;
+    color: #333;
+}
+
+.html-content h1,
+.html-content h2,
+.html-content h3,
+.html-content h4,
+.html-content h5,
+.html-content h6 {
+    margin: 1em 0 0.5em 0;
+    color: #133E71;
+    font-weight: 600;
+}
+
+.html-content h1 { font-size: 1.8em; }
+.html-content h2 { font-size: 1.6em; }
+.html-content h3 { font-size: 1.4em; }
+.html-content h4 { font-size: 1.2em; }
+.html-content h5 { font-size: 1.1em; }
+.html-content h6 { font-size: 1em; }
+
+.html-content p {
+    margin: 0.5em 0;
+}
+
+.html-content ul,
+.html-content ol {
+    margin: 0.5em 0;
+    padding-left: 2em;
+}
+
+.html-content li {
+    margin: 0.25em 0;
+}
+
+.html-content blockquote {
+    margin: 1em 0;
+    padding: 0.5em 1em;
+    border-left: 4px solid #133E71;
+    background-color: #f8f9fa;
+    font-style: italic;
+}
+
+.html-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1em 0;
+}
+
+.html-content th,
+.html-content td {
+    border: 1px solid #dee2e6;
+    padding: 0.5em;
+    text-align: left;
+}
+
+.html-content th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.html-content a {
+    color: #133E71;
+    text-decoration: none;
+}
+
+.html-content a:hover {
+    text-decoration: underline;
+}
+
+.html-content strong,
+.html-content b {
+    font-weight: 600;
+}
+
+.html-content em,
+.html-content i {
+    font-style: italic;
+}
+
+.html-content u {
+    text-decoration: underline;
+}
+
+.html-content s,
+.html-content strike {
+    text-decoration: line-through;
+}
+
 .advertisement-item-container {
     max-width: 1200px;
     margin: 0 auto;
@@ -945,6 +1131,31 @@
     font-weight: 500;
 }
 
+/* Стили для тегов */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.tag {
+    background: #e8f0fe;
+    color: #133E71;
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-size: 12px;
+    font-weight: 500;
+    border: 1px solid #d1e7ff;
+    transition: all 0.3s ease;
+}
+
+.tag:hover {
+    background: #d1e7ff;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(19, 62, 113, 0.1);
+}
+
 .additional-info {
     background: #f8f9fa;
     padding: 15px;
@@ -1130,19 +1341,21 @@
 
 /* Стили для ссылок на товар и организацию */
 .product-link, .company-link {
-    color: #133E71;
-    text-decoration: none;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    padding: 2px 4px;
-    border-radius: 4px;
+    color: #133E71 !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    padding: 2px 4px !important;
+    border-radius: 4px !important;
+    display: inline-block !important;
 }
 
 .product-link:hover, .company-link:hover {
-    color: #1C5BA4;
-    background-color: #e8f0fe;
-    text-decoration: underline;
-    transform: translateY(-1px);
+    color: #1C5BA4 !important;
+    background-color: #e8f0fe !important;
+    text-decoration: underline !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 4px rgba(19, 62, 113, 0.1) !important;
 }
 
 /* Стили для галереи */
@@ -1608,6 +1821,9 @@ window.onclick = function(event) {
     }
 }
 
+// Глобальные переменные для редакторов
+let editEditors = {};
+
 // Функции для редактирования комментариев
 function editComment(field) {
     const content = document.getElementById(field + '_content');
@@ -1616,8 +1832,14 @@ function editComment(field) {
     
     content.style.display = 'none';
     edit.style.display = 'block';
-    textarea.focus();
-    textarea.select();
+    
+    // Для полей с HTML-разметкой инициализируем Quill.js редактор
+    if (field === 'technical_characteristics' || field === 'main_info' || field === 'additional_info') {
+        initializeEditEditor(field);
+    } else {
+        textarea.focus();
+        textarea.select();
+    }
 }
 
 function cancelEdit(field) {
@@ -1629,6 +1851,17 @@ function cancelEdit(field) {
     const originalValue = textarea.getAttribute('data-original') || '';
     textarea.value = originalValue;
     
+    // Для полей с HTML-разметкой уничтожаем редактор
+    if (field === 'technical_characteristics' || field === 'main_info' || field === 'additional_info') {
+        if (editEditors[field]) {
+            const existingEditor = editEditors[field];
+            if (existingEditor.container && existingEditor.container.parentNode) {
+                existingEditor.container.parentNode.removeChild(existingEditor.container);
+            }
+            delete editEditors[field];
+        }
+    }
+    
     content.style.display = 'block';
     edit.style.display = 'none';
 }
@@ -1637,7 +1870,14 @@ function saveComment(field) {
     const textarea = document.getElementById(field + '_textarea');
     const content = document.getElementById(field + '_content');
     const edit = document.getElementById(field + '_edit');
-    const value = textarea.value.trim();
+    
+    // Получаем значение из редактора или textarea
+    let value;
+    if (field === 'technical_characteristics' || field === 'main_info' || field === 'additional_info') {
+        value = editEditors[field] ? editEditors[field].root.innerHTML.trim() : textarea.value.trim();
+    } else {
+        value = textarea.value.trim();
+    }
     
     // Показываем индикатор загрузки
     const saveBtn = edit.querySelector('.btn-primary');
@@ -1662,7 +1902,12 @@ function saveComment(field) {
         if (data.success) {
             // Обновляем отображение
             if (value) {
-                content.innerHTML = `<p>${value}</p>`;
+                // Для полей с HTML-разметкой используем специальное отображение
+                if (field === 'technical_characteristics' || field === 'main_info' || field === 'additional_info') {
+                    content.innerHTML = `<div class="html-content">${value}</div>`;
+                } else {
+                    content.innerHTML = `<p>${value}</p>`;
+                }
             } else {
                 content.innerHTML = '<p class="no-comment">' + getNoCommentText(field) + '</p>';
             }
@@ -1673,6 +1918,17 @@ function saveComment(field) {
             // Скрываем форму редактирования
             content.style.display = 'block';
             edit.style.display = 'none';
+            
+            // Для полей с HTML-разметкой уничтожаем редактор
+            if (field === 'technical_characteristics' || field === 'main_info' || field === 'additional_info') {
+                if (editEditors[field]) {
+                    const existingEditor = editEditors[field];
+                    if (existingEditor.container && existingEditor.container.parentNode) {
+                        existingEditor.container.parentNode.removeChild(existingEditor.container);
+                    }
+                    delete editEditors[field];
+                }
+            }
             
             // Показываем уведомление об успехе
             showNotification('Данные успешно обновлены', 'success');
@@ -1694,6 +1950,7 @@ function saveComment(field) {
 function getNoCommentText(field) {
     const texts = {
         'technical_characteristics': 'Технические характеристики не указаны',
+        'main_info': 'Основная информация не указана',
         'additional_info': 'Дополнительная информация не указана',
         'check_comment': 'Комментарий к проверке не указан',
         'loading_comment': 'Комментарий по погрузке не указан',
@@ -1705,7 +1962,7 @@ function getNoCommentText(field) {
 // Функции для редактирования блока оплаты
 function editPaymentBlock() {
     // Скрываем все контенты и показываем формы редактирования
-    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
+    const fields = ['payment_method', 'purchase_price', 'adv_price', 'adv_price_comment', 'payment_comment'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
@@ -1726,7 +1983,7 @@ function editPaymentBlock() {
 
 function cancelPaymentEdit() {
     // Восстанавливаем все оригинальные значения
-    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
+    const fields = ['payment_method', 'purchase_price', 'adv_price', 'adv_price_comment', 'payment_comment'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
@@ -1740,13 +1997,13 @@ function cancelPaymentEdit() {
                     const originalState = checkbox.getAttribute('data-original') === 'true';
                     checkbox.checked = originalState;
                 });
-            } else if (field === 'purchase_price') {
+            } else if (field === 'purchase_price' || field === 'adv_price') {
                 const input = document.getElementById(field + '_input');
                 if (input) {
                     const originalValue = input.getAttribute('data-original') || '';
                     input.value = originalValue;
                 }
-            } else if (field === 'payment_comment') {
+            } else if (field === 'payment_comment' || field === 'adv_price_comment') {
                 const textarea = document.getElementById(field + '_textarea');
                 if (textarea) {
                     const originalValue = textarea.getAttribute('data-original') || '';
@@ -1771,6 +2028,8 @@ function savePaymentBlock() {
     const paymentData = {
         payment_types: [],
         purchase_price: null,
+        adv_price: null,
+        adv_price_comment: null,
         payment_comment: null
     };
     
@@ -1784,6 +2043,18 @@ function savePaymentBlock() {
     const purchasePriceInput = document.getElementById('purchase_price_input');
     if (purchasePriceInput && purchasePriceInput.value) {
         paymentData.purchase_price = parseFloat(purchasePriceInput.value);
+    }
+    
+    // Получаем цену продажи
+    const advPriceInput = document.getElementById('adv_price_input');
+    if (advPriceInput && advPriceInput.value) {
+        paymentData.adv_price = parseFloat(advPriceInput.value);
+    }
+    
+    // Получаем комментарий к продаже
+    const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
+    if (advPriceCommentTextarea) {
+        paymentData.adv_price_comment = advPriceCommentTextarea.value.trim();
     }
     
     // Получаем комментарий по оплате
@@ -1862,7 +2133,23 @@ function updatePaymentDisplay(paymentData) {
         priceContent.innerHTML = '<span class="no-value">Не указана</span>';
     }
     
-    // Обновляем отображение комментария
+    // Обновляем отображение цены продажи
+    const advPriceContent = document.getElementById('adv_price_content');
+    if (paymentData.adv_price) {
+        advPriceContent.innerHTML = `<span class="price">${paymentData.adv_price.toLocaleString('ru-RU')} ₽</span>`;
+    } else {
+        advPriceContent.innerHTML = '<span class="no-value">Не указана</span>';
+    }
+    
+    // Обновляем отображение комментария к продаже
+    const advPriceCommentContent = document.getElementById('adv_price_comment_content');
+    if (paymentData.adv_price_comment) {
+        advPriceCommentContent.innerHTML = `<p>${paymentData.adv_price_comment}</p>`;
+    } else {
+        advPriceCommentContent.innerHTML = '<span class="no-value">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария по оплате
     const commentContent = document.getElementById('payment_comment_content');
     if (paymentData.payment_comment) {
         commentContent.innerHTML = `<p>${paymentData.payment_comment}</p>`;
@@ -1882,6 +2169,16 @@ function savePaymentOriginals(paymentData) {
     const purchasePriceInput = document.getElementById('purchase_price_input');
     if (purchasePriceInput) {
         purchasePriceInput.setAttribute('data-original', paymentData.purchase_price || '');
+    }
+    
+    const advPriceInput = document.getElementById('adv_price_input');
+    if (advPriceInput) {
+        advPriceInput.setAttribute('data-original', paymentData.adv_price || '');
+    }
+    
+    const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
+    if (advPriceCommentTextarea) {
+        advPriceCommentTextarea.setAttribute('data-original', paymentData.adv_price_comment || '');
     }
     
     const paymentCommentTextarea = document.getElementById('payment_comment_textarea');
@@ -1959,6 +2256,53 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Функция инициализации Quill.js для редактирования
+function initializeEditEditor(field) {
+    // Если редактор уже существует, уничтожаем его
+    if (editEditors[field]) {
+        const existingEditor = editEditors[field];
+        if (existingEditor.container && existingEditor.container.parentNode) {
+            existingEditor.container.parentNode.removeChild(existingEditor.container);
+        }
+        delete editEditors[field];
+    }
+    
+    const editorElement = document.getElementById(field + '_edit_editor');
+    const textarea = document.getElementById(field + '_textarea');
+    
+    if (!editorElement) return;
+    
+    // Конфигурация редактора
+    const toolbarOptions = [
+        [{ 'header': [1, 2, 3, false] }],
+        ['bold', 'italic', 'underline', 'strike'],
+        [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+        [{ 'indent': '-1'}, { 'indent': '+1' }],
+        ['link', 'blockquote'],
+        ['clean']
+    ];
+
+    // Инициализация редактора
+    editEditors[field] = new Quill(editorElement, {
+        theme: 'snow',
+        modules: {
+            toolbar: toolbarOptions
+        },
+        placeholder: 'Введите текст...'
+    });
+    
+    // Устанавливаем начальное значение
+    const initialValue = textarea.value;
+    if (initialValue) {
+        editEditors[field].root.innerHTML = initialValue;
+    }
+    
+    // Синхронизируем изменения обратно в скрытое поле
+    editEditors[field].on('text-change', function() {
+        textarea.value = editEditors[field].root.innerHTML;
+    });
+}
 </script>
 
 @endsection 

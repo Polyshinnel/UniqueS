@@ -55,7 +55,7 @@
                 <div class="form-group">
                     <label for="sku">Артикул поставщика</label>
                     <input type="text" name="sku" id="sku" value="{{ old('sku') }}" class="form-control" placeholder="Будет сгенерирован автоматически">
-                    <small class="form-text text-muted">Если не заполнено, артикул будет сгенерирован автоматически при выборе склада</small>
+                    <small class="form-text text-muted">Артикул будет сгенерирован автоматически при выборе склада</small>
                     @error('sku')
                         <span class="error">{{ $message }}</span>
                     @enderror

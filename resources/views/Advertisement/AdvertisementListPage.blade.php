@@ -39,13 +39,22 @@
                             <div class="advertisement-name">{{ $advertisement->title }}</div>
                             <div class="advertisement-image">
                                 <a href="{{ route('advertisements.show', $advertisement) }}">
-                                    @if($advertisement->mainImage)
-                                        <img src="{{ asset('storage/' . $advertisement->mainImage->file_path) }}" alt="{{ $advertisement->title }}">
+                                    @if($advertisement->getMainImage())
+                                        <img src="{{ asset('storage/' . $advertisement->getMainImage()->file_path) }}" alt="{{ $advertisement->title }}">
                                     @else
                                         <img src="{{ asset('assets/img/stanok.png') }}" alt="{{ $advertisement->title }}">
                                     @endif
                                 </a>
                             </div>
+                            
+                            @if($advertisement->tags->count() > 0)
+                            <div class="advertisement-tags">
+                                @foreach($advertisement->tags as $tag)
+                                    <span class="tag">{{ $tag->tag }}</span>
+                                @endforeach
+                            </div>
+                            @endif
+                            
                             <a href="{{ route('advertisements.show', $advertisement) }}" class="advertisement-link">
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -84,45 +93,52 @@
                                     Не указана
                                 @endif
                             </div>
-                            @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->addresses->count() > 0)
-                                <div class="supplier-address">
+                            @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->region)
+                                <div class="supplier-region">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                         <circle cx="12" cy="10" r="3"></circle>
                                     </svg>
-                                    <span>{{ $advertisement->product->company->addresses->first()->address ?? '' }}</span>
+                                    <span>Регион: {{ $advertisement->product->company->region->name }}</span>
+                                </div>
+                            @else
+                                <div class="supplier-region">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                        <circle cx="12" cy="10" r="3"></circle>
+                                    </svg>
+                                    <span>Регион: Не указан</span>
                                 </div>
                             @endif
-                            <div class="supplier-region">Регион: {{ $advertisement->product->warehouse->name ?? 'Не указан' }}</div>
                             
-                            @if($advertisement->product && $advertisement->product->regional)
+                            @if($advertisement->creator)
                             <div class="responsible-item">
-                                <div class="responsible-label">Регионал:</div>
-                                <div class="responsible-name">{{ $advertisement->product->regional->name }}</div>
+                                <div class="responsible-label">Ответственный:</div>
+                                <div class="responsible-name">{{ $advertisement->creator->name }}</div>
                                 <div class="responsible-actions">
                                     <button class="action-btn contact-card-btn" title="Просмотр" 
-                                        data-id="{{ $advertisement->product->regional->id }}"
-                                        data-name="{{ $advertisement->product->regional->name }}"
-                                        data-email="{{ $advertisement->product->regional->email }}"
-                                        data-phone="{{ $advertisement->product->regional->phone }}"
-                                        data-role="{{ $advertisement->product->regional->role->name ?? 'Роль не указана' }}"
-                                        data-telegram="{{ $advertisement->product->regional->has_telegram ? 'true' : 'false' }}"
-                                        data-whatsapp="{{ $advertisement->product->regional->has_whatsapp ? 'true' : 'false' }}">
+                                        data-id="{{ $advertisement->creator->id }}"
+                                        data-name="{{ $advertisement->creator->name }}"
+                                        data-email="{{ $advertisement->creator->email }}"
+                                        data-phone="{{ $advertisement->creator->phone }}"
+                                        data-role="{{ $advertisement->creator->role->name ?? 'Роль не указана' }}"
+                                        data-telegram="{{ $advertisement->creator->has_telegram ? 'true' : 'false' }}"
+                                        data-whatsapp="{{ $advertisement->creator->has_whatsapp ? 'true' : 'false' }}">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                                             <circle cx="12" cy="12" r="3"></circle>
                                         </svg>
                                     </button>
-                                    @if($advertisement->product->regional->has_telegram)
-                                    <a href="https://t.me/{{ $advertisement->product->regional->phone }}" target="_blank" class="action-btn" title="Telegram">
+                                    @if($advertisement->creator->has_telegram)
+                                    <a href="https://t.me/{{ $advertisement->creator->phone }}" target="_blank" class="action-btn" title="Telegram">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M22 2L11 13"></path>
                                             <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
                                         </svg>
                                     </a>
                                     @endif
-                                    @if($advertisement->product->regional->has_whatsapp)
-                                    <a href="https://wa.me/{{ $advertisement->product->regional->phone }}" target="_blank" class="action-btn" title="WhatsApp">
+                                    @if($advertisement->creator->has_whatsapp)
+                                    <a href="https://wa.me/{{ $advertisement->creator->phone }}" target="_blank" class="action-btn" title="WhatsApp">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                                         </svg>
@@ -139,59 +155,37 @@
                             @if($advertisement->main_characteristics)
                             <div class="char-item">
                                 <span class="char-label">Осн. хар:</span>
-                                <span class="char-value">{{ $advertisement->main_characteristics }}</span>
+                                <span class="char-value">{{ Str::limit($advertisement->main_characteristics, 50) }}</span>
+                            </div>
+                            @endif
+                            @if($advertisement->product && $advertisement->product->mark)
+                            <div class="char-item">
+                                <span class="char-label">Оценка:</span>
+                                <span class="char-value">{{ Str::limit($advertisement->product->mark, 50) }}</span>
                             </div>
                             @endif
                             @if($advertisement->complectation)
                             <div class="char-item">
                                 <span class="char-label">Компл:</span>
-                                <span class="char-value">{{ $advertisement->complectation }}</span>
+                                <span class="char-value">{{ Str::limit($advertisement->complectation, 50) }}</span>
                             </div>
                             @endif
-                            @if($advertisement->check_data && isset($advertisement->check_data['loading_type']))
+                            @if($advertisement->product && $advertisement->product->check->count() > 0)
                             <div class="char-item">
                                 <span class="char-label">Проверка:</span>
-                                <span class="char-value">
-                                    @switch($advertisement->check_data['loading_type'])
-                                        @case('supplier')
-                                            Поставщиком
-                                            @break
-                                        @case('supplier_paid')
-                                            Поставщиком (за доп. плату)
-                                            @break
-                                        @case('client')
-                                            Клиентом
-                                            @break
-                                        @case('other')
-                                            Другое
-                                            @break
-                                        @default
-                                            {{ $advertisement->check_data['loading_type'] }}
-                                    @endswitch
-                                </span>
+                                <span class="char-value">{{ $advertisement->product->check->first()->checkStatus->name ?? 'Не указана' }}</span>
                             </div>
                             @endif
-                            @if($advertisement->removal_data && isset($advertisement->removal_data['removal_type']))
+                            @if($advertisement->product && $advertisement->product->loading->count() > 0)
+                            <div class="char-item">
+                                <span class="char-label">Погрузка:</span>
+                                <span class="char-value">{{ $advertisement->product->loading->first()->installStatus->name ?? 'Не указана' }}</span>
+                            </div>
+                            @endif
+                            @if($advertisement->product && $advertisement->product->removal->count() > 0)
                             <div class="char-item">
                                 <span class="char-label">Демонтаж:</span>
-                                <span class="char-value">
-                                    @switch($advertisement->removal_data['removal_type'])
-                                        @case('supplier')
-                                            Поставщиком
-                                            @break
-                                        @case('supplier_paid')
-                                            Поставщиком (за доп. плату)
-                                            @break
-                                        @case('client')
-                                            Клиентом
-                                            @break
-                                        @case('other')
-                                            Другое
-                                            @break
-                                        @default
-                                            {{ $advertisement->removal_data['removal_type'] }}
-                                    @endswitch
-                                </span>
+                                <span class="char-value">{{ $advertisement->product->removal->first()->installStatus->name ?? 'Не указан' }}</span>
                             </div>
                             @endif
                         </div>
@@ -221,7 +215,7 @@
                         </div>
                         <div class="price-info">
                             <div class="price-label">Цена продажи:</div>
-                            <div class="price-value">{{ $advertisement->product->purchase_price ?? 0 }} руб</div>
+                            <div class="price-value">{{ number_format($advertisement->adv_price ?? 0, 0, ',', ' ') }} руб</div>
                         </div>
                     </td>
                 </tr>
@@ -472,6 +466,34 @@ window.onclick = function(event) {
     height: 14px;
 }
 
+/* Стили для тегов объявлений */
+.advertisement-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #e8f0fe;
+    color: #133E71;
+    border: 1px solid #c5d1e8;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+    transition: all 0.3s ease;
+}
+
+.tag:hover {
+    background: #133E71;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(19, 62, 113, 0.2);
+}
+
 /* Стили для ячейки категории */
 .category-cell {
     min-width: 150px;
@@ -495,7 +517,8 @@ window.onclick = function(event) {
 
 /* Стили для ячейки поставщика */
 .supplier-cell {
-    min-width: 200px;
+    min-width: 250px;
+    max-width: 300px;
 }
 
 .supplier-info {
@@ -532,13 +555,27 @@ window.onclick = function(event) {
     gap: 8px;
 }
 
+.supplier-name .company-link {
+    min-width: 120px;
+    max-width: 180px;
+    flex-shrink: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    line-height: 1.3;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
 .company-card-btn {
     width: 24px;
     height: 24px;
     margin-left: 4px;
 }
 
-.supplier-address {
+.supplier-region {
     display: flex;
     align-items: flex-start;
     gap: 8px;
@@ -548,21 +585,16 @@ window.onclick = function(event) {
     border: 1px solid #e9ecef;
 }
 
-.supplier-address svg {
+.supplier-region svg {
     color: #133E71;
     flex-shrink: 0;
     margin-top: 1px;
 }
 
-.supplier-address span {
+.supplier-region span {
     font-size: 12px;
     color: #333;
     line-height: 1.4;
-}
-
-.supplier-region {
-    font-size: 12px;
-    color: #666;
     font-weight: 500;
 }
 
@@ -843,6 +875,15 @@ window.onclick = function(event) {
     .action-btn svg {
         width: 12px;
         height: 12px;
+    }
+    
+    .advertisement-tags {
+        gap: 3px;
+    }
+    
+    .tag {
+        font-size: 9px;
+        padding: 1px 6px;
     }
 }
 

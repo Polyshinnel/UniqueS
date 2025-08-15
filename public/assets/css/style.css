@@ -1543,3 +1543,37 @@ textarea.form-control {
         width: 100%;
     }
 }
+
+/* Стили для цен товаров */
+.purchase-price-info,
+.sale-price-info {
+    margin-top: 5px;
+    font-size: 12px;
+}
+
+.purchase-price-value,
+.sale-price-value {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.no-purchase-price,
+.no-sale-price {
+    color: #6c757d;
+    font-style: italic;
+}
+
+.sale-price-info {
+    margin-top: 3px;
+}
+
+.sale-price-value {
+    color: #dc3545;
+}
+
+.price-comment {
+    font-size: 11px;
+    color: #6c757d;
+    margin-top: 2px;
+    font-style: italic;
+}

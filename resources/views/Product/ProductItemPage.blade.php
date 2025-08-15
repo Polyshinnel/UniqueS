@@ -420,6 +420,21 @@
                     </div>
                 </div>
 
+                <!-- Цена продажи -->
+                <div class="payment-item">
+                    <strong>Цена продажи:</strong>
+                    <div class="payment-content" id="sale_price_content">
+                        @if($product->activeAdvertisement && $product->activeAdvertisement->adv_price)
+                            <span class="price">{{ number_format($product->activeAdvertisement->adv_price, 0, ',', ' ') }} ₽</span>
+                            @if($product->activeAdvertisement->adv_price_comment)
+                                <div class="price-comment">{{ $product->activeAdvertisement->adv_price_comment }}</div>
+                            @endif
+                        @else
+                            <span class="no-value">Не указана</span>
+                        @endif
+                    </div>
+                </div>
+
                 <!-- Комментарий по оплате -->
                 <div class="payment-item">
                     <strong>Комментарий по оплате:</strong>
