@@ -71,4 +71,14 @@ class Company extends Model
     {
         return $this->hasMany(CompanyEmails::class);
     }
+
+    public function actions(): HasMany
+    {
+        return $this->hasMany(CompanyActions::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class);
+    }
 }

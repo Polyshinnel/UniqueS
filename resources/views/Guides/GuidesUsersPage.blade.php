@@ -788,6 +788,40 @@
         width: 12px;
         height: 12px;
     }
+    
+    /* Адаптивность модального окна */
+    .modal {
+        padding: 10px;
+    }
+    
+    .modal-content {
+        width: 100%;
+        max-width: none;
+        max-height: 95vh;
+    }
+    
+    .modal-body {
+        max-height: calc(95vh - 80px);
+        padding: 20px;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-header h3 {
+        font-size: 16px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* Анимации */
@@ -814,16 +848,19 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 .modal.active {
+    display: flex;
     opacity: 1;
     visibility: visible;
 }
@@ -835,7 +872,8 @@
     width: 90%;
     max-width: 600px;
     max-height: 90vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     transform: scale(0.9);
     transition: transform 0.3s ease;
 }
@@ -883,6 +921,9 @@
 
 .modal-body {
     padding: 25px;
+    overflow-y: auto;
+    flex: 1;
+    max-height: calc(90vh - 80px); /* Вычитаем высоту header */
 }
 
 .user-form {
@@ -1173,6 +1214,31 @@
 
 .multiselect-options::-webkit-scrollbar-thumb:hover {
     background: #adb5bd;
+}
+
+/* Стили для скроллбара в модальном окне */
+.modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.modal-body::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 4px;
+}
+
+.modal-body::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
+
+/* Для Firefox */
+.modal-body {
+    scrollbar-width: thin;
+    scrollbar-color: #dee2e6 #f8f9fa;
 }
 
 /* Стили для кнопок */

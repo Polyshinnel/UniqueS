@@ -468,7 +468,7 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
@@ -478,6 +478,7 @@
 }
 
 .modal.active {
+    display: flex;
     opacity: 1;
     visibility: visible;
 }

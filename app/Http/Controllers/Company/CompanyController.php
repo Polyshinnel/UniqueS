@@ -8,10 +8,14 @@ use App\Models\CompanyAddress;
 use App\Models\CompanyContacts;
 use App\Models\CompanyContactsEmail;
 use App\Models\CompanyContactsPhones;
+use App\Models\CompanyLog;
+use App\Models\CompanyActions;
+use App\Models\LogType;
 use App\Models\Regions;
 use App\Models\Sources;
 use App\Models\User;
 use App\Models\Warehouses;
+use App\Models\ProductStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -30,7 +34,12 @@ class CompanyController extends Controller
             },
             'regional',
             'owner',
-            'status'
+            'status',
+            'actions' => function($query) {
+                $query->where('status', false)
+                      ->latest('expired_at')
+                      ->limit(1);
+            }
         ]);
 
         // Фильтрация компаний в зависимости от роли пользователя
@@ -220,6 +229,27 @@ class CompanyController extends Controller
                 }
             }
 
+            // Создание записи в логе
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            if ($systemLogType) {
+                $logText = "Создана компания {$company->name}, пользователем {$user->name}";
+                CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => null,
+                    'log' => $logText,
+                    'type_id' => $systemLogType->id,
+                ]);
+            }
+
+            // Создание действия для компании
+            CompanyActions::create([
+                'company_id' => $company->id,
+                'user_id' => auth()->id(),
+                'action' => 'Отправить регионала, уточнить список и цены на оборудование',
+                'expired_at' => now()->addDays(7),
+                'status' => false,
+            ]);
+
             return redirect()->route('companies.show', $company)
                 ->with('success', 'Компания успешно создана');
         } catch (\Exception $e) {
@@ -306,9 +336,21 @@ class CompanyController extends Controller
             'source'
         ]);
 
+        // Получаем последний лог компании
+        $lastLog = CompanyLog::where('company_id', $company->id)
+            ->with(['type', 'user'])
+            ->latest()
+            ->first();
+
+        // Получаем последнее невыполненное действие компании
+        $lastAction = CompanyActions::where('company_id', $company->id)
+            ->where('status', false)
+            ->latest('expired_at')
+            ->first();
+
         $statuses = \App\Models\CompanyStatus::all();
 
-        return view('Company.CompanyShowPage', compact('company', 'statuses'));
+        return view('Company.CompanyShowPage', compact('company', 'statuses', 'lastLog', 'lastAction'));
     }
 
     public function updateStatus(Request $request, Company $company)
@@ -341,20 +383,96 @@ class CompanyController extends Controller
         }
 
         $validated = $request->validate([
-            'status_id' => 'required|exists:company_statuses,id'
+            'status_id' => 'required|exists:company_statuses,id',
+            'comment' => 'required|string|min:1'
         ]);
 
-        $company->update([
-            'company_status_id' => $validated['status_id']
-        ]);
+        try {
+            DB::beginTransaction();
 
-        $company->load('status');
+            // Обновляем статус компании
+            $oldStatus = $company->status;
+            $company->update([
+                'company_status_id' => $validated['status_id']
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'status' => $company->status,
-            'message' => 'Статус успешно обновлен'
-        ]);
+            $company->load('status');
+
+            // Получаем новый статус компании
+            $newStatus = $company->status;
+
+            // Проверяем, нужно ли обновить статусы товаров
+            if (in_array($newStatus->name, ['Холд', 'Отказ'])) {
+                // Находим соответствующие статусы товаров
+                $productStatus = \App\Models\ProductStatus::where('name', $newStatus->name)->first();
+                
+                if ($productStatus) {
+                    // Обновляем статусы всех товаров компании
+                    $updatedProductsCount = $company->products()->update([
+                        'status_id' => $productStatus->id
+                    ]);
+
+                    // Добавляем информацию о количестве обновленных товаров в лог
+                    $productsLogText = $updatedProductsCount > 0 
+                        ? " Обновлен статус {$updatedProductsCount} товаров на '{$newStatus->name}'."
+                        : " Товары для обновления не найдены.";
+                }
+            }
+
+            // Если статус "Отказ", создаем действие
+            if ($newStatus->name === 'Отказ') {
+                $expiredAt = now()->addMonths(6);
+                
+                CompanyActions::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'action' => 'Уточнить наличие станков и дальнейший статус компании',
+                    'expired_at' => $expiredAt,
+                    'status' => false
+                ]);
+
+                $actionLogText = " Создано действие 'Уточнить наличие станков и дальнейший статус компании' со сроком до " . $expiredAt->format('d.m.Y') . ".";
+            }
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Смена статуса с '{$oldStatus->name}' на '{$newStatus->name}'. Комментарий: {$validated['comment']}";
+                
+                // Добавляем дополнительную информацию в лог
+                if (isset($productsLogText)) {
+                    $logText .= $productsLogText;
+                }
+                if (isset($actionLogText)) {
+                    $logText .= $actionLogText;
+                }
+
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'status' => $company->status,
+                'message' => 'Статус успешно обновлен',
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении статуса: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -370,6 +488,49 @@ class CompanyController extends Controller
             ->get(['id', 'name']);
 
         return response()->json($regionals);
+    }
+
+    /**
+     * Получает все логи компании
+     */
+    public function getLogs(Company $company)
+    {
+        // Проверяем права пользователя на просмотр данной компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на просмотр компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $logs = CompanyLog::where('company_id', $company->id)
+            ->with(['type', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'logs' => $logs
+        ]);
     }
 
     /**
@@ -396,6 +557,210 @@ class CompanyController extends Controller
                           ->where('user_id', $user->id);
                 })
                 ->get();
+        }
+    }
+
+    /**
+     * Получает все действия компании
+     */
+    public function getActions(Company $company)
+    {
+        // Проверяем права пользователя на просмотр данной компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на просмотр компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $actions = CompanyActions::where('company_id', $company->id)
+            ->orderBy('expired_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'actions' => $actions
+        ]);
+    }
+
+    /**
+     * Создает новое действие для компании
+     */
+    public function storeAction(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на работу с данной компанией
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может работать только со своими компаниями
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на работу с компаниями
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Валидируем запрос
+        $validated = $request->validate([
+            'action' => 'required|string|max:1000',
+            'expired_at' => 'required|date|after:today'
+        ]);
+
+        try {
+            // Создаем новое действие
+            $action = CompanyActions::create([
+                'company_id' => $company->id,
+                'user_id' => $user->id,
+                'action' => $validated['action'],
+                'expired_at' => $validated['expired_at'],
+                'status' => false,
+            ]);
+
+            // Создаем лог о создании действия
+            $commentType = LogType::where('name', 'Комментарий')->first();
+            
+            $logMessage = "Пользователь: {$user->name}, создал новую задачу: \"{$validated['action']}\" со сроком до {$validated['expired_at']}";
+            
+            $log = CompanyLog::create([
+                'company_id' => $company->id,
+                'type_id' => $commentType ? $commentType->id : null,
+                'log' => $logMessage,
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Действие успешно создано',
+                'action' => $action,
+                'log' => $log->load(['type', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании действия: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Отмечает действие как выполненное
+     */
+    public function completeAction(Request $request, Company $company, $actionId)
+    {
+        // Проверяем права пользователя на работу с данной компанией
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может работать только со своими компаниями
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на работу с компаниями
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Валидируем запрос
+        $validated = $request->validate([
+            'comment' => 'required|string|max:1000'
+        ]);
+
+        try {
+            // Находим действие
+            $action = CompanyActions::where('id', $actionId)
+                ->where('company_id', $company->id)
+                ->first();
+
+            if (!$action) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Действие не найдено'
+                ], 404);
+            }
+
+            // Проверяем, что действие еще не выполнено
+            if ($action->status) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Действие уже выполнено'
+                ], 400);
+            }
+
+            // Отмечаем действие как выполненное
+            $action->status = true;
+            $action->completed_at = now();
+            $action->save();
+
+            // Создаем лог о выполнении действия
+            $commentType = LogType::where('name', 'Комментарий')->first();
+            
+            $logMessage = "Пользователь: {$user->name}, выполнил задачу \"{$action->action}\" с комментарием: {$validated['comment']}";
+            
+            $log = CompanyLog::create([
+                'company_id' => $company->id,
+                'type_id' => $commentType ? $commentType->id : null,
+                'log' => $logMessage,
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Действие успешно выполнено',
+                'log' => $log->load(['type', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при выполнении действия: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

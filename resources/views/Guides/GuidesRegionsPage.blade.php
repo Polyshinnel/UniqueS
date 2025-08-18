@@ -511,7 +511,7 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
@@ -521,6 +521,7 @@
 }
 
 .modal.active {
+    display: flex;
     opacity: 1;
     visibility: visible;
 }
@@ -747,9 +748,8 @@ function openModal() {
 function closeModal() {
     document.getElementById('regionModal').classList.remove('active');
     document.body.style.overflow = '';
+    resetForm();
 }
-
-
 
 // Закрытие модального окна по Escape
 document.addEventListener('keydown', function(event) {
@@ -803,12 +803,7 @@ function resetForm() {
     errorInputs.forEach(input => input.classList.remove('is-invalid'));
 }
 
-// Обновляем функцию закрытия модального окна
-function closeModal() {
-    document.getElementById('regionModal').classList.remove('active');
-    document.body.style.overflow = '';
-    resetForm();
-}
+
 
 // Функции для модального окна редактирования
 function openEditModal(regionId) {

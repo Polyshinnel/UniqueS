@@ -182,6 +182,16 @@
                         </span>
                     </div>
                     <div class="info-item">
+                        <span class="label">Регион:</span>
+                        <span class="value">
+                            @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->region)
+                                {{ $advertisement->product->company->region->name }}
+                            @else
+                                Не указан
+                            @endif
+                        </span>
+                    </div>
+                    <div class="info-item">
                         <span class="label">Отвественный:</span>
                         <span class="value">
                             @if($advertisement->creator)
@@ -330,7 +340,15 @@
 
             @if($advertisement->check_data || true)
                 <div class="info-block">
-                    <h3>Информация о проверке</h3>
+                    <div class="block-header">
+                        <h3>Информация о проверке</h3>
+                        <button class="edit-comment-btn" onclick="editCheckBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                    </div>
                     @php
                         $checkStatus = null;
                         if (isset($advertisement->check_data['status_id'])) {
@@ -340,19 +358,27 @@
                     <div class="check-container">
                         <div class="check-status">
                             <strong>Статус проверки:</strong>
-                            <span class="status-badge" style="background-color: {{ $checkStatus->color ?? '#6c757d' }}; color: white;">
-                                {{ $checkStatus->name ?? 'Не указан' }}
-                            </span>
+                            <div class="status-content" id="check_status_content">
+                                <span class="status-badge" style="background-color: {{ $checkStatus->color ?? '#6c757d' }}; color: white;">
+                                    {{ $checkStatus->name ?? 'Не указан' }}
+                                </span>
+                            </div>
+                            <div class="status-edit" id="check_status_edit" style="display: none;">
+                                <select class="form-control" id="check_status_select" data-original="{{ $advertisement->check_data['status_id'] ?? '' }}">
+                                    <option value="">Выберите статус</option>
+                                    @foreach($checkStatuses as $status)
+                                        <option value="{{ $status->id }}" 
+                                                {{ (isset($advertisement->check_data['status_id']) && $advertisement->check_data['status_id'] == $status->id) ? 'selected' : '' }}
+                                                data-color="{{ $status->color }}">
+                                            {{ $status->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                         <div class="comment-section" data-field="check_comment">
                             <div class="comment-header">
                                 <strong>Комментарий к проверке:</strong>
-                                <button class="edit-comment-btn" onclick="editComment('check_comment')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                    Редактировать
-                                </button>
                             </div>
                             <div class="comment-content" id="check_comment_content">
                                 @if(isset($advertisement->check_data['comment']) && $advertisement->check_data['comment'])
@@ -363,11 +389,12 @@
                             </div>
                             <div class="comment-edit" id="check_comment_edit" style="display: none;">
                                 <textarea class="comment-textarea" id="check_comment_textarea" rows="3" data-original="{{ $advertisement->check_data['comment'] ?? '' }}">{{ $advertisement->check_data['comment'] ?? '' }}</textarea>
-                                <div class="comment-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="saveComment('check_comment')">Сохранить</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('check_comment')">Отмена</button>
-                                </div>
                             </div>
+                        </div>
+                        <!-- Кнопки действий для блока проверки -->
+                        <div class="check-actions" id="check_actions" style="display: none;">
+                            <button class="btn btn-primary" onclick="saveCheckBlock()">Сохранить</button>
+                            <button class="btn btn-secondary" onclick="cancelCheckEdit()">Отмена</button>
                         </div>
                     </div>
                 </div>
@@ -375,7 +402,15 @@
 
             @if($advertisement->loading_data || true)
                 <div class="info-block">
-                    <h3>Информация о погрузке</h3>
+                    <div class="block-header">
+                        <h3>Информация о погрузке</h3>
+                        <button class="edit-comment-btn" onclick="editLoadingBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                    </div>
                     @php
                         $loadingStatus = null;
                         if (isset($advertisement->loading_data['status_id'])) {
@@ -385,19 +420,26 @@
                     <div class="loading-container">
                         <div class="loading-status">
                             <strong>Статус погрузки:</strong>
-                            <span class="status-badge">
-                                {{ $loadingStatus->name ?? 'Не указан' }}
-                            </span>
+                            <div class="status-content" id="loading_status_content">
+                                <span class="status-badge">
+                                    {{ $loadingStatus->name ?? 'Не указан' }}
+                                </span>
+                            </div>
+                            <div class="status-edit" id="loading_status_edit" style="display: none;">
+                                <select class="form-control" id="loading_status_select" data-original="{{ $advertisement->loading_data['status_id'] ?? '' }}">
+                                    <option value="">Выберите статус</option>
+                                    @foreach($installStatuses as $status)
+                                        <option value="{{ $status->id }}" 
+                                                {{ (isset($advertisement->loading_data['status_id']) && $advertisement->loading_data['status_id'] == $status->id) ? 'selected' : '' }}>
+                                            {{ $status->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                         <div class="comment-section" data-field="loading_comment">
                             <div class="comment-header">
                                 <strong>Комментарий по погрузке:</strong>
-                                <button class="edit-comment-btn" onclick="editComment('loading_comment')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                    Редактировать
-                                </button>
                             </div>
                             <div class="comment-content" id="loading_comment_content">
                                 @if(isset($advertisement->loading_data['comment']) && $advertisement->loading_data['comment'])
@@ -408,11 +450,12 @@
                             </div>
                             <div class="comment-edit" id="loading_comment_edit" style="display: none;">
                                 <textarea class="comment-textarea" id="loading_comment_textarea" rows="3" data-original="{{ $advertisement->loading_data['comment'] ?? '' }}">{{ $advertisement->loading_data['comment'] ?? '' }}</textarea>
-                                <div class="comment-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="saveComment('loading_comment')">Сохранить</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('loading_comment')">Отмена</button>
-                                </div>
                             </div>
+                        </div>
+                        <!-- Кнопки действий для блока погрузки -->
+                        <div class="loading-actions" id="loading_actions" style="display: none;">
+                            <button class="btn btn-primary" onclick="saveLoadingBlock()">Сохранить</button>
+                            <button class="btn btn-secondary" onclick="cancelLoadingEdit()">Отмена</button>
                         </div>
                     </div>
                 </div>
@@ -420,7 +463,15 @@
 
             @if($advertisement->removal_data || true)
                 <div class="info-block">
-                    <h3>Информация о демонтаже</h3>
+                    <div class="block-header">
+                        <h3>Информация о демонтаже</h3>
+                        <button class="edit-comment-btn" onclick="editRemovalBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                    </div>
                     @php
                         $removalStatus = null;
                         if (isset($advertisement->removal_data['status_id'])) {
@@ -430,19 +481,26 @@
                     <div class="removal-container">
                         <div class="removal-status">
                             <strong>Статус демонтажа:</strong>
-                            <span class="status-badge">
-                                {{ $removalStatus->name ?? 'Не указан' }}
-                            </span>
+                            <div class="status-content" id="removal_status_content">
+                                <span class="status-badge">
+                                    {{ $removalStatus->name ?? 'Не указан' }}
+                                </span>
+                            </div>
+                            <div class="status-edit" id="removal_status_edit" style="display: none;">
+                                <select class="form-control" id="removal_status_select" data-original="{{ $advertisement->removal_data['status_id'] ?? '' }}">
+                                    <option value="">Выберите статус</option>
+                                    @foreach($installStatuses as $status)
+                                        <option value="{{ $status->id }}" 
+                                                {{ (isset($advertisement->removal_data['status_id']) && $advertisement->removal_data['status_id'] == $status->id) ? 'selected' : '' }}>
+                                            {{ $status->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                         <div class="comment-section" data-field="removal_comment">
                             <div class="comment-header">
                                 <strong>Комментарий по демонтажу:</strong>
-                                <button class="edit-comment-btn" onclick="editComment('removal_comment')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                    Редактировать
-                                </button>
                             </div>
                             <div class="comment-content" id="removal_comment_content">
                                 @if(isset($advertisement->removal_data['comment']) && $advertisement->removal_data['comment'])
@@ -453,21 +511,23 @@
                             </div>
                             <div class="comment-edit" id="removal_comment_edit" style="display: none;">
                                 <textarea class="comment-textarea" id="removal_comment_textarea" rows="3" data-original="{{ $advertisement->removal_data['comment'] ?? '' }}">{{ $advertisement->removal_data['comment'] ?? '' }}</textarea>
-                                <div class="comment-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="saveComment('removal_comment')">Сохранить</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('removal_comment')">Отмена</button>
-                                </div>
                             </div>
+                        </div>
+                        <!-- Кнопки действий для блока демонтажа -->
+                        <div class="removal-actions" id="removal_actions" style="display: none;">
+                            <button class="btn btn-primary" onclick="saveRemovalBlock()">Сохранить</button>
+                            <button class="btn btn-secondary" onclick="cancelRemovalEdit()">Отмена</button>
                         </div>
                     </div>
                 </div>
             @endif
 
             @if($advertisement->product || true)
+                <!-- Блок информации о покупке -->
                 <div class="info-block">
                     <div class="block-header">
-                        <h3>Информация об оплате</h3>
-                        <button class="edit-payment-btn" onclick="editPaymentBlock()">
+                        <h3>Информация о покупке</h3>
+                        <button class="edit-payment-btn" onclick="editPurchaseBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
@@ -503,9 +563,9 @@
                         </div>
                     </div>
 
-                    <!-- Закупочная цена -->
+                    <!-- Стоимость покупки -->
                     <div class="payment-item">
-                        <strong>Закупочная цена:</strong>
+                        <strong>Стоимость покупки:</strong>
                         <div class="payment-content" id="purchase_price_content">
                             @if($advertisement->product && $advertisement->product->purchase_price)
                                 <span class="price">{{ number_format($advertisement->product->purchase_price, 0, ',', ' ') }} ₽</span>
@@ -517,8 +577,44 @@
                             <input type="number" class="form-control" id="purchase_price_input" 
                                    value="{{ $advertisement->product->purchase_price ?? '' }}" 
                                    data-original="{{ $advertisement->product->purchase_price ?? '' }}"
-                                   placeholder="Введите закупочную цену">
+                                   placeholder="Введите стоимость покупки">
                         </div>
+                    </div>
+
+                    <!-- Комментарий к покупке -->
+                    <div class="payment-item">
+                        <strong>Комментарий к покупке:</strong>
+                        <div class="payment-content" id="payment_comment_content">
+                            @if($advertisement->product && $advertisement->product->payment_comment)
+                                <p>{{ $advertisement->product->payment_comment }}</p>
+                            @else
+                                <span class="no-value">Не указан</span>
+                            @endif
+                        </div>
+                        <div class="payment-edit" id="payment_comment_edit" style="display: none;">
+                            <textarea class="form-control" id="payment_comment_textarea" rows="3" 
+                                      data-original="{{ $advertisement->product->payment_comment ?? '' }}"
+                                      placeholder="Введите комментарий к покупке">{{ $advertisement->product->payment_comment ?? '' }}</textarea>
+                        </div>
+                    </div>
+
+                    <!-- Кнопки действий для блока покупки -->
+                    <div class="payment-actions" id="purchase_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="savePurchaseBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelPurchaseEdit()">Отмена</button>
+                    </div>
+                </div>
+
+                <!-- Блок информации о продаже -->
+                <div class="info-block">
+                    <div class="block-header">
+                        <h3>Информация о продаже</h3>
+                        <button class="edit-payment-btn" onclick="editSaleBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
                     </div>
 
                     <!-- Цена продажи -->
@@ -556,27 +652,10 @@
                         </div>
                     </div>
 
-                    <!-- Комментарий по оплате -->
-                    <div class="payment-item">
-                        <strong>Комментарий по оплате:</strong>
-                        <div class="payment-content" id="payment_comment_content">
-                            @if($advertisement->product && $advertisement->product->payment_comment)
-                                <p>{{ $advertisement->product->payment_comment }}</p>
-                            @else
-                                <span class="no-value">Не указан</span>
-                            @endif
-                        </div>
-                        <div class="payment-edit" id="payment_comment_edit" style="display: none;">
-                            <textarea class="form-control" id="payment_comment_textarea" rows="3" 
-                                      data-original="{{ $advertisement->product->payment_comment ?? '' }}"
-                                      placeholder="Введите комментарий по оплате">{{ $advertisement->product->payment_comment ?? '' }}</textarea>
-                        </div>
-                    </div>
-
-                    <!-- Кнопки действий для блока оплаты -->
-                    <div class="payment-actions" id="payment_actions" style="display: none;">
-                        <button class="btn btn-primary" onclick="savePaymentBlock()">Сохранить</button>
-                        <button class="btn btn-secondary" onclick="cancelPaymentEdit()">Отмена</button>
+                    <!-- Кнопки действий для блока продажи -->
+                    <div class="payment-actions" id="sale_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveSaleBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelSaleEdit()">Отмена</button>
                     </div>
                 </div>
             @endif
@@ -1676,6 +1755,42 @@
         text-align: center;
     }
 }
+
+/* Стили для редактирования статусов */
+.status-content, .status-edit {
+    display: inline-block;
+}
+
+.status-edit {
+    margin-top: 10px;
+}
+
+.status-edit select {
+    min-width: 200px;
+}
+
+.check-actions, .loading-actions, .removal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: flex-end;
+}
+
+.check-status, .loading-status, .removal-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    margin-bottom: 15px;
+}
+
+.check-status strong, .loading-status strong, .removal-status strong {
+    min-width: 120px;
+    flex-shrink: 0;
+}
 </style>
 
 <script>
@@ -1959,10 +2074,10 @@ function getNoCommentText(field) {
     return texts[field] || 'Не указано';
 }
 
-// Функции для редактирования блока оплаты
-function editPaymentBlock() {
-    // Скрываем все контенты и показываем формы редактирования
-    const fields = ['payment_method', 'purchase_price', 'adv_price', 'adv_price_comment', 'payment_comment'];
+// Функции для редактирования блока покупки
+function editPurchaseBlock() {
+    // Скрываем все контенты и показываем формы редактирования для блока покупки
+    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
@@ -1974,16 +2089,16 @@ function editPaymentBlock() {
         }
     });
     
-    // Показываем общие кнопки действий
-    document.getElementById('payment_actions').style.display = 'flex';
+    // Показываем кнопки действий для блока покупки
+    document.getElementById('purchase_actions').style.display = 'flex';
     
     // Скрываем кнопку редактирования
-    document.querySelector('.edit-payment-btn').style.display = 'none';
+    document.querySelector('#purchase_actions').closest('.info-block').querySelector('.edit-payment-btn').style.display = 'none';
 }
 
-function cancelPaymentEdit() {
-    // Восстанавливаем все оригинальные значения
-    const fields = ['payment_method', 'purchase_price', 'adv_price', 'adv_price_comment', 'payment_comment'];
+function cancelPurchaseEdit() {
+    // Восстанавливаем все оригинальные значения для блока покупки
+    const fields = ['payment_method', 'purchase_price', 'payment_comment'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
@@ -1997,13 +2112,13 @@ function cancelPaymentEdit() {
                     const originalState = checkbox.getAttribute('data-original') === 'true';
                     checkbox.checked = originalState;
                 });
-            } else if (field === 'purchase_price' || field === 'adv_price') {
+            } else if (field === 'purchase_price') {
                 const input = document.getElementById(field + '_input');
                 if (input) {
                     const originalValue = input.getAttribute('data-original') || '';
                     input.value = originalValue;
                 }
-            } else if (field === 'payment_comment' || field === 'adv_price_comment') {
+            } else if (field === 'payment_comment') {
                 const textarea = document.getElementById(field + '_textarea');
                 if (textarea) {
                     const originalValue = textarea.getAttribute('data-original') || '';
@@ -2016,89 +2131,75 @@ function cancelPaymentEdit() {
         }
     });
     
-    // Скрываем общие кнопки действий
-    document.getElementById('payment_actions').style.display = 'none';
+    // Скрываем кнопки действий для блока покупки
+    document.getElementById('purchase_actions').style.display = 'none';
     
     // Показываем кнопку редактирования
-    document.querySelector('.edit-payment-btn').style.display = 'flex';
+    document.querySelector('#purchase_actions').closest('.info-block').querySelector('.edit-payment-btn').style.display = 'flex';
 }
 
-function savePaymentBlock() {
-    // Собираем данные для отправки
-    const paymentData = {
+function savePurchaseBlock() {
+    // Собираем данные для отправки (только данные покупки)
+    const purchaseData = {
         payment_types: [],
         purchase_price: null,
-        adv_price: null,
-        adv_price_comment: null,
         payment_comment: null
     };
     
     // Получаем выбранные варианты оплаты
     const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]:checked');
     paymentCheckboxes.forEach(checkbox => {
-        paymentData.payment_types.push(parseInt(checkbox.value));
+        purchaseData.payment_types.push(parseInt(checkbox.value));
     });
     
-    // Получаем закупочную цену
+    // Получаем стоимость покупки
     const purchasePriceInput = document.getElementById('purchase_price_input');
     if (purchasePriceInput && purchasePriceInput.value) {
-        paymentData.purchase_price = parseFloat(purchasePriceInput.value);
+        purchaseData.purchase_price = parseFloat(purchasePriceInput.value);
     }
     
-    // Получаем цену продажи
-    const advPriceInput = document.getElementById('adv_price_input');
-    if (advPriceInput && advPriceInput.value) {
-        paymentData.adv_price = parseFloat(advPriceInput.value);
-    }
-    
-    // Получаем комментарий к продаже
-    const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
-    if (advPriceCommentTextarea) {
-        paymentData.adv_price_comment = advPriceCommentTextarea.value.trim();
-    }
-    
-    // Получаем комментарий по оплате
+    // Получаем комментарий к покупке
     const paymentCommentTextarea = document.getElementById('payment_comment_textarea');
     if (paymentCommentTextarea) {
-        paymentData.payment_comment = paymentCommentTextarea.value.trim();
+        purchaseData.payment_comment = paymentCommentTextarea.value.trim();
     }
     
     // Показываем индикатор загрузки
-    const saveBtn = document.querySelector('#payment_actions .btn-primary');
+    const saveBtn = document.querySelector('#purchase_actions .btn-primary');
     const originalText = saveBtn.textContent;
     saveBtn.textContent = 'Сохранение...';
     saveBtn.disabled = true;
     
     // Отправляем AJAX запрос
-    fetch(`/advertisements/{{ $advertisement->id }}/payment-info`, {
+    fetch(`/advertisements/{{ $advertisement->id }}/purchase-info`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
-        body: JSON.stringify(paymentData)
+        body: JSON.stringify(purchaseData)
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             // Обновляем отображение
-            updatePaymentDisplay(paymentData);
+            updatePurchaseDisplay(purchaseData);
             
             // Сохраняем новые значения как оригинальные
-            savePaymentOriginals(paymentData);
+            savePurchaseOriginals(purchaseData);
             
             // Скрываем формы редактирования
-            cancelPaymentEdit();
+            cancelPurchaseEdit();
             
             // Показываем уведомление об успехе
-            showNotification('Информация об оплате успешно обновлена', 'success');
+            showNotification('Информация о покупке успешно обновлена', 'success');
         } else {
             throw new Error(data.message || 'Ошибка при сохранении');
         }
     })
     .catch(error => {
         console.error('Ошибка:', error);
-        showNotification('Ошибка при сохранении информации об оплате', 'error');
+        showNotification('Ошибка при сохранении информации о покупке', 'error');
     })
     .finally(() => {
         // Восстанавливаем кнопку
@@ -2107,11 +2208,131 @@ function savePaymentBlock() {
     });
 }
 
-function updatePaymentDisplay(paymentData) {
+// Функции для редактирования блока продажи
+function editSaleBlock() {
+    // Скрываем все контенты и показываем формы редактирования для блока продажи
+    const fields = ['adv_price', 'adv_price_comment'];
+    
+    fields.forEach(field => {
+        const content = document.getElementById(field + '_content');
+        const edit = document.getElementById(field + '_edit');
+        
+        if (content && edit) {
+            content.style.display = 'none';
+            edit.style.display = 'block';
+        }
+    });
+    
+    // Показываем кнопки действий для блока продажи
+    document.getElementById('sale_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#sale_actions').closest('.info-block').querySelector('.edit-payment-btn').style.display = 'none';
+}
+
+function cancelSaleEdit() {
+    // Восстанавливаем все оригинальные значения для блока продажи
+    const fields = ['adv_price', 'adv_price_comment'];
+    
+    fields.forEach(field => {
+        const content = document.getElementById(field + '_content');
+        const edit = document.getElementById(field + '_edit');
+        
+        if (content && edit) {
+            if (field === 'adv_price') {
+                const input = document.getElementById(field + '_input');
+                if (input) {
+                    const originalValue = input.getAttribute('data-original') || '';
+                    input.value = originalValue;
+                }
+            } else if (field === 'adv_price_comment') {
+                const textarea = document.getElementById(field + '_textarea');
+                if (textarea) {
+                    const originalValue = textarea.getAttribute('data-original') || '';
+                    textarea.value = originalValue;
+                }
+            }
+            
+            content.style.display = 'block';
+            edit.style.display = 'none';
+        }
+    });
+    
+    // Скрываем кнопки действий для блока продажи
+    document.getElementById('sale_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#sale_actions').closest('.info-block').querySelector('.edit-payment-btn').style.display = 'flex';
+}
+
+function saveSaleBlock() {
+    // Собираем данные для отправки (только данные продажи)
+    const saleData = {
+        adv_price: null,
+        adv_price_comment: null
+    };
+    
+    // Получаем цену продажи
+    const advPriceInput = document.getElementById('adv_price_input');
+    if (advPriceInput && advPriceInput.value) {
+        saleData.adv_price = parseFloat(advPriceInput.value);
+    }
+    
+    // Получаем комментарий к продаже
+    const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
+    if (advPriceCommentTextarea) {
+        saleData.adv_price_comment = advPriceCommentTextarea.value.trim();
+    }
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#sale_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/advertisements/{{ $advertisement->id }}/sale-info`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(saleData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateSaleDisplay(saleData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveSaleOriginals(saleData);
+            
+            // Скрываем формы редактирования
+            cancelSaleEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о продаже успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о продаже', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+function updatePurchaseDisplay(purchaseData) {
     // Обновляем отображение вариантов оплаты
     const paymentContent = document.getElementById('payment_method_content');
-    if (paymentData.payment_types.length > 0) {
-        const variantNames = paymentData.payment_types.map(typeId => {
+    if (purchaseData.payment_types.length > 0) {
+        const variantNames = purchaseData.payment_types.map(typeId => {
             const checkbox = document.querySelector(`input[name="payment_types[]"][value="${typeId}"]`);
             return checkbox ? checkbox.parentElement.textContent.trim() : '';
         }).filter(name => name);
@@ -2125,65 +2346,70 @@ function updatePaymentDisplay(paymentData) {
         paymentContent.innerHTML = '<span class="no-value">Не указаны</span>';
     }
     
-    // Обновляем отображение закупочной цены
+    // Обновляем отображение стоимости покупки
     const priceContent = document.getElementById('purchase_price_content');
-    if (paymentData.purchase_price) {
-        priceContent.innerHTML = `<span class="price">${paymentData.purchase_price.toLocaleString('ru-RU')} ₽</span>`;
+    if (purchaseData.purchase_price) {
+        priceContent.innerHTML = `<span class="price">${purchaseData.purchase_price.toLocaleString('ru-RU')} ₽</span>`;
     } else {
         priceContent.innerHTML = '<span class="no-value">Не указана</span>';
     }
     
+    // Обновляем отображение комментария к покупке
+    const commentContent = document.getElementById('payment_comment_content');
+    if (purchaseData.payment_comment) {
+        commentContent.innerHTML = `<p>${purchaseData.payment_comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<span class="no-value">Не указан</span>';
+    }
+}
+
+function savePurchaseOriginals(purchaseData) {
+    // Сохраняем новые значения как оригинальные для блока покупки
+    const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]');
+    paymentCheckboxes.forEach(checkbox => {
+        const isChecked = purchaseData.payment_types.includes(parseInt(checkbox.value));
+        checkbox.setAttribute('data-original', isChecked.toString());
+    });
+    
+    const purchasePriceInput = document.getElementById('purchase_price_input');
+    if (purchasePriceInput) {
+        purchasePriceInput.setAttribute('data-original', purchaseData.purchase_price || '');
+    }
+    
+    const paymentCommentTextarea = document.getElementById('payment_comment_textarea');
+    if (paymentCommentTextarea) {
+        paymentCommentTextarea.setAttribute('data-original', purchaseData.payment_comment || '');
+    }
+}
+
+function updateSaleDisplay(saleData) {
     // Обновляем отображение цены продажи
     const advPriceContent = document.getElementById('adv_price_content');
-    if (paymentData.adv_price) {
-        advPriceContent.innerHTML = `<span class="price">${paymentData.adv_price.toLocaleString('ru-RU')} ₽</span>`;
+    if (saleData.adv_price) {
+        advPriceContent.innerHTML = `<span class="price">${saleData.adv_price.toLocaleString('ru-RU')} ₽</span>`;
     } else {
         advPriceContent.innerHTML = '<span class="no-value">Не указана</span>';
     }
     
     // Обновляем отображение комментария к продаже
     const advPriceCommentContent = document.getElementById('adv_price_comment_content');
-    if (paymentData.adv_price_comment) {
-        advPriceCommentContent.innerHTML = `<p>${paymentData.adv_price_comment}</p>`;
+    if (saleData.adv_price_comment) {
+        advPriceCommentContent.innerHTML = `<p>${saleData.adv_price_comment}</p>`;
     } else {
         advPriceCommentContent.innerHTML = '<span class="no-value">Не указан</span>';
     }
-    
-    // Обновляем отображение комментария по оплате
-    const commentContent = document.getElementById('payment_comment_content');
-    if (paymentData.payment_comment) {
-        commentContent.innerHTML = `<p>${paymentData.payment_comment}</p>`;
-    } else {
-        commentContent.innerHTML = '<span class="no-value">Не указан</span>';
-    }
 }
 
-function savePaymentOriginals(paymentData) {
-    // Сохраняем новые значения как оригинальные
-    const paymentCheckboxes = document.querySelectorAll('input[name="payment_types[]"]');
-    paymentCheckboxes.forEach(checkbox => {
-        const isChecked = paymentData.payment_types.includes(parseInt(checkbox.value));
-        checkbox.setAttribute('data-original', isChecked.toString());
-    });
-    
-    const purchasePriceInput = document.getElementById('purchase_price_input');
-    if (purchasePriceInput) {
-        purchasePriceInput.setAttribute('data-original', paymentData.purchase_price || '');
-    }
-    
+function saveSaleOriginals(saleData) {
+    // Сохраняем новые значения как оригинальные для блока продажи
     const advPriceInput = document.getElementById('adv_price_input');
     if (advPriceInput) {
-        advPriceInput.setAttribute('data-original', paymentData.adv_price || '');
+        advPriceInput.setAttribute('data-original', saleData.adv_price || '');
     }
     
     const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
     if (advPriceCommentTextarea) {
-        advPriceCommentTextarea.setAttribute('data-original', paymentData.adv_price_comment || '');
-    }
-    
-    const paymentCommentTextarea = document.getElementById('payment_comment_textarea');
-    if (paymentCommentTextarea) {
-        paymentCommentTextarea.setAttribute('data-original', paymentData.payment_comment || '');
+        advPriceCommentTextarea.setAttribute('data-original', saleData.adv_price_comment || '');
     }
 }
 
@@ -2302,6 +2528,402 @@ function initializeEditEditor(field) {
     editEditors[field].on('text-change', function() {
         textarea.value = editEditors[field].root.innerHTML;
     });
+}
+
+// Функции для редактирования блока проверки
+function editCheckBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('check_status_content').style.display = 'none';
+    document.getElementById('check_status_edit').style.display = 'block';
+    document.getElementById('check_comment_content').style.display = 'none';
+    document.getElementById('check_comment_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('check_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#check_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelCheckEdit() {
+    // Восстанавливаем оригинальные значения
+    const statusSelect = document.getElementById('check_status_select');
+    const commentTextarea = document.getElementById('check_comment_textarea');
+    
+    if (statusSelect) {
+        const originalStatus = statusSelect.getAttribute('data-original') || '';
+        statusSelect.value = originalStatus;
+    }
+    
+    if (commentTextarea) {
+        const originalComment = commentTextarea.getAttribute('data-original') || '';
+        commentTextarea.value = originalComment;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('check_status_content').style.display = 'block';
+    document.getElementById('check_status_edit').style.display = 'none';
+    document.getElementById('check_comment_content').style.display = 'block';
+    document.getElementById('check_comment_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('check_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#check_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveCheckBlock() {
+    // Собираем данные
+    const checkData = {
+        status_id: document.getElementById('check_status_select').value || null,
+        comment: document.getElementById('check_comment_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#check_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/advertisements/{{ $advertisement->id }}/check-status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(checkData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateCheckDisplay(checkData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveCheckOriginals(checkData);
+            
+            // Скрываем формы редактирования
+            cancelCheckEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о проверке успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о проверке', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции для редактирования блока погрузки
+function editLoadingBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('loading_status_content').style.display = 'none';
+    document.getElementById('loading_status_edit').style.display = 'block';
+    document.getElementById('loading_comment_content').style.display = 'none';
+    document.getElementById('loading_comment_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('loading_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#loading_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelLoadingEdit() {
+    // Восстанавливаем оригинальные значения
+    const statusSelect = document.getElementById('loading_status_select');
+    const commentTextarea = document.getElementById('loading_comment_textarea');
+    
+    if (statusSelect) {
+        const originalStatus = statusSelect.getAttribute('data-original') || '';
+        statusSelect.value = originalStatus;
+    }
+    
+    if (commentTextarea) {
+        const originalComment = commentTextarea.getAttribute('data-original') || '';
+        commentTextarea.value = originalComment;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('loading_status_content').style.display = 'block';
+    document.getElementById('loading_status_edit').style.display = 'none';
+    document.getElementById('loading_comment_content').style.display = 'block';
+    document.getElementById('loading_comment_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('loading_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#loading_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveLoadingBlock() {
+    // Собираем данные
+    const loadingData = {
+        status_id: document.getElementById('loading_status_select').value || null,
+        comment: document.getElementById('loading_comment_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#loading_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/advertisements/{{ $advertisement->id }}/loading-status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(loadingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateLoadingDisplay(loadingData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveLoadingOriginals(loadingData);
+            
+            // Скрываем формы редактирования
+            cancelLoadingEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о погрузке успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о погрузке', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции для редактирования блока демонтажа
+function editRemovalBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('removal_status_content').style.display = 'none';
+    document.getElementById('removal_status_edit').style.display = 'block';
+    document.getElementById('removal_comment_content').style.display = 'none';
+    document.getElementById('removal_comment_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('removal_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#removal_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelRemovalEdit() {
+    // Восстанавливаем оригинальные значения
+    const statusSelect = document.getElementById('removal_status_select');
+    const commentTextarea = document.getElementById('removal_comment_textarea');
+    
+    if (statusSelect) {
+        const originalStatus = statusSelect.getAttribute('data-original') || '';
+        statusSelect.value = originalStatus;
+    }
+    
+    if (commentTextarea) {
+        const originalComment = commentTextarea.getAttribute('data-original') || '';
+        commentTextarea.value = originalComment;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('removal_status_content').style.display = 'block';
+    document.getElementById('removal_status_edit').style.display = 'none';
+    document.getElementById('removal_comment_content').style.display = 'block';
+    document.getElementById('removal_comment_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('removal_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#removal_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveRemovalBlock() {
+    // Собираем данные
+    const removalData = {
+        status_id: document.getElementById('removal_status_select').value || null,
+        comment: document.getElementById('removal_comment_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#removal_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/advertisements/{{ $advertisement->id }}/removal-status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(removalData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateRemovalDisplay(removalData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveRemovalOriginals(removalData);
+            
+            // Скрываем формы редактирования
+            cancelRemovalEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о демонтаже успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о демонтаже', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции обновления отображения
+function updateCheckDisplay(checkData) {
+    // Обновляем отображение статуса проверки
+    const statusContent = document.getElementById('check_status_content');
+    if (checkData.status_id) {
+        const statusSelect = document.getElementById('check_status_select');
+        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+        const statusName = selectedOption.text;
+        
+        // Получаем цвет из data-атрибута или используем цвет по умолчанию
+        const statusColor = selectedOption.getAttribute('data-color') || '#6c757d';
+        
+        statusContent.innerHTML = `
+            <span class="status-badge" style="background-color: ${statusColor}; color: white;">
+                ${statusName}
+            </span>
+        `;
+    } else {
+        statusContent.innerHTML = '<span class="status-badge" style="background-color: #6c757d; color: white;">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария
+    const commentContent = document.getElementById('check_comment_content');
+    if (checkData.comment) {
+        commentContent.innerHTML = `<p>${checkData.comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<p class="no-comment">Комментарий к проверке не указан</p>';
+    }
+}
+
+function updateLoadingDisplay(loadingData) {
+    // Обновляем отображение статуса погрузки
+    const statusContent = document.getElementById('loading_status_content');
+    if (loadingData.status_id) {
+        const statusSelect = document.getElementById('loading_status_select');
+        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+        const statusName = selectedOption.text;
+        
+        statusContent.innerHTML = `<span class="status-badge">${statusName}</span>`;
+    } else {
+        statusContent.innerHTML = '<span class="status-badge">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария
+    const commentContent = document.getElementById('loading_comment_content');
+    if (loadingData.comment) {
+        commentContent.innerHTML = `<p>${loadingData.comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<p class="no-comment">Комментарий по погрузке не указан</p>';
+    }
+}
+
+function updateRemovalDisplay(removalData) {
+    // Обновляем отображение статуса демонтажа
+    const statusContent = document.getElementById('removal_status_content');
+    if (removalData.status_id) {
+        const statusSelect = document.getElementById('removal_status_select');
+        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+        const statusName = selectedOption.text;
+        
+        statusContent.innerHTML = `<span class="status-badge">${statusName}</span>`;
+    } else {
+        statusContent.innerHTML = '<span class="status-badge">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария
+    const commentContent = document.getElementById('removal_comment_content');
+    if (removalData.comment) {
+        commentContent.innerHTML = `<p>${removalData.comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<p class="no-comment">Комментарий по демонтажу не указан</p>';
+    }
+}
+
+// Функции сохранения оригинальных значений
+function saveCheckOriginals(checkData) {
+    const statusSelect = document.getElementById('check_status_select');
+    const commentTextarea = document.getElementById('check_comment_textarea');
+    
+    if (statusSelect) {
+        statusSelect.setAttribute('data-original', checkData.status_id || '');
+    }
+    
+    if (commentTextarea) {
+        commentTextarea.setAttribute('data-original', checkData.comment || '');
+    }
+}
+
+function saveLoadingOriginals(loadingData) {
+    const statusSelect = document.getElementById('loading_status_select');
+    const commentTextarea = document.getElementById('loading_comment_textarea');
+    
+    if (statusSelect) {
+        statusSelect.setAttribute('data-original', loadingData.status_id || '');
+    }
+    
+    if (commentTextarea) {
+        commentTextarea.setAttribute('data-original', loadingData.comment || '');
+    }
+}
+
+function saveRemovalOriginals(removalData) {
+    const statusSelect = document.getElementById('removal_status_select');
+    const commentTextarea = document.getElementById('removal_comment_textarea');
+    
+    if (statusSelect) {
+        statusSelect.setAttribute('data-original', removalData.status_id || '');
+    }
+    
+    if (commentTextarea) {
+        commentTextarea.setAttribute('data-original', removalData.comment || '');
+    }
 }
 </script>
 

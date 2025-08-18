@@ -537,6 +537,69 @@ class AdvertisementController extends Controller
         }
     }
 
+    public function updateCheckStatus(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'status_id' => 'nullable|exists:product_check_statuses,id',
+            'comment' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            $checkData = [
+                'status_id' => $request->status_id,
+                'comment' => $request->comment ?? '',
+            ];
+
+            $advertisement->update(['check_data' => $checkData]);
+
+            return response()->json(['success' => true, 'message' => 'Статус проверки обновлен']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Ошибка при обновлении статуса проверки'], 500);
+        }
+    }
+
+    public function updateLoadingStatus(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'status_id' => 'nullable|exists:product_install_statuses,id',
+            'comment' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            $loadingData = [
+                'status_id' => $request->status_id,
+                'comment' => $request->comment ?? '',
+            ];
+
+            $advertisement->update(['loading_data' => $loadingData]);
+
+            return response()->json(['success' => true, 'message' => 'Статус погрузки обновлен']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Ошибка при обновлении статуса погрузки'], 500);
+        }
+    }
+
+    public function updateRemovalStatus(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'status_id' => 'nullable|exists:product_install_statuses,id',
+            'comment' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            $removalData = [
+                'status_id' => $request->status_id,
+                'comment' => $request->comment ?? '',
+            ];
+
+            $advertisement->update(['removal_data' => $removalData]);
+
+            return response()->json(['success' => true, 'message' => 'Статус демонтажа обновлен']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Ошибка при обновлении статуса демонтажа'], 500);
+        }
+    }
+
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];

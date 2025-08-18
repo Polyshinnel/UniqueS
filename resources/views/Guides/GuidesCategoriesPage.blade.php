@@ -75,11 +75,11 @@ use App\Models\ProductCategories;
                 <tr class="category-row" data-level="{{ $category->level }}">
                     <td class="category-info-cell">
                         <div class="category-info">
-                            <div class="category-name" style="padding-left: {{ $category->level * 20 }}px">
+                            <div class="category-name" style="padding-left: {{ $category->level * 20 }}px;">
                                 @if(ProductCategories::where('parent_id', $category->id)->exists())
                                     <span class="toggle-category" data-category-id="{{ $category->id }}">▼</span>
                                 @else
-                                    <span style="margin-left: 16px"></span>
+                                    <span style="margin-left: 16px;"></span>
                                 @endif
                                 {{ $category->name }}
                             </div>
@@ -591,7 +591,7 @@ use App\Models\ProductCategories;
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     z-index: 1000;
@@ -601,6 +601,7 @@ use App\Models\ProductCategories;
 }
 
 .modal.active {
+    display: flex;
     opacity: 1;
     visibility: visible;
 }
@@ -1050,16 +1051,16 @@ document.addEventListener('click', function(event) {
 
 // Обработка успешного добавления/обновления категории
 document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация TreeSelect
+    initializeTreeSelect('parent_treeselect', 'parent_id', @json($activeCategories));
+    initializeTreeSelect('edit_parent_treeselect', 'edit_parent_id', @json($activeCategories));
+    
     @if(session('success'))
         setTimeout(() => {
             closeModal();
             closeEditModal();
         }, 1000);
     @endif
-    
-    // Инициализация TreeSelect
-    initializeTreeSelect('parent_treeselect', 'parent_id', @json($activeCategories));
-    initializeTreeSelect('edit_parent_treeselect', 'edit_parent_id', @json($activeCategories));
     
     // Обработка сворачивания/разворачивания категорий
     const toggleButtons = document.querySelectorAll('.toggle-category');

@@ -249,12 +249,6 @@
                                     Актив
                                 </div>
                             </div>
-                            <div class="status-item">
-                                <div class="status-label">Статус публикации</div>
-                                <div class="status-badge status-unpublished">
-                                    Не опубл.
-                                </div>
-                            </div>
                         </div>
                         <div class="price-info">
                             <div class="price-label">Цена продажи:</div>

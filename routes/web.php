@@ -27,6 +27,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/company', [\App\Http\Controllers\Company\CompanyController::class, 'store'])->name('companies.store');
     Route::get('/company/{company}', [\App\Http\Controllers\Company\CompanyController::class, 'show'])->name('companies.show');
     Route::patch('/company/{company}/status', [\App\Http\Controllers\Company\CompanyController::class, 'updateStatus'])->name('companies.update-status');
+    Route::get('/company/{company}/logs', [\App\Http\Controllers\Company\CompanyController::class, 'getLogs'])->name('companies.logs');
+    Route::get('/company/{company}/actions', [\App\Http\Controllers\Company\CompanyController::class, 'getActions'])->name('companies.actions');
+    Route::post('/company/{company}/actions', [\App\Http\Controllers\Company\CompanyController::class, 'storeAction'])->name('companies.store-action');
+    Route::post('/company/{company}/actions/{actionId}/complete', [\App\Http\Controllers\Company\CompanyController::class, 'completeAction'])->name('companies.complete-action');
     Route::get('/company/next-sku/{warehouseName}', [\App\Http\Controllers\Company\CompanyController::class, 'getNextSku'])->name('companies.next-sku');
     Route::get('/company/regionals/{regionId}', [\App\Http\Controllers\Company\CompanyController::class, 'getRegionalsByRegion'])->name('companies.regionals-by-region');
 
@@ -68,6 +72,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/advertisements/{advertisement}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'deleteMedia'])->name('advertisements.delete-media');
     Route::patch('/advertisements/{advertisement}/comment', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateComment'])->name('advertisements.update-comment');
     Route::patch('/advertisements/{advertisement}/payment-info', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updatePaymentInfo'])->name('advertisements.update-payment-info');
+    Route::patch('/advertisements/{advertisement}/check-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCheckStatus'])->name('advertisements.update-check-status');
+    Route::patch('/advertisements/{advertisement}/loading-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateLoadingStatus'])->name('advertisements.update-loading-status');
+    Route::patch('/advertisements/{advertisement}/removal-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateRemovalStatus'])->name('advertisements.update-removal-status');
 
     Route::get('/guide', [GuidesMain::class, 'index']);
 });

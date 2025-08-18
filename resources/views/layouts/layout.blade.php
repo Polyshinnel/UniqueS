@@ -135,6 +135,7 @@
             background: rgba(255, 255, 255, 0.1);
             transform: scaleX(0);
             transition: transform 0.3s ease;
+            pointer-events: none;
         }
 
         .menu-block-item__active {
@@ -159,6 +160,10 @@
         .menu-block-item img {
             transition: transform 0.3s ease;
             filter: brightness(0) invert(1);
+        }
+
+        #addBtn {
+            cursor: pointer;
         }
 
         .menu-block-item:hover img {
@@ -386,6 +391,252 @@
                 height: 16px;
             }
         }
+
+        /* Стили для модального окна */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        /* Стили для модальных окон справочников */
+        .modal.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow: hidden;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { 
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            padding: 25px 30px 20px 30px;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            color: #133E71;
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            font-size: 28px;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .modal-close:hover {
+            background: #f8f9fa;
+            color: #133E71;
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .create-options-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .create-option-card {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 12px;
+            text-decoration: none;
+            color: inherit;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .create-option-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #133E71, #1C5BA4);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .create-option-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #133E71;
+            background: white;
+        }
+
+        .create-option-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .create-option-icon {
+            flex-shrink: 0;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #133E71, #1C5BA4);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .create-option-card:hover .create-option-icon {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(19, 62, 113, 0.3);
+        }
+
+        .create-option-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .create-option-title {
+            font-size: 18px;
+            color: #133E71;
+            margin: 0 0 5px 0;
+            font-weight: 600;
+            transition: color 0.3s ease;
+        }
+
+        .create-option-card:hover .create-option-title {
+            color: #1C5BA4;
+        }
+
+        .create-option-description {
+            font-size: 13px;
+            color: #666;
+            margin: 0;
+            line-height: 1.4;
+        }
+
+        .create-option-arrow {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            transition: all 0.3s ease;
+        }
+
+        .create-option-card:hover .create-option-arrow {
+            background: #133E71;
+            color: white;
+            transform: translateX(2px);
+        }
+
+        /* Адаптивность для модального окна */
+        @media (max-width: 768px) {
+            .modal-content {
+                width: 95%;
+                margin: 20px;
+            }
+            
+            .modal-header {
+                padding: 20px 25px 15px 25px;
+            }
+            
+            .modal-title {
+                font-size: 20px;
+            }
+            
+            .modal-body {
+                padding: 25px;
+            }
+            
+            .create-options-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .create-option-card {
+                padding: 15px;
+                gap: 12px;
+            }
+            
+            .create-option-icon {
+                width: 45px;
+                height: 45px;
+            }
+            
+            .create-option-title {
+                font-size: 16px;
+            }
+            
+            .create-option-description {
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .create-option-card {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+            
+            .create-option-arrow {
+                align-self: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -405,7 +656,7 @@
                 <li>
                     <div class="menu-block-item">
                         @section('add-btn-link')
-                            <img src="{{ asset('assets/img/icons/plus.svg') }}" alt="plus" class="add-btn">
+                            <img src="{{ asset('assets/img/icons/plus.svg') }}" alt="plus" class="add-btn" id="addBtn">
                         @show
                     </div>
                 </li>
@@ -490,5 +741,114 @@
     </div>
 
     @stack('scripts')
+    
+    <!-- Модальное окно для создания -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Что требуется создать?</h2>
+                <span class="modal-close" id="closeModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="create-options-grid">
+                    <a href="/company/create" class="create-option-card">
+                        <div class="create-option-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="9" cy="7" r="4"></circle>
+                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                            </svg>
+                        </div>
+                        <div class="create-option-content">
+                            <h3 class="create-option-title">Компанию</h3>
+                            <p class="create-option-description">Создать новую компанию</p>
+                        </div>
+                        <div class="create-option-arrow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9,18 15,12 9,6"></polyline>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/product/create" class="create-option-card">
+                        <div class="create-option-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                            </svg>
+                        </div>
+                        <div class="create-option-content">
+                            <h3 class="create-option-title">Товар</h3>
+                            <p class="create-option-description">Добавить новый товар</p>
+                        </div>
+                        <div class="create-option-arrow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9,18 15,12 9,6"></polyline>
+                            </svg>
+                        </div>
+                    </a>
+
+                    <a href="/advertisements/create" class="create-option-card">
+                        <div class="create-option-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10,9 9,9 8,9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="create-option-content">
+                            <h3 class="create-option-title">Объявление</h3>
+                            <p class="create-option-description">Создать новое объявление</p>
+                        </div>
+                        <div class="create-option-arrow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9,18 15,12 9,6"></polyline>
+                            </svg>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // JavaScript для модального окна
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('createModal');
+            const addBtn = document.getElementById('addBtn');
+            const closeBtn = document.getElementById('closeModal');
+
+            // Открытие модального окна
+            addBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                modal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            });
+
+            // Закрытие модального окна при клике на крестик
+            closeBtn.addEventListener('click', function() {
+                modal.style.display = 'none';
+                document.body.style.overflow = 'auto';
+            });
+
+            // Закрытие модального окна при клике вне его
+            window.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+
+            // Закрытие модального окна при нажатии Escape
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal.style.display === 'flex') {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                }
+            });
+        });
+    </script>
 </body>
 </html>

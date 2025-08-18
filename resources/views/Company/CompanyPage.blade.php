@@ -156,8 +156,14 @@
 
                     <td class="action-cell">
                         <div class="action-info">
-                            <div class="action-date">{{ now()->format('d.m.Y H:i') }}</div>
-                            <div class="action-text">Позвонить клиенту, уточнить по наличию оборудования</div>
+                            @if($company->actions->isNotEmpty())
+                                @php $lastAction = $company->actions->first(); @endphp
+                                <div class="action-date">{{ $lastAction->expired_at->format('d.m.Y') }}</div>
+                                <div class="action-text">{{ $lastAction->action }}</div>
+                            @else
+                                <div class="action-date">{{ now()->format('d.m.Y') }}</div>
+                                <div class="action-text">Нет активных действий</div>
+                            @endif
                         </div>
                     </td>
 
