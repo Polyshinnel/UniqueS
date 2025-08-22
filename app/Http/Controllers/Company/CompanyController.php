@@ -75,14 +75,12 @@ class CompanyController extends Controller
 
     public function create()
     {
-        $warehouses = Warehouses::all();
+        $warehouses = Warehouses::with('regions')->get();
         $sources = Sources::all();
         // Не загружаем всех региональных представителей, они будут загружены через AJAX
         $regionals = collect();
-        
-        $regions = $this->getUserRegions();
 
-        return view('Company.CompanyCreatePage', compact('warehouses', 'sources', 'regionals', 'regions'));
+        return view('Company.CompanyCreatePage', compact('warehouses', 'sources', 'regionals'));
     }
 
     public function store(Request $request)
@@ -100,7 +98,6 @@ class CompanyController extends Controller
             'warehouse_id' => 'required|exists:warehouses,id',
             'source_id' => 'required|exists:sources,id',
             'region_id' => 'required|exists:users,id',
-            'region' => 'required|exists:regions,id',
             'inn' => 'nullable|string',
             'name' => 'required|string',
             'addresses' => 'required|array',
@@ -125,15 +122,26 @@ class CompanyController extends Controller
             'common_info' => 'required|string',
         ]);
 
-        // Проверяем, что выбранный регион доступен пользователю
+        // Получаем регион из выбранного склада
+        $warehouse = Warehouses::with('regions')->find($validated['warehouse_id']);
+        if (!$warehouse || !$warehouse->regions->count()) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['warehouse_id' => 'Выбранный склад не прикреплен к региону']);
+        }
+        
+        $region = $warehouse->regions->first();
+        $validated['region'] = $region->id;
+
+        // Проверяем, что регион склада доступен пользователю
         $userRegions = $this->getUserRegions()->pluck('id')->toArray();
         if (!empty($userRegions) && !in_array($validated['region'], $userRegions)) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['region' => 'Выбранный регион недоступен для вашего пользователя']);
+                ->withErrors(['warehouse_id' => 'Регион выбранного склада недоступен для вашего пользователя']);
         }
 
-        // Проверяем, что выбранный региональный представитель прикреплен к выбранному региону
+        // Проверяем, что выбранный региональный представитель прикреплен к региону склада
         $regional = User::where('id', $validated['region_id'])
             ->where('role_id', 3)
             ->where('active', true)
@@ -145,7 +153,7 @@ class CompanyController extends Controller
         if (!$regional) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['region_id' => 'Выбранный региональный представитель не прикреплен к данному региону']);
+                ->withErrors(['region_id' => 'Выбранный региональный представитель не прикреплен к региону выбранного склада']);
         }
 
         try {
@@ -476,18 +484,110 @@ class CompanyController extends Controller
     }
 
     /**
-     * Получает региональных представителей для выбранного региона
+     * Получает региональных представителей для выбранного склада
      */
-    public function getRegionalsByRegion($regionId)
+    public function getRegionalsByWarehouse($warehouseId)
     {
+        $warehouse = Warehouses::with('regions')->find($warehouseId);
+        
+        if (!$warehouse || !$warehouse->regions->count()) {
+            return response()->json([]);
+        }
+        
+        $region = $warehouse->regions->first();
+        
         $regionals = User::where('role_id', 3)
             ->where('active', true)
-            ->whereHas('regions', function($query) use ($regionId) {
-                $query->where('regions.id', $regionId);
+            ->whereHas('regions', function($query) use ($region) {
+                $query->where('regions.id', $region->id);
             })
             ->get(['id', 'name']);
 
         return response()->json($regionals);
+    }
+
+    /**
+     * Получает информацию о регионе склада
+     */
+    public function getWarehouseRegion($warehouseId)
+    {
+        $warehouse = Warehouses::with('regions')->find($warehouseId);
+        
+        if (!$warehouse || !$warehouse->regions->count()) {
+            return response()->json(['region' => null]);
+        }
+        
+        $region = $warehouse->regions->first();
+        
+        return response()->json([
+            'region' => [
+                'id' => $region->id,
+                'name' => $region->name
+            ]
+        ]);
+    }
+
+    /**
+     * Получает информацию о компании (склад, регион, адреса)
+     */
+    public function getCompanyInfo(Company $company)
+    {
+        // Проверяем права пользователя
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на просмотр компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Загружаем связанные данные
+        $company->load(['warehouses.regions', 'addresses']);
+
+        // Получаем основной адрес компании
+        $mainAddress = $company->addresses->where('main_address', true)->first();
+        
+        // Получаем склад компании
+        $warehouse = $company->warehouses->first();
+        
+        // Получаем регион склада
+        $region = $warehouse ? $warehouse->regions->first() : null;
+
+        return response()->json([
+            'success' => true,
+            'company' => [
+                'id' => $company->id,
+                'name' => $company->name,
+                'sku' => $company->sku,
+                'warehouse' => $warehouse ? [
+                    'id' => $warehouse->id,
+                    'name' => $warehouse->name
+                ] : null,
+                'region' => $region ? [
+                    'id' => $region->id,
+                    'name' => $region->name
+                ] : null,
+                'main_address' => $mainAddress ? $mainAddress->address : null
+            ]
+        ]);
     }
 
     /**

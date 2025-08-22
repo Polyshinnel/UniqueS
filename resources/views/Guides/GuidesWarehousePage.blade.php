@@ -159,14 +159,30 @@
                 </div>
                 <div class="form-group">
                     <label for="region_id">Регион *</label>
-                    <select name="region_id" id="region_id" class="form-control @error('region_id') is-invalid @enderror" required>
-                        <option value="">Выберите регион</option>
-                        @foreach($regions->where('active', true) as $region)
-                            <option value="{{ $region->id }}" {{ old('region_id') == $region->id ? 'selected' : '' }}>
-                                {{ $region->name }} ({{ $region->city_name }})
-                            </option>
-                        @endforeach
-                    </select>
+                    <div class="select-wrapper">
+                        <div class="select-input" id="region_select" tabindex="0">
+                            <span class="select-placeholder">Выберите регион *</span>
+                            <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="select-dropdown" id="region_select_dropdown">
+                            <div class="select-search">
+                                <input type="text" id="region_select_search" placeholder="Поиск регионов..." class="select-search-input">
+                            </div>
+                            <div class="select-options" id="region_select_options">
+                                <!-- Опции будут заполнены JavaScript -->
+                            </div>
+                        </div>
+                        <select name="region_id" id="region_id" class="form-control @error('region_id') is-invalid @enderror" style="display: none;" required>
+                            <option value="">Выберите регион</option>
+                            @foreach($regions->where('active', true) as $region)
+                                <option value="{{ $region->id }}" {{ old('region_id') == $region->id ? 'selected' : '' }}>
+                                    {{ $region->name }} ({{ $region->city_name }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                     @error('region_id')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
@@ -218,12 +234,28 @@
                 </div>
                 <div class="form-group">
                     <label for="edit_region_id">Регион *</label>
-                    <select name="region_id" id="edit_region_id" class="form-control" required>
-                        <option value="">Выберите регион</option>
-                        @foreach($regions->where('active', true) as $region)
-                            <option value="{{ $region->id }}">{{ $region->name }} ({{ $region->city_name }})</option>
-                        @endforeach
-                    </select>
+                    <div class="select-wrapper">
+                        <div class="select-input" id="edit_region_select" tabindex="0">
+                            <span class="select-placeholder">Выберите регион *</span>
+                            <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="select-dropdown" id="edit_region_select_dropdown">
+                            <div class="select-search">
+                                <input type="text" id="edit_region_select_search" placeholder="Поиск регионов..." class="select-search-input">
+                            </div>
+                            <div class="select-options" id="edit_region_select_options">
+                                <!-- Опции будут заполнены JavaScript -->
+                            </div>
+                        </div>
+                        <select name="region_id" id="edit_region_id" class="form-control" style="display: none;" required>
+                            <option value="">Выберите регион</option>
+                            @foreach($regions->where('active', true) as $region)
+                                <option value="{{ $region->id }}">{{ $region->name }} ({{ $region->city_name }})</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <span class="error-message" id="edit_region_id_error" style="display: none;"></span>
                 </div>
                 <div class="form-group">
@@ -749,6 +781,157 @@
 .warehouse-row {
     animation: fadeIn 0.3s ease;
 }
+
+/* Стили для select с поиском */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 48px;
+}
+
+.select-input:hover {
+    border-color: #133E71;
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.select-input.active {
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.select-placeholder {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.select-value {
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.select-arrow {
+    color: #6c757d;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.select-input.active .select-arrow {
+    transform: rotate(180deg);
+}
+
+.select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 2px;
+    display: none;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.select-dropdown.active {
+    display: block;
+    animation: selectFadeIn 0.15s ease-out;
+}
+
+@keyframes selectFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.select-search {
+    padding: 12px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.select-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.select-search-input:focus {
+    border-color: #133E71;
+}
+
+.select-options {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.select-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 14px;
+    color: #495057;
+}
+
+.select-option:hover {
+    background: #f8f9fa;
+}
+
+.select-option.selected {
+    background: #e3f2fd;
+    color: #133E71;
+    font-weight: 500;
+}
+
+/* Стили для скроллбара в select */
+.select-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.select-options::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.select-options::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.select-options::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
 </style>
 @endpush
 
@@ -793,6 +976,9 @@ document.addEventListener('DOMContentLoaded', function() {
             closeEditModal();
         }, 1000);
     @endif
+    
+    // Инициализация select с поиском для регионов
+    initializeSelect('region_select', 'region_id', @json($regions->where('active', true)));
 });
 
 // Функция для очистки формы
@@ -803,6 +989,25 @@ function resetForm() {
     errorMessages.forEach(error => error.remove());
     const errorInputs = document.querySelectorAll('#warehouseModal .form-control.is-invalid');
     errorInputs.forEach(input => input.classList.remove('is-invalid'));
+    
+    // Сброс select с поиском
+    const selectInput = document.getElementById('region_select');
+    if (selectInput) {
+        const placeholder = selectInput.querySelector('.select-placeholder');
+        const valueElement = selectInput.querySelector('.select-value');
+        
+        if (placeholder) {
+            placeholder.style.display = 'block';
+        }
+        if (valueElement) {
+            valueElement.style.display = 'none';
+        }
+        
+        // Восстанавливаем placeholder с звездочкой
+        if (placeholder) {
+            placeholder.textContent = 'Выберите регион *';
+        }
+    }
 }
 
 // Функции для модального окна редактирования
@@ -813,11 +1018,13 @@ function openEditModal(warehouseId) {
         .then(warehouse => {
             // Заполняем форму данными
             document.getElementById('edit_name').value = warehouse.name;
-            document.getElementById('edit_region_id').value = warehouse.region_id || '';
             document.getElementById('edit_active').value = warehouse.active ? '1' : '0';
             
             // Устанавливаем action для формы
             document.getElementById('editWarehouseForm').action = `/guide/warehouses/${warehouseId}`;
+            
+            // Инициализируем select с поиском для регионов с выбранным значением
+            initializeSelect('edit_region_select', 'edit_region_id', @json($regions->where('active', true)), warehouse.region_id);
             
             // Открываем модальное окно
             document.getElementById('editWarehouseModal').classList.add('active');
@@ -846,8 +1053,200 @@ function resetEditForm() {
     });
     const errorInputs = document.querySelectorAll('#editWarehouseModal .form-control.is-invalid');
     errorInputs.forEach(input => input.classList.remove('is-invalid'));
+    
+    // Сброс select с поиском
+    const selectInput = document.getElementById('edit_region_select');
+    if (selectInput) {
+        const placeholder = selectInput.querySelector('.select-placeholder');
+        const valueElement = selectInput.querySelector('.select-value');
+        
+        if (placeholder) {
+            placeholder.style.display = 'block';
+        }
+        if (valueElement) {
+            valueElement.style.display = 'none';
+        }
+        
+        // Восстанавливаем placeholder с звездочкой
+        if (placeholder) {
+            placeholder.textContent = 'Выберите регион *';
+        }
+    }
 }
 
-
+// Функция инициализации select с поиском
+function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = null) {
+    const selectInput = document.getElementById(selectId);
+    const selectDropdown = document.getElementById(selectId + '_dropdown');
+    const selectOptions = document.getElementById(selectId + '_options');
+    const selectSearch = document.getElementById(selectId + '_search');
+    const hiddenSelect = document.getElementById(hiddenSelectId);
+    
+    if (!selectInput || !selectDropdown || !selectOptions || !hiddenSelect) return;
+    
+    let isOpen = false;
+    let selectedValue = preSelectedValue;
+    
+    console.log('Инициализация select:', {
+        selectId: selectId,
+        hiddenSelectId: hiddenSelectId,
+        preSelectedValue: preSelectedValue,
+        selectedValue: selectedValue
+    });
+    
+    // Обновляем опции
+    function updateOptions(filteredOptions = null) {
+        const optionsToUse = filteredOptions || options;
+        
+        let html = '';
+        optionsToUse.forEach(option => {
+            const isSelected = selectedValue && selectedValue.toString() === option.id.toString();
+            html += `<div class="select-option ${isSelected ? 'selected' : ''}" data-value="${option.id}">
+                <span>${option.name} (${option.city_name})</span>
+            </div>`;
+        });
+        
+        selectOptions.innerHTML = html;
+        attachOptionEvents();
+    }
+    
+    // Привязываем события к опциям
+    function attachOptionEvents() {
+        const optionElements = selectOptions.querySelectorAll('.select-option');
+        optionElements.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.dataset.value;
+                const optionData = options.find(opt => opt.id.toString() === value);
+                
+                selectedValue = value;
+                updateSelectedDisplay(optionData);
+                updateHiddenSelect();
+                closeDropdown();
+            });
+        });
+    }
+    
+    // Обновляем отображение выбранного значения
+    function updateSelectedDisplay(optionData) {
+        const placeholder = selectInput.querySelector('.select-placeholder');
+        const valueElement = selectInput.querySelector('.select-value');
+        
+        if (!optionData) {
+            placeholder.style.display = 'block';
+            if (valueElement) {
+                valueElement.style.display = 'none';
+            }
+            return;
+        }
+        
+        placeholder.style.display = 'none';
+        
+        if (!valueElement) {
+            const newValueElement = document.createElement('span');
+            newValueElement.className = 'select-value';
+            selectInput.insertBefore(newValueElement, selectInput.querySelector('.select-arrow'));
+        }
+        
+        const currentValueElement = selectInput.querySelector('.select-value');
+        currentValueElement.textContent = `${optionData.name} (${optionData.city_name})`;
+        currentValueElement.style.display = 'block';
+    }
+    
+    // Обновляем скрытый select
+    function updateHiddenSelect() {
+        // Очищаем все опции
+        hiddenSelect.innerHTML = '';
+        
+        if (selectedValue) {
+            const option = document.createElement('option');
+            option.value = selectedValue;
+            option.selected = true;
+            hiddenSelect.appendChild(option);
+        }
+        
+        console.log('Обновление скрытого select:', {
+            selectedValue: selectedValue,
+            optionsCount: hiddenSelect.options.length,
+            selectedOptionsCount: hiddenSelect.selectedOptions.length
+        });
+    }
+    
+    // Открытие/закрытие выпадающего списка
+    function toggleDropdown() {
+        isOpen = !isOpen;
+        
+        if (isOpen) {
+            selectInput.classList.add('active');
+            selectDropdown.classList.add('active');
+            updateOptions();
+            selectSearch.focus();
+        } else {
+            closeDropdown();
+        }
+    }
+    
+    function closeDropdown() {
+        isOpen = false;
+        selectInput.classList.remove('active');
+        selectDropdown.classList.remove('active');
+    }
+    
+    // Фильтрация
+    function filterOptions(searchTerm) {
+        if (!searchTerm) {
+            updateOptions();
+            return;
+        }
+        
+        const searchTermLower = searchTerm.toLowerCase();
+        const filteredOptions = options.filter(option => 
+            option.name.toLowerCase().includes(searchTermLower) ||
+            option.city_name.toLowerCase().includes(searchTermLower)
+        );
+        
+        updateOptions(filteredOptions);
+    }
+    
+    // События
+    selectInput.addEventListener('click', toggleDropdown);
+    
+    selectInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) {
+                toggleDropdown();
+            }
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    selectSearch.addEventListener('input', function() {
+        filterOptions(this.value);
+    });
+    
+    selectSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    // Закрытие при клике вне
+    document.addEventListener('click', function(e) {
+        if (!selectInput.contains(e.target) && !selectDropdown.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+    
+    // Инициализация с текущими значениями
+    if (selectedValue) {
+        const optionData = options.find(opt => opt.id.toString() === selectedValue.toString());
+        if (optionData) {
+            updateSelectedDisplay(optionData);
+            updateHiddenSelect();
+        }
+    }
+}
 </script>
 @endpush

@@ -654,23 +654,28 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="warehouse_id">Склад</label>
-                    <select name="warehouse_id" id="warehouse_id" class="form-control" required>
-                        <option value="">Выберите склад</option>
-                        @foreach($warehouses as $warehouse)
-                            <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="company_id">Поставщик</label>
+                    <label for="company_id">
+                        Поставщик
+                        <span class="tooltip-trigger" data-tooltip="Доступны только компании со статусами 'В работе' и 'Вторая очередь'. Компании со статусами 'Холд' и 'Отказ' недоступны для создания товаров.">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
+                                <path d="M8 6v4M8 4h.01" stroke="#133E71" stroke-width="2"/>
+                            </svg>
+                        </span>
+                    </label>
                     <select name="company_id" id="company_id" class="form-control" required>
                         <option value="">Выберите поставщика</option>
                         @foreach($companies as $company)
                             <option value="{{ $company->id }}" data-sku="{{ $company->sku }}">{{ $company->name }}</option>
                         @endforeach
                     </select>
+                    <small class="form-text text-muted">Компании со статусами "Холд" и "Отказ" недоступны для создания товаров</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="warehouse_display">Склад</label>
+                    <input type="text" id="warehouse_display" class="form-control" readonly placeholder="Будет определен автоматически по поставщику">
+                    <input type="hidden" name="warehouse_id" id="warehouse_id" value="">
                 </div>
             </div>
 
@@ -718,13 +723,21 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="product_address">Адрес станка</label>
-                    <input type="text" name="product_address" id="product_address" class="form-control" placeholder="Например: Цех 1, участок А, позиция 5">
+                    <label for="region_display">Регион</label>
+                    <input type="text" id="region_display" class="form-control" readonly placeholder="Будет определен автоматически по поставщику">
+                    <input type="hidden" name="region" id="region" value="">
                 </div>
 
                 <div class="form-group">
                     <label for="sku">Артикул</label>
                     <input type="text" name="sku" id="sku" class="form-control" placeholder="Генерируется автоматически при выборе поставщика (артикул_поставщика-дата_время)">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="product_address">Адрес станка</label>
+                    <input type="text" name="product_address" id="product_address" class="form-control" placeholder="Будет подставлен из основного адреса поставщика">
                 </div>
             </div>
 
@@ -1481,44 +1494,97 @@ document.addEventListener('DOMContentLoaded', function() {
         window.location.href = productUrl;
     }
     
-    // Автоматическая генерация артикула при выборе поставщика
+    // Автоматическая генерация артикула и загрузка информации при выборе поставщика
     const companySelect = document.getElementById('company_id');
     const skuInput = document.getElementById('sku');
+    const warehouseDisplay = document.getElementById('warehouse_display');
+    const warehouseHidden = document.getElementById('warehouse_id');
+    const regionDisplay = document.getElementById('region_display');
+    const regionHidden = document.getElementById('region');
+    const productAddressInput = document.getElementById('product_address');
 
-    if (companySelect && skuInput) {
+    if (companySelect) {
         companySelect.addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            if (selectedOption.value) {
-                // Получаем артикул поставщика из выбранной опции
-                const supplierSku = selectedOption.getAttribute('data-sku') || '000';
-                const date = new Date();
-                const dayMonth = date.getDate().toString().padStart(2, '0') + 
-                                (date.getMonth() + 1).toString().padStart(2, '0');
-                const year = date.getFullYear().toString();
-                const time = date.getHours().toString().padStart(2, '0') + 
-                            date.getMinutes().toString().padStart(2, '0');
-                
-                const generatedSku = supplierSku + '-' + dayMonth + year + '-' + time;
-                skuInput.value = generatedSku;
+            const selectedCompanyId = this.value;
+            
+            // Очищаем поля при смене компании
+            if (skuInput) skuInput.value = '';
+            if (warehouseDisplay) warehouseDisplay.value = '';
+            if (warehouseHidden) warehouseHidden.value = '';
+            if (regionDisplay) regionDisplay.value = '';
+            if (regionHidden) regionHidden.value = '';
+            if (productAddressInput) productAddressInput.value = '';
+            
+            if (selectedCompanyId) {
+                // Загружаем информацию о компании
+                fetch(`/company/${selectedCompanyId}/info`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.company) {
+                            const company = data.company;
+                            
+                            // Заполняем склад
+                            if (warehouseDisplay && company.warehouse) {
+                                warehouseDisplay.value = company.warehouse.name;
+                            }
+                            if (warehouseHidden && company.warehouse) {
+                                warehouseHidden.value = company.warehouse.id;
+                            }
+                            
+                            // Заполняем регион
+                            if (regionDisplay && company.region) {
+                                regionDisplay.value = company.region.name;
+                            }
+                            if (regionHidden && company.region) {
+                                regionHidden.value = company.region.id;
+                            }
+                            
+                            // Заполняем адрес станка
+                            if (productAddressInput && company.main_address) {
+                                productAddressInput.value = company.main_address;
+                            }
+                            
+                            // Генерируем артикул
+                            if (skuInput) {
+                                const supplierSku = company.sku || '000';
+                                const date = new Date();
+                                const dayMonth = date.getDate().toString().padStart(2, '0') + 
+                                                (date.getMonth() + 1).toString().padStart(2, '0');
+                                const year = date.getFullYear().toString();
+                                const time = date.getHours().toString().padStart(2, '0') + 
+                                            date.getMinutes().toString().padStart(2, '0');
+                                
+                                const generatedSku = supplierSku + '-' + dayMonth + year + '-' + time;
+                                skuInput.value = generatedSku;
+                            }
+                        } else {
+                            console.error('Ошибка при получении информации о компании:', data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при загрузке информации о компании:', error);
+                    });
             }
         });
 
         // Обрабатываем случай, когда пользователь очищает поле артикула
-        skuInput.addEventListener('blur', function() {
-            if (!this.value.trim() && companySelect.value) {
-                const selectedOption = companySelect.options[companySelect.selectedIndex];
-                const supplierSku = selectedOption.getAttribute('data-sku') || '000';
-                const date = new Date();
-                const dayMonth = date.getDate().toString().padStart(2, '0') + 
-                                (date.getMonth() + 1).toString().padStart(2, '0');
-                const year = date.getFullYear().toString();
-                const time = date.getHours().toString().padStart(2, '0') + 
-                            date.getMinutes().toString().padStart(2, '0');
-                
-                const generatedSku = supplierSku + '-' + dayMonth + year + '-' + time;
-                skuInput.value = generatedSku;
-            }
-        });
+        if (skuInput) {
+            skuInput.addEventListener('blur', function() {
+                if (!this.value.trim() && companySelect.value) {
+                    const selectedOption = companySelect.options[companySelect.selectedIndex];
+                    const supplierSku = selectedOption.getAttribute('data-sku') || '000';
+                    const date = new Date();
+                    const dayMonth = date.getDate().toString().padStart(2, '0') + 
+                                    (date.getMonth() + 1).toString().padStart(2, '0');
+                    const year = date.getFullYear().toString();
+                    const time = date.getHours().toString().padStart(2, '0') + 
+                                date.getMinutes().toString().padStart(2, '0');
+                    
+                    const generatedSku = supplierSku + '-' + dayMonth + year + '-' + time;
+                    skuInput.value = generatedSku;
+                }
+            });
+        }
     }
 
     // Обработка отправки формы с прогрессбаром

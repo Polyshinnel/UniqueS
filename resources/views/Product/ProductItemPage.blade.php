@@ -1,5 +1,9 @@
 @extends('layouts.layout')
 
+@section('header-title')
+    <h1 class="header-title">{{ $product->name }}</h1>
+@endsection
+
 @section('content')
 <div class="product-item-container">
     @if(session('success'))

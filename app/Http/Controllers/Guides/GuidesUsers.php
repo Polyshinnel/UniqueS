@@ -21,6 +21,38 @@ class GuidesUsers extends Controller
         return view('Guides.GuidesUsersPage', compact('users', 'regions', 'roles'));
     }
 
+    /**
+     * Очищает номер телефона от лишних символов и форматирует в формат +79030264456
+     */
+    private function cleanPhoneNumber($phone)
+    {
+        // Удаляем все символы кроме цифр
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+        
+        // Если номер начинается с 8, заменяем на 7
+        if (strlen($phone) === 11 && $phone[0] === '8') {
+            $phone = '7' . substr($phone, 1);
+        }
+        
+        // Если номер начинается с 7 и имеет 11 цифр, добавляем +
+        if (strlen($phone) === 11 && $phone[0] === '7') {
+            return '+' . $phone;
+        }
+        
+        // Если номер имеет 10 цифр и начинается с 9, добавляем +7
+        if (strlen($phone) === 10 && $phone[0] === '9') {
+            return '+7' . $phone;
+        }
+        
+        // Если номер уже в правильном формате, возвращаем как есть
+        if (strlen($phone) === 12 && $phone[0] === '+') {
+            return $phone;
+        }
+        
+        // В остальных случаях возвращаем как есть (будет отклонено валидацией)
+        return $phone;
+    }
+
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -30,11 +62,21 @@ class GuidesUsers extends Controller
             'role_id' => 'required|exists:role_lists,id',
             'regions' => 'required|array|min:1',
             'regions.*' => 'exists:regions,id',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => 'required|string|min:8',
             'has_whatsapp' => 'boolean',
             'has_telegram' => 'boolean',
             'active' => 'boolean',
         ]);
+
+        // Очищаем и форматируем номер телефона
+        $cleanPhone = $this->cleanPhoneNumber($validated['phone']);
+        
+        // Дополнительная валидация телефона
+        if (!preg_match('/^\+7[9]\d{9}$/', $cleanPhone)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['phone' => 'Номер телефона должен быть в формате +7(999)999-99-99 и начинаться с 9 после кода страны']);
+        }
 
         try {
             DB::beginTransaction();
@@ -42,7 +84,7 @@ class GuidesUsers extends Controller
             $user = User::create([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'phone' => $validated['phone'],
+                'phone' => $cleanPhone,
                 'role_id' => $validated['role_id'],
                 'has_whatsapp' => $request->has('has_whatsapp'),
                 'has_telegram' => $request->has('has_telegram'),
@@ -61,7 +103,16 @@ class GuidesUsers extends Controller
             }
 
             DB::commit();
-            return redirect()->route('users.index')->with('success', 'Сотрудник успешно добавлен');
+            
+            // Возвращаем данные созданного пользователя для отображения в модальном окне
+            return redirect()->route('users.index')->with([
+                'success' => 'Сотрудник успешно добавлен',
+                'created_user' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'password' => $validated['password'] // Возвращаем оригинальный пароль
+                ]
+            ]);
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->route('users.index')->with('error', 'Произошла ошибка при добавлении сотрудника');
@@ -82,11 +133,21 @@ class GuidesUsers extends Controller
             'role_id' => 'required|exists:role_lists,id',
             'regions' => 'required|array|min:1',
             'regions.*' => 'exists:regions,id',
-            'password' => 'nullable|string|min:8|confirmed',
+            'password' => 'nullable|string|min:8',
             'has_whatsapp' => 'boolean',
             'has_telegram' => 'boolean',
             'active' => 'boolean',
         ]);
+
+        // Очищаем и форматируем номер телефона
+        $cleanPhone = $this->cleanPhoneNumber($validated['phone']);
+        
+        // Дополнительная валидация телефона
+        if (!preg_match('/^\+7[9]\d{9}$/', $cleanPhone)) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['phone' => 'Номер телефона должен быть в формате +7(999)999-99-99 и начинаться с 9 после кода страны']);
+        }
 
         try {
             DB::beginTransaction();
@@ -94,7 +155,7 @@ class GuidesUsers extends Controller
             $userData = [
                 'name' => $validated['name'],
                 'email' => $validated['email'],
-                'phone' => $validated['phone'],
+                'phone' => $cleanPhone,
                 'role_id' => $validated['role_id'],
                 'has_whatsapp' => $request->has('has_whatsapp'),
                 'has_telegram' => $request->has('has_telegram'),

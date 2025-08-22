@@ -186,7 +186,7 @@
                 </div>
                 <div class="form-group">
                     <label for="phone">Телефон *</label>
-                    <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror" required>
+                    <input type="tel" name="phone" id="phone" value="{{ old('phone') }}" class="form-control @error('phone') is-invalid @enderror" placeholder="+7(999)999-99-99" required>
                     @error('phone')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
@@ -236,14 +236,25 @@
                 </div>
                 <div class="form-group">
                     <label for="password">Пароль *</label>
-                    <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" required>
+                    <div class="password-field">
+                        <input type="password" name="password" id="password" class="form-control @error('password') is-invalid @enderror" required>
+                        <button type="button" class="password-toggle" onclick="generatePassword('password')" title="Сгенерировать случайный пароль">
+                            <svg width="20" height="20" viewBox="0 0 32 32" fill="#133E71" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M31.255,11.746l-11-11c-0.141-0.141-0.369-0.141-0.51,0l-11,11c-0.141,0.141-0.141,0.368,0,0.509
+                                l2.386,2.386H1c-0.199,0-0.36,0.161-0.36,0.36v16c0,0.199,0.161,0.36,0.36,0.36h16c0.199,0,0.36-0.161,0.36-0.36V20.87l2.385,2.385
+                                c0.07,0.07,0.163,0.105,0.255,0.105s0.185-0.035,0.255-0.105l11-11C31.396,12.114,31.396,11.886,31.255,11.746z M16.64,30.64H1.36
+                                V15.36h15.28V30.64z M20,22.491l-2.64-2.641V15c0-0.199-0.161-0.36-0.36-0.36h-4.851L9.509,12L20,1.509L30.491,12L20,22.491z M14,19
+                                c0,0.552-0.448,1-1,1s-1-0.448-1-1s0.448-1,1-1S14,18.448,14,19z M20,6c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S20.552,6,20,6
+                                z M20,11c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S20.552,11,20,11z M15,11c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1
+                                S15.552,11,15,11z M25,11c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S25.552,11,25,11z M20,16c-0.552,0-1,0.448-1,1s0.448,1,1,1
+                                s1-0.448,1-1S20.552,16,20,16z M9,22c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S9.552,22,9,22z M5,26c-0.552,0-1,0.448-1,1
+                                s0.448,1,1,1s1-0.448,1-1S5.552,26,5,26z"/>
+                            </svg>
+                        </button>
+                    </div>
                     @error('password')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
-                </div>
-                <div class="form-group">
-                    <label for="password_confirmation">Подтверждение пароля *</label>
-                    <input type="password" name="password_confirmation" id="password_confirmation" class="form-control" required>
                 </div>
                 <div class="form-group">
                     <div class="switch-group">
@@ -286,6 +297,40 @@
     </div>
 </div>
 
+<!-- Модальное окно для отображения данных созданного пользователя -->
+<div id="createdUserModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Сотрудник успешно создан</h3>
+            <button class="close-btn" onclick="closeCreatedUserModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="created-user-info">
+                <div class="info-item">
+                    <label>Имя:</label>
+                    <span id="created_user_name"></span>
+                </div>
+                <div class="info-item">
+                    <label>Логин:</label>
+                    <span id="created_user_email"></span>
+                </div>
+                <div class="info-item">
+                    <label>Пароль:</label>
+                    <span id="created_user_password"></span>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" onclick="closeCreatedUserModal()">Закрыть</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Модальное окно для редактирования сотрудника -->
 <div id="editUserModal" class="modal">
     <div class="modal-content">
@@ -314,7 +359,7 @@
                 </div>
                 <div class="form-group">
                     <label for="edit_phone">Телефон *</label>
-                    <input type="tel" name="phone" id="edit_phone" class="form-control" required>
+                    <input type="tel" name="phone" id="edit_phone" class="form-control" placeholder="+7(999)999-99-99" required>
                     <span class="error-message" id="edit_phone_error" style="display: none;"></span>
                 </div>
                 <div class="form-group">
@@ -354,12 +399,23 @@
                 </div>
                 <div class="form-group">
                     <label for="edit_password">Новый пароль (оставьте пустым, если не хотите менять)</label>
-                    <input type="password" name="password" id="edit_password" class="form-control">
+                    <div class="password-field">
+                        <input type="password" name="password" id="edit_password" class="form-control">
+                        <button type="button" class="password-toggle" onclick="generatePassword('edit_password')" title="Сгенерировать случайный пароль">
+                            <svg width="20" height="20" viewBox="0 0 32 32" fill="#133E71" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M31.255,11.746l-11-11c-0.141-0.141-0.369-0.141-0.51,0l-11,11c-0.141,0.141-0.141,0.368,0,0.509
+                                l2.386,2.386H1c-0.199,0-0.36,0.161-0.36,0.36v16c0,0.199,0.161,0.36,0.36,0.36h16c0.199,0,0.36-0.161,0.36-0.36V20.87l2.385,2.385
+                                c0.07,0.07,0.163,0.105,0.255,0.105s0.185-0.035,0.255-0.105l11-11C31.396,12.114,31.396,11.886,31.255,11.746z M16.64,30.64H1.36
+                                V15.36h15.28V30.64z M20,22.491l-2.64-2.641V15c0-0.199-0.161-0.36-0.36-0.36h-4.851L9.509,12L20,1.509L30.491,12L20,22.491z M14,19
+                                c0,0.552-0.448,1-1,1s-1-0.448-1-1s0.448-1,1-1S14,18.448,14,19z M20,6c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S20.552,6,20,6
+                                z M20,11c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S20.552,11,20,11z M15,11c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1
+                                S15.552,11,15,11z M25,11c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S25.552,11,25,11z M20,16c-0.552,0-1,0.448-1,1s0.448,1,1,1
+                                s1-0.448,1-1S20.552,16,20,16z M9,22c-0.552,0-1,0.448-1,1s0.448,1,1,1s1-0.448,1-1S9.552,22,9,22z M5,26c-0.552,0-1,0.448-1,1
+                                s0.448,1,1,1s1-0.448,1-1S5.552,26,5,26z"/>
+                            </svg>
+                        </button>
+                    </div>
                     <span class="error-message" id="edit_password_error" style="display: none;"></span>
-                </div>
-                <div class="form-group">
-                    <label for="edit_password_confirmation">Подтверждение нового пароля</label>
-                    <input type="password" name="password_confirmation" id="edit_password_confirmation" class="form-control">
                 </div>
                 <div class="form-group">
                     <div class="switch-group">
@@ -929,13 +985,13 @@
 .user-form {
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 12px;
 }
 
 .form-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .form-group label {
@@ -980,7 +1036,7 @@
 .form-actions {
     display: flex;
     gap: 12px;
-    margin-top: 20px;
+    margin-top: 16px;
 }
 
 /* Стили для переключателей */
@@ -1314,6 +1370,88 @@
 .alert li {
     margin: 5px 0;
 }
+
+/* Стили для модального окна с данными созданного пользователя */
+.created-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.info-item label {
+    font-weight: 600;
+    color: #133E71;
+    min-width: 80px;
+    margin: 0;
+}
+
+.info-item span {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+/* Стили для поля пароля */
+.password-field {
+    position: relative;
+}
+
+.password-toggle {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #666;
+    padding: 5px;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+}
+
+.password-toggle:hover {
+    color: #133E71;
+    background: rgba(19, 62, 113, 0.1);
+}
+
+.password-toggle svg {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.3s ease;
+}
+
+.password-toggle:hover svg {
+    transform: rotate(180deg);
+}
+
+/* Анимация для кнопки при генерации */
+.password-toggle.generating {
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: translateY(-50%) rotate(0deg); }
+    to { transform: translateY(-50%) rotate(360deg); }
+}
 </style>
 @endpush
 
@@ -1335,6 +1473,7 @@ document.addEventListener('keydown', function(event) {
     if (event.key === 'Escape') {
         closeModal();
         closeEditModal();
+        closeCreatedUserModal();
     }
 });
 
@@ -1342,21 +1481,30 @@ document.addEventListener('keydown', function(event) {
 document.addEventListener('click', function(event) {
     const modal = document.getElementById('userModal');
     const editModal = document.getElementById('editUserModal');
+    const createdUserModal = document.getElementById('createdUserModal');
     if (event.target === modal) {
         closeModal();
     }
     if (event.target === editModal) {
         closeEditModal();
     }
+    if (event.target === createdUserModal) {
+        closeCreatedUserModal();
+    }
 });
 
 // Обработка успешного добавления/обновления пользователя
 document.addEventListener('DOMContentLoaded', function() {
     @if(session('success'))
-        setTimeout(() => {
-            closeModal();
-            closeEditModal();
-        }, 1000);
+        @if(session('created_user'))
+            // Показываем модальное окно с данными созданного пользователя
+            showCreatedUserModal(@json(session('created_user')));
+        @else
+            setTimeout(() => {
+                closeModal();
+                closeEditModal();
+            }, 1000);
+        @endif
     @endif
     
     // Инициализация мультиселекта для регионов
@@ -1608,7 +1756,12 @@ function openEditModal(userId) {
             // Заполняем форму данными
             document.getElementById('edit_name').value = user.name;
             document.getElementById('edit_email').value = user.email;
-            document.getElementById('edit_phone').value = user.phone;
+            
+            // Применяем маску к телефону
+            const phoneInput = document.getElementById('edit_phone');
+            phoneInput.value = user.phone;
+            applyPhoneMask(phoneInput);
+            
             document.getElementById('edit_role_id').value = user.role_id;
             document.getElementById('edit_has_whatsapp').checked = user.has_whatsapp;
             document.getElementById('edit_has_telegram').checked = user.has_telegram;
@@ -1676,6 +1829,26 @@ function closeEditModal() {
     resetEditForm();
 }
 
+// Функции для модального окна созданного пользователя
+function showCreatedUserModal(userData) {
+    // Заполняем данные в модальном окне
+    document.getElementById('created_user_name').textContent = userData.name;
+    document.getElementById('created_user_email').textContent = userData.email;
+    document.getElementById('created_user_password').textContent = userData.password;
+    
+    // Показываем модальное окно
+    document.getElementById('createdUserModal').classList.add('active');
+    document.body.style.overflow = 'hidden';
+    
+    // Закрываем модальное окно добавления пользователя
+    closeModal();
+}
+
+function closeCreatedUserModal() {
+    document.getElementById('createdUserModal').classList.remove('active');
+    document.body.style.overflow = '';
+}
+
 function resetEditForm() {
     const form = document.querySelector('#editUserForm');
     form.reset();
@@ -1705,5 +1878,206 @@ function resetEditForm() {
         }
     }
 }
+
+// Функция генерации случайного пароля
+function generatePassword(inputId) {
+    const button = event.target.closest('.password-toggle');
+    const input = document.getElementById(inputId);
+    
+    if (!button || !input) return;
+    
+    // Добавляем анимацию к кнопке
+    button.classList.add('generating');
+    
+    // Определяем наборы символов
+    const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+    const numbers = '0123456789';
+    const symbols = '_)()[]@-';
+    
+    // Создаем массив для пароля
+    let password = [];
+    
+    // Генерируем 10 символов
+    for (let i = 0; i < 10; i++) {
+        let charSet, randomChar;
+        
+        if (i === 0 || i === 9) {
+            // Первый и последний символ - только буквы и цифры
+            charSet = uppercase + lowercase + numbers;
+        } else {
+            // Остальные символы - любые
+            charSet = uppercase + lowercase + numbers + symbols;
+        }
+        
+        randomChar = charSet.charAt(Math.floor(Math.random() * charSet.length));
+        password.push(randomChar);
+    }
+    
+    // Перемешиваем массив (кроме первого и последнего символа)
+    for (let i = 1; i < password.length - 1; i++) {
+        const j = Math.floor(Math.random() * (password.length - 2)) + 1;
+        [password[i], password[j]] = [password[j], password[i]];
+    }
+    
+    // Объединяем в строку
+    const generatedPassword = password.join('');
+    
+    // Устанавливаем значение в поле
+    input.value = generatedPassword;
+    
+    // Показываем пароль на короткое время
+    const originalType = input.type;
+    input.type = 'text';
+    
+    // Убираем анимацию с кнопки
+    setTimeout(() => {
+        button.classList.remove('generating');
+    }, 300);
+    
+    // Скрываем пароль через 2 секунды
+    setTimeout(() => {
+        input.type = originalType;
+    }, 2000);
+    
+    // Показываем уведомление
+    showNotification('Пароль сгенерирован и скопирован в поле', 'success');
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type = 'info') {
+    // Создаем элемент уведомления
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#28a745' : '#17a2b8'};
+        color: white;
+        padding: 12px 20px;
+        border-radius: 6px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 10000;
+        font-size: 14px;
+        max-width: 300px;
+        animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    // Добавляем стили для анимации
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Добавляем уведомление на страницу
+    document.body.appendChild(notification);
+    
+    // Удаляем уведомление через 3 секунды
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Функция для маски телефона
+function applyPhoneMask(input) {
+    let value = input.value.replace(/\D/g, ''); // Удаляем все нецифровые символы
+    
+    // Если первая цифра 8, заменяем на 7
+    if (value.length > 0 && value[0] === '8') {
+        value = '7' + value.substring(1);
+    }
+    
+    // Если номер начинается с 7 и имеет больше 1 цифры, добавляем +
+    if (value.length > 1 && value[0] === '7') {
+        value = '+' + value;
+    }
+    
+    // Если номер начинается с 9 и имеет 10 цифр, добавляем +7
+    if (value.length === 10 && value[0] === '9') {
+        value = '+7' + value;
+    }
+    
+    // Применяем маску +7(999)999-99-99
+    if (value.startsWith('+7')) {
+        const digits = value.substring(2).replace(/\D/g, '');
+        
+        if (digits.length === 0) {
+            value = '+7';
+        } else if (digits.length <= 3) {
+            value = '+7(' + digits;
+        } else if (digits.length <= 6) {
+            value = '+7(' + digits.substring(0, 3) + ')' + digits.substring(3);
+        } else if (digits.length <= 8) {
+            value = '+7(' + digits.substring(0, 3) + ')' + digits.substring(3, 6) + '-' + digits.substring(6);
+        } else {
+            value = '+7(' + digits.substring(0, 3) + ')' + digits.substring(3, 6) + '-' + digits.substring(6, 8) + '-' + digits.substring(8, 10);
+        }
+    }
+    
+    input.value = value;
+}
+
+// Инициализация масок телефона при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    // Применяем маску к полям телефона
+    const phoneInputs = document.querySelectorAll('input[type="tel"]');
+    phoneInputs.forEach(input => {
+        // Применяем маску при вводе
+        input.addEventListener('input', function() {
+            applyPhoneMask(this);
+        });
+        
+        // Применяем маску при фокусе
+        input.addEventListener('focus', function() {
+            if (!this.value) {
+                this.value = '+7';
+            }
+        });
+        
+        // Применяем маску при потере фокуса
+        input.addEventListener('blur', function() {
+            if (this.value === '+7') {
+                this.value = '';
+            }
+        });
+        
+        // Предотвращаем ввод недопустимых символов
+        input.addEventListener('keydown', function(e) {
+            // Разрешаем: backspace, delete, tab, escape, enter, стрелки
+            if ([8, 9, 27, 13, 46, 37, 38, 39, 40].indexOf(e.keyCode) !== -1 ||
+                // Разрешаем Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+                (e.keyCode === 65 && e.ctrlKey === true) ||
+                (e.keyCode === 67 && e.ctrlKey === true) ||
+                (e.keyCode === 86 && e.ctrlKey === true) ||
+                (e.keyCode === 88 && e.ctrlKey === true)) {
+                return;
+            }
+            
+            // Разрешаем только цифры
+            if ((e.keyCode >= 48 && e.keyCode <= 57) || (e.keyCode >= 96 && e.keyCode <= 105)) {
+                return;
+            }
+            
+            e.preventDefault();
+        });
+    });
+    
+
+});
 </script>
 @endpush

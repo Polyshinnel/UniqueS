@@ -53,12 +53,16 @@ class ProductController extends Controller
 
     public function create()
     {
-        $warehouses = Warehouses::where('active', true)->get();
-        
         // Получаем только компании, принадлежащие авторизованному пользователю
         $currentUserId = auth()->id() ?? 1; // Временно используем id=1, пока нет аутентификации
-        $companies = Company::with('status')
+        
+        // Получаем ID статусов "Холд" и "Отказ"
+        $holdStatusId = \App\Models\CompanyStatus::where('name', 'Холд')->value('id');
+        $refuseStatusId = \App\Models\CompanyStatus::where('name', 'Отказ')->value('id');
+        
+        $companies = Company::with(['status', 'addresses', 'warehouses.regions'])
             ->where('owner_user_id', $currentUserId)
+            ->whereNotIn('company_status_id', [$holdStatusId, $refuseStatusId])
             ->get();
             
         $categories = ProductCategories::all();
@@ -68,7 +72,6 @@ class ProductController extends Controller
         $priceTypes = ProductPriceType::all();
 
         return view('Product.ProductCreatePage', compact(
-            'warehouses', 
             'companies', 
             'categories', 
             'statuses',
@@ -81,7 +84,6 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $validator = \Validator::make($request->all(), [
-            'warehouse_id' => 'required|exists:warehouses,id',
             'company_id' => 'required|exists:companies,id',
             'category_id' => 'required|exists:product_categories,id',
             'name' => 'required|string|max:255',
@@ -153,7 +155,8 @@ class ProductController extends Controller
 
         // Проверяем, что выбранная компания принадлежит авторизованному пользователю
         $currentUserId = auth()->id() ?? 1;
-        $company = Company::where('id', $validated['company_id'])
+        $company = Company::with(['warehouses.regions', 'addresses', 'status'])
+            ->where('id', $validated['company_id'])
             ->where('owner_user_id', $currentUserId)
             ->first();
 
@@ -170,8 +173,59 @@ class ProductController extends Controller
                 ->withErrors(['company_id' => 'Выбранная компания недоступна для вашего пользователя']);
         }
 
-        // Получаем регионального представителя из выбранной компании
-        $regionalUserId = $company->regional_user_id ?? 1;
+        // Проверяем, что компания не находится в статусе "Холд" или "Отказ"
+        if (in_array($company->status->name, ['Холд', 'Отказ'])) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Нельзя создавать товары для компаний со статусом "' . $company->status->name . '"'
+                ], 422);
+            }
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['company_id' => 'Нельзя создавать товары для компаний со статусом "' . $company->status->name . '"']);
+        }
+
+        // Получаем склад компании (первый связанный склад)
+        $warehouse = $company->warehouses->first();
+        if (!$warehouse) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'У выбранной компании нет связанного склада'
+                ], 422);
+            }
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['company_id' => 'У выбранной компании нет связанного склада']);
+        }
+
+        // Получаем регион склада
+        $region = $warehouse->regions->first();
+        if (!$region) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'У склада компании нет связанного региона'
+                ], 422);
+            }
+            
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['company_id' => 'У склада компании нет связанного региона']);
+        }
+
+        // Получаем регионального представителя для данного региона
+        $regionalUser = User::where('role_id', 3)
+            ->where('active', true)
+            ->whereHas('regions', function($query) use ($region) {
+                $query->where('regions.id', $region->id);
+            })
+            ->first();
+
+        $regionalUserId = $regionalUser ? $regionalUser->id : 1;
 
         // Генерируем SKU для товара, если не указан
         $sku = $validated['sku'] ?: $this->generateSku($validated['company_id']);
@@ -180,7 +234,7 @@ class ProductController extends Controller
         $product = Product::create([
             'name' => $validated['name'],
             'sku' => $sku,
-            'warehouse_id' => $validated['warehouse_id'],
+            'warehouse_id' => $warehouse->id,
             'company_id' => $validated['company_id'],
             'category_id' => $validated['category_id'],
             'owner_id' => $currentUserId, // Владелец товара - авторизованный пользователь
@@ -238,6 +292,12 @@ class ProductController extends Controller
         if ($request->hasFile('media_files')) {
             $this->handleMediaFiles($request->file('media_files'), $product);
         }
+
+        // Создаем лог о создании товара
+        $this->logProductCreation($product);
+
+        // Создаем задачу для владельца компании
+        $this->createProductAction($product);
 
         // Проверяем, является ли запрос AJAX
         \Log::info('Product store request', [
@@ -375,18 +435,16 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $product->load(['mediaOrdered']);
-        $warehouses = Warehouses::where('active', true)->get();
         $companies = Company::with('status')->get();
         $categories = ProductCategories::all();
         $statuses = ProductStatus::where('active', true)->get();
 
-        return view('Product.ProductEditPage', compact('product', 'warehouses', 'companies', 'categories', 'statuses'));
+        return view('Product.ProductEditPage', compact('product', 'companies', 'categories', 'statuses'));
     }
 
     public function update(Request $request, Product $product)
     {
         $request->validate([
-            'warehouse_id' => 'required|exists:warehouses,id',
             'company_id' => 'required|exists:companies,id',
             'category_id' => 'required|exists:product_categories,id',
             'name' => 'required|string|max:255',
@@ -408,10 +466,14 @@ class ProductController extends Controller
             'delete_media.*' => 'exists:products_media,id'
         ]);
 
+        // Получаем склад компании
+        $company = Company::with('warehouses')->find($request->company_id);
+        $warehouse = $company ? $company->warehouses->first() : null;
+
         // Обновляем товар
         $product->update([
             'name' => $request->name,
-            'warehouse_id' => $request->warehouse_id,
+            'warehouse_id' => $warehouse ? $warehouse->id : $product->warehouse_id,
             'company_id' => $request->company_id,
             'category_id' => $request->category_id,
             'status_id' => $request->status_id,
@@ -1118,5 +1180,78 @@ class ProductController extends Controller
                 'type_id' => $systemLogType ? $systemLogType->id : null
             ]);
         }
+    }
+
+    /**
+     * Логирует создание товара
+     */
+    private function logProductCreation(Product $product)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $logMessage = "Пользователь {$userName} создал товар {$product->name}";
+        
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        
+        ProductLog::create([
+            'product_id' => $product->id,
+            'user_id' => auth()->id(),
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
+    }
+
+    /**
+     * Создает задачу для владельца компании при создании товара
+     */
+    private function createProductAction(Product $product)
+    {
+        // Загружаем компанию с владельцем
+        $company = Company::with('owner')->find($product->company_id);
+        
+        if (!$company || !$company->owner) {
+            \Log::warning('Не удалось найти владельца компании для товара', [
+                'product_id' => $product->id,
+                'company_id' => $product->company_id
+            ]);
+            return;
+        }
+
+        // Создаем задачу для владельца компании
+        $action = ProductAction::create([
+            'product_id' => $product->id,
+            'user_id' => $company->owner_user_id, // ID владельца компании
+            'action' => 'Актуализировать данные по товару, уточнить цену и способ оплаты, принять решение по дальнейшим действиям.',
+            'expired_at' => now()->addDays(7), // Срок выполнения - 7 дней
+            'status' => false, // Задача не выполнена
+        ]);
+
+        // Создаем лог о создании задачи
+        $this->logActionCreation($product, $action, $company->owner);
+
+        \Log::info('Создана задача для владельца компании', [
+            'product_id' => $product->id,
+            'company_id' => $company->id,
+            'owner_user_id' => $company->owner_user_id,
+            'action_id' => $action->id
+        ]);
+    }
+
+    /**
+     * Логирует создание задачи для товара
+     */
+    private function logActionCreation(Product $product, ProductAction $action, User $owner)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $ownerName = $owner->name ?? 'Неизвестный владелец';
+        $logMessage = "Пользователь Система создал задачу для {$ownerName}: {$action->action}";
+        
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        
+        ProductLog::create([
+            'product_id' => $product->id,
+            'user_id' => auth()->id(),
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
     }
 }

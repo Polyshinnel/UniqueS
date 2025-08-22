@@ -60,18 +60,6 @@
 
             <div class="form-row">
                 <div class="form-group">
-                    <label for="warehouse_id">Склад</label>
-                    <select name="warehouse_id" id="warehouse_id" class="form-control" required>
-                        <option value="">Выберите склад</option>
-                        @foreach($warehouses as $warehouse)
-                            <option value="{{ $warehouse->id }}" {{ $product->warehouse_id == $warehouse->id ? 'selected' : '' }}>
-                                {{ $warehouse->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <div class="form-group">
                     <label for="company_id">Поставщик</label>
                     <select name="company_id" id="company_id" class="form-control" required>
                         <option value="">Выберите поставщика</option>
@@ -81,6 +69,12 @@
                             </option>
                         @endforeach
                     </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="warehouse_display">Склад</label>
+                    <input type="text" id="warehouse_display" class="form-control" readonly value="{{ $product->warehouse ? $product->warehouse->name : '' }}" placeholder="Будет определен автоматически по поставщику">
+                    <input type="hidden" name="warehouse_id" id="warehouse_id" value="{{ $product->warehouse_id }}">
                 </div>
             </div>
 
@@ -581,6 +575,40 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Инициализация
     showStep(1);
+    
+    // Обработка смены компании
+    const companySelect = document.getElementById('company_id');
+    const warehouseDisplay = document.getElementById('warehouse_display');
+    const warehouseHidden = document.getElementById('warehouse_id');
+
+    if (companySelect && warehouseDisplay && warehouseHidden) {
+        companySelect.addEventListener('change', function() {
+            const selectedCompanyId = this.value;
+            
+            if (selectedCompanyId) {
+                // Загружаем информацию о компании
+                fetch(`/company/${selectedCompanyId}/info`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.company && data.company.warehouse) {
+                            warehouseDisplay.value = data.company.warehouse.name;
+                            warehouseHidden.value = data.company.warehouse.id;
+                        } else {
+                            warehouseDisplay.value = '';
+                            warehouseHidden.value = '';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Ошибка при загрузке информации о компании:', error);
+                        warehouseDisplay.value = '';
+                        warehouseHidden.value = '';
+                    });
+            } else {
+                warehouseDisplay.value = '';
+                warehouseHidden.value = '';
+            }
+        });
+    }
 });
 </script>
 

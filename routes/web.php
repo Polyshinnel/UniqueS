@@ -32,7 +32,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/company/{company}/actions', [\App\Http\Controllers\Company\CompanyController::class, 'storeAction'])->name('companies.store-action');
     Route::post('/company/{company}/actions/{actionId}/complete', [\App\Http\Controllers\Company\CompanyController::class, 'completeAction'])->name('companies.complete-action');
     Route::get('/company/next-sku/{warehouseName}', [\App\Http\Controllers\Company\CompanyController::class, 'getNextSku'])->name('companies.next-sku');
-    Route::get('/company/regionals/{regionId}', [\App\Http\Controllers\Company\CompanyController::class, 'getRegionalsByRegion'])->name('companies.regionals-by-region');
+    Route::get('/company/regionals/warehouse/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getRegionalsByWarehouse'])->name('companies.regionals-by-warehouse');
+    Route::get('/company/warehouse-region/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getWarehouseRegion'])->name('companies.warehouse-region');
+    Route::get('/company/{company}/info', [\App\Http\Controllers\Company\CompanyController::class, 'getCompanyInfo'])->name('companies.info');
 
     Route::get('/product', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
     Route::get('/product/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');
