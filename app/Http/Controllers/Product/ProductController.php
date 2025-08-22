@@ -20,6 +20,10 @@ use App\Models\ProductLoading;
 use App\Models\ProductRemoval;
 use App\Models\ProductPaymentVariants;
 use App\Models\User;
+use App\Models\ProductLog;
+use App\Models\ProductAction;
+use App\Models\LogType;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
@@ -36,7 +40,12 @@ class ProductController extends Controller
             'loading.installStatus',
             'removal.installStatus',
             'paymentVariants.priceType',
-            'activeAdvertisement'
+            'activeAdvertisement',
+            'actions' => function($query) {
+                $query->where('status', false)
+                      ->latest('expired_at')
+                      ->limit(1);
+            }
         ])->get();
 
         return view('Product.ProductPage', compact('products'));
@@ -344,9 +353,23 @@ class ProductController extends Controller
             'activeAdvertisement'
         ]);
 
-        $statuses = ProductStatus::all();
+        // Получаем последний лог товара
+        $lastLog = ProductLog::where('product_id', $product->id)
+            ->with(['type', 'user'])
+            ->latest()
+            ->first();
 
-        return view('Product.ProductItemPage', compact('product', 'statuses'));
+        // Получаем последнее невыполненное действие товара
+        $lastAction = ProductAction::where('product_id', $product->id)
+            ->where('status', false)
+            ->latest('expired_at')
+            ->first();
+
+        $statuses = ProductStatus::all();
+        $checkStatuses = ProductCheckStatuses::all();
+        $installStatuses = ProductInstallStatuses::all();
+
+        return view('Product.ProductItemPage', compact('product', 'statuses', 'checkStatuses', 'installStatuses', 'lastLog', 'lastAction'));
     }
 
     public function edit(Product $product)
@@ -499,23 +522,39 @@ class ProductController extends Controller
     public function updateLoadingStatus(Request $request, Product $product)
     {
         $request->validate([
-            'install_status_id' => 'required|exists:product_install_statuses,id',
+            'status_id' => 'nullable|exists:product_install_statuses,id',
             'comment' => 'nullable|string|max:1000'
         ]);
 
         $loading = $product->loading->first();
+        
+        // Сохраняем старые значения для логирования
+        $oldStatusId = $loading ? $loading->install_status_id : null;
+        $oldComment = $loading ? $loading->comment : null;
+        
+        // Получаем названия статусов
+        $oldStatusName = $oldStatusId ? ProductInstallStatuses::find($oldStatusId)->name : null;
+        $newStatusName = $request->status_id ? ProductInstallStatuses::find($request->status_id)->name : null;
+        
+        // Нормализуем значения для сравнения
+        $oldCommentNormalized = $oldComment ? trim($oldComment) : '';
+        $newCommentNormalized = $request->comment ? trim($request->comment) : '';
+        
         if ($loading) {
             $loading->update([
-                'install_status_id' => $request->install_status_id,
+                'install_status_id' => $request->status_id,
                 'comment' => $request->comment
             ]);
         } else {
             ProductLoading::create([
                 'product_id' => $product->id,
-                'install_status_id' => $request->install_status_id,
+                'install_status_id' => $request->status_id ?? 1,
                 'comment' => $request->comment ?? ''
             ]);
         }
+
+        // Создаем запись в логе от имени системы
+        $this->logLoadingChanges($product, $oldStatusName, $newStatusName, $oldCommentNormalized, $newCommentNormalized);
 
         return response()->json([
             'success' => true,
@@ -526,23 +565,39 @@ class ProductController extends Controller
     public function updateRemovalStatus(Request $request, Product $product)
     {
         $request->validate([
-            'install_status_id' => 'required|exists:product_install_statuses,id',
+            'status_id' => 'nullable|exists:product_install_statuses,id',
             'comment' => 'nullable|string|max:1000'
         ]);
 
         $removal = $product->removal->first();
+        
+        // Сохраняем старые значения для логирования
+        $oldStatusId = $removal ? $removal->install_status_id : null;
+        $oldComment = $removal ? $removal->comment : null;
+        
+        // Получаем названия статусов
+        $oldStatusName = $oldStatusId ? ProductInstallStatuses::find($oldStatusId)->name : null;
+        $newStatusName = $request->status_id ? ProductInstallStatuses::find($request->status_id)->name : null;
+        
+        // Нормализуем значения для сравнения
+        $oldCommentNormalized = $oldComment ? trim($oldComment) : '';
+        $newCommentNormalized = $request->comment ? trim($request->comment) : '';
+        
         if ($removal) {
             $removal->update([
-                'install_status_id' => $request->install_status_id,
+                'install_status_id' => $request->status_id,
                 'comment' => $request->comment
             ]);
         } else {
             ProductRemoval::create([
                 'product_id' => $product->id,
-                'install_status_id' => $request->install_status_id,
+                'install_status_id' => $request->status_id ?? 1,
                 'comment' => $request->comment ?? ''
             ]);
         }
+
+        // Создаем запись в логе от имени системы
+        $this->logRemovalChanges($product, $oldStatusName, $newStatusName, $oldCommentNormalized, $newCommentNormalized);
 
         return response()->json([
             'success' => true,
@@ -553,23 +608,39 @@ class ProductController extends Controller
     public function updateCheckStatus(Request $request, Product $product)
     {
         $request->validate([
-            'check_status_id' => 'required|exists:product_check_statuses,id',
+            'status_id' => 'nullable|exists:product_check_statuses,id',
             'comment' => 'nullable|string|max:1000'
         ]);
 
         $check = $product->check->first();
+        
+        // Сохраняем старые значения для логирования
+        $oldStatusId = $check ? $check->check_status_id : null;
+        $oldComment = $check ? $check->comment : null;
+        
+        // Получаем названия статусов
+        $oldStatusName = $oldStatusId ? ProductCheckStatuses::find($oldStatusId)->name : null;
+        $newStatusName = $request->status_id ? ProductCheckStatuses::find($request->status_id)->name : null;
+        
+        // Нормализуем значения для сравнения
+        $oldCommentNormalized = $oldComment ? trim($oldComment) : '';
+        $newCommentNormalized = $request->comment ? trim($request->comment) : '';
+        
         if ($check) {
             $check->update([
-                'check_status_id' => $request->check_status_id,
+                'check_status_id' => $request->status_id,
                 'comment' => $request->comment
             ]);
         } else {
             ProductCheck::create([
                 'product_id' => $product->id,
-                'check_status_id' => $request->check_status_id,
+                'check_status_id' => $request->status_id ?? 1,
                 'comment' => $request->comment ?? ''
             ]);
         }
+
+        // Создаем запись в логе от имени системы
+        $this->logCheckChanges($product, $oldStatusName, $newStatusName, $oldCommentNormalized, $newCommentNormalized);
 
         return response()->json([
             'success' => true,
@@ -586,6 +657,20 @@ class ProductController extends Controller
             'purchase_price' => 'nullable|numeric|min:0',
             'payment_comment' => 'nullable|string|max:1000'
         ]);
+
+        // Сохраняем старые значения для логирования
+        $oldMainPaymentMethod = $product->main_payment_method;
+        $oldPurchasePrice = $product->purchase_price;
+        $oldPaymentComment = $product->payment_comment;
+        $oldPaymentVariants = $product->paymentVariants->pluck('price_type')->toArray();
+        
+        // Получаем названия типов оплаты
+        $oldMainPaymentName = $oldMainPaymentMethod ? ProductPriceType::find($oldMainPaymentMethod)->name : null;
+        $newMainPaymentName = $request->main_payment_method ? ProductPriceType::find($request->main_payment_method)->name : null;
+        
+        // Нормализуем значения для сравнения
+        $oldPaymentCommentNormalized = $oldPaymentComment ? trim($oldPaymentComment) : '';
+        $newPaymentCommentNormalized = $request->payment_comment ? trim($request->payment_comment) : '';
 
         // Обновляем основные поля оплаты
         $product->update([
@@ -610,6 +695,9 @@ class ProductController extends Controller
             }
         }
 
+        // Создаем запись в логе от имени системы
+        $this->logPaymentChanges($product, $oldMainPaymentName, $newMainPaymentName, $oldPurchasePrice, $request->purchase_price, $oldPaymentCommentNormalized, $newPaymentCommentNormalized, $oldPaymentVariants, $request->payment_types ?? []);
+
         return response()->json([
             'success' => true,
             'message' => 'Информация об оплате обновлена'
@@ -619,19 +707,416 @@ class ProductController extends Controller
     public function updateStatus(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'status_id' => 'required|exists:product_statuses,id'
+            'status_id' => 'required|exists:product_statuses,id',
+            'comment' => 'required|string|min:1'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Сохраняем старый статус
+            $oldStatus = $product->status;
+
+            // Обновляем статус товара
+            $product->update([
+                'status_id' => $validated['status_id']
+            ]);
+
+            $product->load('status');
+
+            // Получаем новый статус
+            $newStatus = $product->status;
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Смена статуса товара с '{$oldStatus->name}' на '{$newStatus->name}'. Комментарий: {$validated['comment']}";
+
+                $log = ProductLog::create([
+                    'product_id' => $product->id,
+                    'user_id' => auth()->id(),
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'status' => $product->status,
+                    'message' => 'Статус товара успешно обновлен',
+                    'log' => $log->load(['type', 'user'])
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'status' => $product->status,
+                'message' => 'Статус товара успешно обновлен'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении статуса: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateCharacteristics(Request $request, Product $product)
+    {
+        $request->validate([
+            'main_chars' => 'nullable|string|max:1000',
+            'complectation' => 'nullable|string|max:1000',
+            'mark' => 'nullable|string|max:1000'
         ]);
 
         $product->update([
-            'status_id' => $validated['status_id']
+            'main_chars' => $request->main_chars,
+            'complectation' => $request->complectation,
+            'mark' => $request->mark
         ]);
 
-        $product->load('status');
+        // Создаем запись в логах от имени системы
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        $currentUser = auth()->user();
+        $userName = $currentUser ? $currentUser->name : 'Неизвестный пользователь';
+        
+        $logMessage = "Пользователь {$userName} изменил блок Характеристик товара";
+        
+        ProductLog::create([
+            'product_id' => $product->id,
+            'type_id' => $systemLogType ? $systemLogType->id : null,
+            'log' => $logMessage,
+            'user_id' => null // От имени системы
+        ]);
 
         return response()->json([
             'success' => true,
-            'status' => $product->status,
-            'message' => 'Статус товара успешно обновлен'
+            'message' => 'Характеристики товара успешно обновлены'
         ]);
+    }
+
+    /**
+     * Получает все логи товара
+     */
+    public function getLogs(Product $product)
+    {
+        $logs = ProductLog::where('product_id', $product->id)
+            ->with(['type', 'user'])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'logs' => $logs
+        ]);
+    }
+
+    /**
+     * Получает все действия товара
+     */
+    public function getActions(Product $product)
+    {
+        $actions = ProductAction::where('product_id', $product->id)
+            ->orderBy('expired_at', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'actions' => $actions
+        ]);
+    }
+
+    /**
+     * Создает новое действие для товара
+     */
+    public function storeAction(Request $request, Product $product)
+    {
+        // Валидируем запрос
+        $validated = $request->validate([
+            'action' => 'required|string|max:1000',
+            'expired_at' => 'required|date|after:today'
+        ]);
+
+        try {
+            // Создаем новое действие
+            $action = ProductAction::create([
+                'product_id' => $product->id,
+                'user_id' => auth()->id(),
+                'action' => $validated['action'],
+                'expired_at' => $validated['expired_at'],
+                'status' => false,
+            ]);
+
+            // Создаем лог о создании действия
+            $commentType = LogType::where('name', 'Комментарий')->first();
+            
+            $logMessage = "Пользователь: " . auth()->user()->name . ", создал новую задачу: \"{$validated['action']}\" со сроком до {$validated['expired_at']}";
+            
+            $log = ProductLog::create([
+                'product_id' => $product->id,
+                'type_id' => $commentType ? $commentType->id : null,
+                'log' => $logMessage,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Действие успешно создано',
+                'action' => $action,
+                'log' => $log->load(['type', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании действия: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Отмечает действие как выполненное
+     */
+    public function completeAction(Request $request, Product $product, $actionId)
+    {
+        // Валидируем запрос
+        $validated = $request->validate([
+            'comment' => 'required|string|max:1000'
+        ]);
+
+        try {
+            // Находим действие
+            $action = ProductAction::where('id', $actionId)
+                ->where('product_id', $product->id)
+                ->first();
+
+            if (!$action) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Действие не найдено'
+                ], 404);
+            }
+
+            // Проверяем, что действие еще не выполнено
+            if ($action->status) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Действие уже выполнено'
+                ], 400);
+            }
+
+            // Отмечаем действие как выполненное
+            $action->status = true;
+            $action->completed_at = now();
+            $action->save();
+
+            // Создаем лог о выполнении действия
+            $commentType = LogType::where('name', 'Комментарий')->first();
+            
+            $logMessage = "Пользователь: " . auth()->user()->name . ", выполнил задачу \"{$action->action}\" с комментарием: {$validated['comment']}";
+            
+            $log = ProductLog::create([
+                'product_id' => $product->id,
+                'type_id' => $commentType ? $commentType->id : null,
+                'log' => $logMessage,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Действие успешно выполнено',
+                'log' => $log->load(['type', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при выполнении действия: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Логирует изменения в блоке "Информация о проверке"
+     */
+    private function logCheckChanges(Product $product, $oldStatusName, $newStatusName, $oldComment, $newComment)
+    {
+        $changes = [];
+        
+        // Проверяем изменение статуса
+        if ($oldStatusName !== $newStatusName) {
+            $oldStatusText = $oldStatusName ? "'{$oldStatusName}'" : "'Не указан'";
+            $newStatusText = $newStatusName ? "'{$newStatusName}'" : "'Не указан'";
+            $changes[] = "сменил статус с {$oldStatusText} на {$newStatusText}";
+        }
+        
+        // Проверяем изменение комментария
+        if ($oldComment !== $newComment) {
+            $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
+            $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
+            $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
+        }
+        
+        // Если есть изменения, создаем запись в логе
+        if (!empty($changes)) {
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $logMessage = "Пользователь {$userName} изменил блок Информация о проверки, " . implode(', ', $changes);
+            
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            ProductLog::create([
+                'product_id' => $product->id,
+                'user_id' => null, // От имени системы
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+        }
+    }
+
+    /**
+     * Логирует изменения в блоке "Информация о погрузке"
+     */
+    private function logLoadingChanges(Product $product, $oldStatusName, $newStatusName, $oldComment, $newComment)
+    {
+        $changes = [];
+        
+        // Проверяем изменение статуса
+        if ($oldStatusName !== $newStatusName) {
+            $oldStatusText = $oldStatusName ? "'{$oldStatusName}'" : "'Не указан'";
+            $newStatusText = $newStatusName ? "'{$newStatusName}'" : "'Не указан'";
+            $changes[] = "сменил статус с {$oldStatusText} на {$newStatusText}";
+        }
+        
+        // Проверяем изменение комментария
+        if ($oldComment !== $newComment) {
+            $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
+            $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
+            $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
+        }
+        
+        // Если есть изменения, создаем запись в логе
+        if (!empty($changes)) {
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $logMessage = "Пользователь {$userName} изменил блок Информация о погрузке, " . implode(', ', $changes);
+            
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            ProductLog::create([
+                'product_id' => $product->id,
+                'user_id' => null, // От имени системы
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+        }
+    }
+
+    /**
+     * Логирует изменения в блоке "Информация о демонтаже"
+     */
+    private function logRemovalChanges(Product $product, $oldStatusName, $newStatusName, $oldComment, $newComment)
+    {
+        $changes = [];
+        
+        // Проверяем изменение статуса
+        if ($oldStatusName !== $newStatusName) {
+            $oldStatusText = $oldStatusName ? "'{$oldStatusName}'" : "'Не указан'";
+            $newStatusText = $newStatusName ? "'{$newStatusName}'" : "'Не указан'";
+            $changes[] = "сменил статус с {$oldStatusText} на {$newStatusText}";
+        }
+        
+        // Проверяем изменение комментария
+        if ($oldComment !== $newComment) {
+            $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
+            $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
+            $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
+        }
+        
+        // Если есть изменения, создаем запись в логе
+        if (!empty($changes)) {
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $logMessage = "Пользователь {$userName} изменил блок Информация о демонтаже, " . implode(', ', $changes);
+            
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            ProductLog::create([
+                'product_id' => $product->id,
+                'user_id' => null, // От имени системы
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+        }
+    }
+
+    /**
+     * Логирует изменения в блоке "Информация о покупке"
+     */
+    private function logPaymentChanges(Product $product, $oldMainPaymentName, $newMainPaymentName, $oldPurchasePrice, $newPurchasePrice, $oldComment, $newComment, $oldVariants, $newVariants)
+    {
+        $changes = [];
+        
+        // Проверяем изменение основного способа оплаты
+        if ($oldMainPaymentName !== $newMainPaymentName) {
+            $oldPaymentText = $oldMainPaymentName ? "'{$oldMainPaymentName}'" : "'Не указан'";
+            $newPaymentText = $newMainPaymentName ? "'{$newMainPaymentName}'" : "'Не указан'";
+            $changes[] = "сменил основной способ оплаты с {$oldPaymentText} на {$newPaymentText}";
+        }
+        
+        // Проверяем изменение закупочной цены
+        if ($oldPurchasePrice != $newPurchasePrice) {
+            $oldPriceText = $oldPurchasePrice ? number_format($oldPurchasePrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
+            $newPriceText = $newPurchasePrice ? number_format($newPurchasePrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
+            $changes[] = "изменил закупочную цену с {$oldPriceText} на {$newPriceText}";
+        }
+        
+        // Проверяем изменение комментария
+        if ($oldComment !== $newComment) {
+            $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
+            $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
+            $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
+        }
+        
+        // Проверяем изменение вариантов оплаты
+        $oldVariantsSorted = sort($oldVariants);
+        $newVariantsSorted = sort($newVariants);
+        if ($oldVariantsSorted != $newVariantsSorted) {
+            $oldVariantsNames = [];
+            $newVariantsNames = [];
+            
+            foreach ($oldVariants as $variantId) {
+                $variant = ProductPriceType::find($variantId);
+                if ($variant) {
+                    $oldVariantsNames[] = $variant->name;
+                }
+            }
+            
+            foreach ($newVariants as $variantId) {
+                $variant = ProductPriceType::find($variantId);
+                if ($variant) {
+                    $newVariantsNames[] = $variant->name;
+                }
+            }
+            
+            $oldVariantsText = !empty($oldVariantsNames) ? "'" . implode(', ', $oldVariantsNames) . "'" : "'Не указаны'";
+            $newVariantsText = !empty($newVariantsNames) ? "'" . implode(', ', $newVariantsNames) . "'" : "'Не указаны'";
+            $changes[] = "изменил варианты оплаты с {$oldVariantsText} на {$newVariantsText}";
+        }
+        
+        // Если есть изменения, создаем запись в логе
+        if (!empty($changes)) {
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $logMessage = "Пользователь {$userName} изменил блок Информация о покупке, " . implode(', ', $changes);
+            
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            ProductLog::create([
+                'product_id' => $product->id,
+                'user_id' => null, // От имени системы
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+        }
     }
 }

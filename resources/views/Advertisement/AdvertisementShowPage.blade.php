@@ -1,6 +1,8 @@
 @extends('layouts.layout')
 
 @section('content')
+<!-- CSRF токен для AJAX запросов -->
+<meta name="csrf-token" content="{{ csrf_token() }}">
 <!-- Подключение Quill.js -->
 <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
 <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
@@ -88,53 +90,56 @@
                 <div class="info-block">
                     <h3>Следующие действия</h3>
                     <div class="action-info">
-                        <div class="action-date">
-                            <span class="label">Дата:</span>
-                            <span class="value">{{ now()->format('d.m.Y') }}</span>
-                        </div>
-                        <div class="action-description">
-                            <span class="label">Что требуется сделать:</span>
-                            <p>Проверить актуальность объявления, обновить информацию при необходимости</p>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-primary">Задать новое действие</button>
-                            <a href="#" class="btn btn-secondary">Подробнее</a>
-                        </div>
+                        @if($lastAction)
+                            <div class="action-date">
+                                <span class="label">Дата:</span>
+                                <span class="value">{{ $lastAction->expired_at->format('d.m.Y') }}</span>
+                            </div>
+                            <div class="action-description">
+                                <span class="label">Что требуется сделать:</span>
+                                <p>{{ $lastAction->action }}</p>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                                <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                            </div>
+                        @else
+                            <div class="action-description">
+                                <p style="color: #666; font-style: italic;">Нет активных действий</p>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
                 <div class="info-block">
                     <h3>Лог событий</h3>
                     <div class="events-list">
-                        <div class="event-item">
-                            <div class="event-header">
-                                <span class="event-type">Создание</span>
-                                <span class="event-date">{{ $advertisement->created_at->format('d.m.Y H:i:s') }}</span>
+                        @if($lastLog)
+                            <div class="event-item">
+                                <div class="event-header">
+                                    <span class="event-type" data-color="{{ $lastLog->type ? $lastLog->type->color : '#133E71' }}">{{ $lastLog->type ? $lastLog->type->name : 'Неизвестный тип' }}</span>
+                                    <span class="event-date">{{ $lastLog->created_at->format('d.m.Y H:i:s') }}</span>
+                                </div>
+                                <div class="event-content">
+                                    <p>{{ $lastLog->log }}</p>
+                                </div>
+                                <div class="event-footer">
+                                    <span>Создал: {{ $lastLog->user_id ? ($lastLog->user ? $lastLog->user->name : 'Пользователь не найден') : 'Система' }}</span>
+                                </div>
                             </div>
-                            <div class="event-content">
-                                <p>Объявление создано</p>
+                        @else
+                            <div class="event-item">
+                                <div class="event-content">
+                                    <p style="color: #666; font-style: italic;">Логи событий отсутствуют</p>
+                                </div>
                             </div>
-                            <div class="event-footer">
-                                <span>Создал: {{ $advertisement->creator->name ?? 'Создатель не указан' }}</span>
-                            </div>
-                        </div>
-                        @if($advertisement->published_at)
-                        <div class="event-item">
-                            <div class="event-header">
-                                <span class="event-type">Публикация</span>
-                                <span class="event-date">{{ $advertisement->published_at->format('d.m.Y H:i:s') }}</span>
-                            </div>
-                            <div class="event-content">
-                                <p>Объявление опубликовано</p>
-                            </div>
-                            <div class="event-footer">
-                                <span>Опубликовал: {{ $advertisement->creator->name ?? 'Не указан' }}</span>
-                            </div>
-                        </div>
                         @endif
                     </div>
                     <div class="events-actions">
-                        <button class="btn btn-secondary">История</button>
+                        <button class="btn btn-secondary" onclick="showLogsHistory()">История</button>
                     </div>
                 </div>
             </div>
@@ -216,21 +221,57 @@
                 </div>
             </div>
 
-            @if($advertisement->main_characteristics || $advertisement->complectation)
+            @if($advertisement->main_characteristics || $advertisement->complectation || true)
                 <div class="info-block">
-                    <h3>Характеристики</h3>
-                    @if($advertisement->main_characteristics)
-                        <div class="chars-item">
-                            <strong>Основные характеристики:</strong>
-                            <p>{{ $advertisement->main_characteristics }}</p>
+                    <div class="block-header">
+                        <h3>Характеристики</h3>
+                        <button class="edit-comment-btn" onclick="editCharacteristicsBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                    </div>
+                    
+                    <!-- Основные характеристики -->
+                    <div class="chars-item">
+                        <strong>Основные характеристики:</strong>
+                        <div class="chars-content" id="main_characteristics_content">
+                            @if($advertisement->main_characteristics)
+                                <p>{{ $advertisement->main_characteristics }}</p>
+                            @else
+                                <p class="no-comment">Основные характеристики не указаны</p>
+                            @endif
                         </div>
-                    @endif
-                    @if($advertisement->complectation)
-                        <div class="chars-item">
-                            <strong>Комплектация:</strong>
-                            <p>{{ $advertisement->complectation }}</p>
+                        <div class="chars-edit" id="main_characteristics_edit" style="display: none;">
+                            <textarea class="form-control" id="main_characteristics_textarea" rows="4" 
+                                      data-original="{{ $advertisement->main_characteristics ?? '' }}"
+                                      placeholder="Введите основные характеристики">{{ $advertisement->main_characteristics ?? '' }}</textarea>
                         </div>
-                    @endif
+                    </div>
+                    
+                    <!-- Комплектация -->
+                    <div class="chars-item">
+                        <strong>Комплектация:</strong>
+                        <div class="chars-content" id="complectation_content">
+                            @if($advertisement->complectation)
+                                <p>{{ $advertisement->complectation }}</p>
+                            @else
+                                <p class="no-comment">Комплектация не указана</p>
+                            @endif
+                        </div>
+                        <div class="chars-edit" id="complectation_edit" style="display: none;">
+                            <textarea class="form-control" id="complectation_textarea" rows="4" 
+                                      data-original="{{ $advertisement->complectation ?? '' }}"
+                                      placeholder="Введите комплектацию">{{ $advertisement->complectation ?? '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Кнопки действий для блока характеристик -->
+                    <div class="chars-actions" id="characteristics_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveCharacteristicsBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelCharacteristicsEdit()">Отмена</button>
+                    </div>
                 </div>
             @endif
 
@@ -721,6 +762,92 @@
     </div>
 </div>
 
+<!-- Модальное окно для создания нового действия -->
+<div id="newActionModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Создать новое действие</h3>
+            <span class="close" onclick="closeNewActionModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="newActionForm">
+                <div class="form-group">
+                    <label for="actionExpiredAt">Дата истечения срока задачи:</label>
+                    <input type="date" id="actionExpiredAt" name="expired_at" required min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                </div>
+                <div class="form-group">
+                    <label for="actionDescription">Что требуется сделать:</label>
+                    <textarea id="actionDescription" name="action" rows="4" placeholder="Опишите задачу..." required maxlength="1000"></textarea>
+                    <div class="char-counter">
+                        <span id="charCount">0</span>/1000
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeNewActionModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="saveNewAction()">Создать</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для комментария к выполненному действию -->
+<div id="actionCommentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Завершение действия</h3>
+            <span class="close" onclick="closeActionCommentModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Оставьте комментарий о выполнении действия.</p>
+            <div class="form-group">
+                <label for="actionComment">Комментарий:</label>
+                <textarea id="actionComment" rows="4" placeholder="Введите комментарий..." required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeActionCommentModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="saveActionComment()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для действий -->
+<div id="actionsModal" class="modal" style="display: none;">
+    <div class="modal-content actions-modal">
+        <div class="modal-header">
+            <h3>Список необходимых действий</h3>
+            <span class="close" onclick="closeActionsModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="actionsList">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка действий...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для истории логов -->
+<div id="logsHistoryModal" class="modal" style="display: none;">
+    <div class="modal-content logs-history-modal">
+        <div class="modal-header">
+            <h3>История логов объявления</h3>
+            <span class="close" onclick="closeLogsHistory()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="logsHistoryContent">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка логов...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
 /* Стили для отображения HTML-контента из редактора */
 .html-content {
@@ -1189,6 +1316,31 @@
     border-radius: 4px;
 }
 
+/* Стили для блока характеристик */
+.chars-content {
+    margin-top: 10px;
+}
+
+.chars-content p {
+    margin-top: 8px;
+    color: #495057;
+    line-height: 1.5;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+.chars-edit {
+    margin-top: 15px;
+}
+
+.chars-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: flex-end;
+}
+
 .price {
     font-size: 18px;
     font-weight: 700;
@@ -1299,6 +1451,10 @@
 .edit-comment-btn svg, .edit-payment-btn svg {
     width: 14px;
     height: 14px;
+}
+
+.payment-content{
+    margin-top: 10px;
 }
 
 .comment-content, .payment-content {
@@ -1680,6 +1836,147 @@
     font-size: 13px;
 }
 
+/* Стили для модальных окон действий и логов */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.form-group .form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: inherit;
+}
+
+.form-group .form-control:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.action-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    border-left: 4px solid #133E71;
+}
+
+.action-info p {
+    margin: 0;
+    color: #495057;
+}
+
+.history-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.history-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.history-date {
+    color: #666;
+    font-size: 12px;
+}
+
+.history-type {
+    background: #133E71;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.history-status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.history-status.completed {
+    background: #28a745;
+    color: white;
+}
+
+.history-status.pending {
+    background: #ffc107;
+    color: #212529;
+}
+
+.history-content {
+    margin-bottom: 10px;
+}
+
+.history-content p {
+    color: #495057;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.history-footer {
+    color: #666;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.no-data {
+    text-align: center;
+    color: #999;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+/* Стили для кнопок */
+.btn-success {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.btn-success:hover {
+    background: #218838;
+    transform: translateY(-1px);
+}
+
 /* Адаптивность */
 @media (max-width: 768px) {
     .advertisement-content {
@@ -1790,6 +2087,415 @@
 .check-status strong, .loading-status strong, .removal-status strong {
     min-width: 120px;
     flex-shrink: 0;
+}
+
+/* Стили для модальных окон */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 10000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-header {
+    padding: 20px 20px 0 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #133E71;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.close {
+    color: #aaa;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.close:hover,
+.close:focus {
+    color: #000;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-body p {
+    margin: 0 0 15px 0;
+    color: #666;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 80px;
+}
+
+.form-group textarea:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+}
+
+.form-group input[type="date"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.form-group input[type="date"]:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+}
+
+.modal-footer {
+    padding: 0 20px 20px 20px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-footer .btn {
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.3s ease;
+}
+
+.modal-footer .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.modal-footer .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+.modal-footer .btn-primary {
+    background-color: #133E71;
+    color: white;
+    border-color: #133E71;
+}
+
+.modal-footer .btn-primary:hover {
+    background-color: #0f2d56;
+    border-color: #0f2d56;
+}
+
+/* Стили для модального окна истории логов */
+.logs-history-modal {
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.logs-history-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+.logs-history-modal .modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.logs-history-modal .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.logs-history-modal .modal-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.logs-history-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Стили для модального окна действий */
+.actions-modal {
+    max-height: 600px;
+    display: flex;
+    flex-direction: column;
+}
+
+.actions-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    max-height: 500px;
+}
+
+.actions-modal .modal-body::-webkit-scrollbar {
+    width: 8px;
+}
+
+.actions-modal .modal-body::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.actions-modal .modal-body::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.actions-modal .modal-body::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* Стили для списка действий */
+.actions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.action-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.action-item.completed {
+    background: #e8f5e8;
+    border-color: #28a745;
+}
+
+.action-item.completed .action-text {
+    text-decoration: line-through;
+    color: #666;
+}
+
+.action-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.action-text {
+    font-weight: 500;
+    color: #495057;
+    line-height: 1.5;
+    margin: 0;
+    flex-grow: 1;
+}
+
+.action-date {
+    color: #666;
+    font-size: 12px;
+    margin-left: 15px;
+}
+
+.action-button {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 10px;
+}
+
+.action-button:hover {
+    background: #218838;
+}
+
+.action-button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.action-comment-block {
+    margin-top: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    display: none;
+}
+
+.action-comment-block.show {
+    display: block;
+    animation: fadeIn 0.3s ease;
+}
+
+.action-comment-textarea {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    resize: vertical;
+    min-height: 60px;
+    margin-bottom: 10px;
+}
+
+.action-comment-textarea:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+}
+
+.action-comment-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Стили для спиннера загрузки */
+.loading-spinner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #133E71;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 15px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-spinner p {
+    color: #666;
+    margin: 0;
+    font-size: 14px;
+}
+
+/* Стили для счетчика символов */
+.char-counter {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+    margin-top: 5px;
+}
+
+.char-counter span {
+    font-weight: bold;
+}
+
+/* Стили для списка логов в модальном окне */
+.logs-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.logs-history-item {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px;
+    border: 1px solid #e9ecef;
+}
+
+.logs-history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.logs-history-type {
+    background: #133E71;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.logs-history-date {
+    color: #666;
+    font-size: 12px;
+}
+
+.logs-history-content {
+    margin-bottom: 10px;
+}
+
+.logs-history-content p {
+    color: #495057;
+    line-height: 1.5;
+    margin: 0;
+}
+
+.logs-history-footer {
+    color: #666;
+    font-size: 12px;
 }
 </style>
 
@@ -1930,8 +2636,8 @@ function closeContactCard() {
 
 // Закрытие модального окна при клике вне его
 window.onclick = function(event) {
-    const modal = document.getElementById('contactModal');
-    if (event.target === modal) {
+    const contactModal = document.getElementById('contactModal');
+    if (event.target === contactModal) {
         closeContactCard();
     }
 }
@@ -2456,6 +3162,147 @@ function showNotification(message, type = 'info') {
     }, 3000);
 }
 
+// Функции для редактирования блока характеристик
+function editCharacteristicsBlock() {
+    // Скрываем все контенты и показываем формы редактирования для блока характеристик
+    const fields = ['main_characteristics', 'complectation'];
+    
+    fields.forEach(field => {
+        const content = document.getElementById(field + '_content');
+        const edit = document.getElementById(field + '_edit');
+        
+        if (content && edit) {
+            content.style.display = 'none';
+            edit.style.display = 'block';
+        }
+    });
+    
+    // Показываем кнопки действий для блока характеристик
+    document.getElementById('characteristics_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#characteristics_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelCharacteristicsEdit() {
+    // Восстанавливаем все оригинальные значения для блока характеристик
+    const fields = ['main_characteristics', 'complectation'];
+    
+    fields.forEach(field => {
+        const content = document.getElementById(field + '_content');
+        const edit = document.getElementById(field + '_edit');
+        const textarea = document.getElementById(field + '_textarea');
+        
+        if (content && edit && textarea) {
+            const originalValue = textarea.getAttribute('data-original') || '';
+            textarea.value = originalValue;
+            
+            content.style.display = 'block';
+            edit.style.display = 'none';
+        }
+    });
+    
+    // Скрываем кнопки действий для блока характеристик
+    document.getElementById('characteristics_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#characteristics_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveCharacteristicsBlock() {
+    // Собираем данные для отправки
+    const characteristicsData = {
+        main_characteristics: null,
+        complectation: null
+    };
+    
+    // Получаем основные характеристики
+    const mainCharacteristicsTextarea = document.getElementById('main_characteristics_textarea');
+    if (mainCharacteristicsTextarea) {
+        characteristicsData.main_characteristics = mainCharacteristicsTextarea.value.trim();
+    }
+    
+    // Получаем комплектацию
+    const complectationTextarea = document.getElementById('complectation_textarea');
+    if (complectationTextarea) {
+        characteristicsData.complectation = complectationTextarea.value.trim();
+    }
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#characteristics_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/advertisements/{{ $advertisement->id }}/characteristics`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(characteristicsData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateCharacteristicsDisplay(characteristicsData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveCharacteristicsOriginals(characteristicsData);
+            
+            // Скрываем формы редактирования
+            cancelCharacteristicsEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Характеристики успешно обновлены', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении характеристик', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+function updateCharacteristicsDisplay(characteristicsData) {
+    // Обновляем отображение основных характеристик
+    const mainCharacteristicsContent = document.getElementById('main_characteristics_content');
+    if (characteristicsData.main_characteristics) {
+        mainCharacteristicsContent.innerHTML = `<p>${characteristicsData.main_characteristics}</p>`;
+    } else {
+        mainCharacteristicsContent.innerHTML = '<p class="no-comment">Основные характеристики не указаны</p>';
+    }
+    
+    // Обновляем отображение комплектации
+    const complectationContent = document.getElementById('complectation_content');
+    if (characteristicsData.complectation) {
+        complectationContent.innerHTML = `<p>${characteristicsData.complectation}</p>`;
+    } else {
+        complectationContent.innerHTML = '<p class="no-comment">Комплектация не указана</p>';
+    }
+}
+
+function saveCharacteristicsOriginals(characteristicsData) {
+    // Сохраняем новые значения как оригинальные для блока характеристик
+    const mainCharacteristicsTextarea = document.getElementById('main_characteristics_textarea');
+    if (mainCharacteristicsTextarea) {
+        mainCharacteristicsTextarea.setAttribute('data-original', characteristicsData.main_characteristics || '');
+    }
+    
+    const complectationTextarea = document.getElementById('complectation_textarea');
+    if (complectationTextarea) {
+        complectationTextarea.setAttribute('data-original', characteristicsData.complectation || '');
+    }
+}
+
 // Добавляем CSS анимации для уведомлений
 const style = document.createElement('style');
 style.textContent = `
@@ -2925,6 +3772,559 @@ function saveRemovalOriginals(removalData) {
         commentTextarea.setAttribute('data-original', removalData.comment || '');
     }
 }
+
+// Глобальные переменные для работы с действиями
+let currentActionId = null;
+let currentActionText = null;
+let currentAdvertisementId = {{ $advertisement->id }};
+
+// Функции для работы с модальным окном создания нового действия
+function showNewActionModal() {
+    const modal = document.getElementById('newActionModal');
+    const form = document.getElementById('newActionForm');
+    
+    // Очищаем форму
+    form.reset();
+    
+    // Устанавливаем минимальную дату (завтра)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    document.getElementById('actionExpiredAt').min = tomorrowStr;
+    
+    // Сбрасываем счетчик символов
+    document.getElementById('charCount').textContent = '0';
+    
+    // Показываем модальное окно
+    modal.style.display = 'block';
+    
+    // Фокусируемся на поле описания
+    document.getElementById('actionDescription').focus();
+}
+
+function closeNewActionModal() {
+    const modal = document.getElementById('newActionModal');
+    modal.style.display = 'none';
+}
+
+function saveNewAction() {
+    const form = document.getElementById('newActionForm');
+    const expiredAt = document.getElementById('actionExpiredAt').value;
+    const action = document.getElementById('actionDescription').value.trim();
+    
+    if (!expiredAt) {
+        alert('Пожалуйста, выберите дату истечения срока');
+        return;
+    }
+    
+    if (!action) {
+        alert('Пожалуйста, опишите задачу');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const saveButton = document.querySelector('#newActionModal .btn-primary');
+    const originalText = saveButton.textContent;
+    saveButton.textContent = 'Создание...';
+    saveButton.disabled = true;
+    
+    // Отправляем запрос на сервер
+    fetch(`/advertisements/${currentAdvertisementId}/actions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            action: action,
+            expired_at: expiredAt
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем модальное окно
+            closeNewActionModal();
+            
+            // Обновляем отображение действий
+            updateActionsDisplay(data.action);
+            
+            // Обновляем лог событий, если получен новый лог
+            if (data.log) {
+                updateEventsLog(data.log);
+            }
+            
+            // Показываем уведомление об успехе
+            showNotification('Действие успешно создано', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при создании действия');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при создании действия', 'error');
+    })
+    .finally(() => {
+        // Возвращаем оригинальное состояние кнопки
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
+    });
+}
+
+function updateActionsDisplay(newAction) {
+    // Обновляем блок действий
+    const actionInfo = document.querySelector('.action-info');
+    if (actionInfo) {
+        const actionDate = actionInfo.querySelector('.action-date');
+        const actionDescription = actionInfo.querySelector('.action-description');
+        const actionButtons = actionInfo.querySelector('.action-buttons');
+        
+        if (actionDate && actionDescription) {
+            // Форматируем дату
+            const expiredDate = new Date(newAction.expired_at);
+            const formattedDate = expiredDate.toLocaleDateString('ru-RU');
+            
+            // Обновляем содержимое
+            actionDate.innerHTML = `
+                <span class="label">Дата:</span>
+                <span class="value">${formattedDate}</span>
+            `;
+            
+            actionDescription.innerHTML = `
+                <span class="label">Что требуется сделать:</span>
+                <p>${newAction.action}</p>
+            `;
+            
+            // Убеждаемся, что кнопки на месте
+            if (!actionButtons.querySelector('.btn-secondary')) {
+                actionButtons.innerHTML = `
+                    <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                    <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                `;
+            }
+        }
+    }
+}
+
+function updateEventsLog(log) {
+    const eventsList = document.querySelector('.events-list');
+    
+    // Создаем новый элемент лога
+    const eventItem = document.createElement('div');
+    eventItem.className = 'event-item';
+    
+    const eventHeader = document.createElement('div');
+    eventHeader.className = 'event-header';
+    
+    const eventType = document.createElement('span');
+    eventType.className = 'event-type';
+    eventType.textContent = log.type ? log.type.name : 'Неизвестный тип';
+    if (log.type && log.type.color) {
+        eventType.style.backgroundColor = log.type.color;
+    }
+    
+    const eventDate = document.createElement('span');
+    eventDate.className = 'event-date';
+    eventDate.textContent = new Date(log.created_at).toLocaleString('ru-RU');
+    
+    eventHeader.appendChild(eventType);
+    eventHeader.appendChild(eventDate);
+    
+    const eventContent = document.createElement('div');
+    eventContent.className = 'event-content';
+    const contentParagraph = document.createElement('p');
+    contentParagraph.textContent = log.log;
+    eventContent.appendChild(contentParagraph);
+    
+    const eventFooter = document.createElement('div');
+    eventFooter.className = 'event-footer';
+    const footerSpan = document.createElement('span');
+    footerSpan.textContent = `Создал: ${log.user ? log.user.name : 'Система'}`;
+    eventFooter.appendChild(footerSpan);
+    
+    eventItem.appendChild(eventHeader);
+    eventItem.appendChild(eventContent);
+    eventItem.appendChild(eventFooter);
+    
+    // Добавляем новый лог в начало списка
+    if (eventsList.firstChild) {
+        eventsList.insertBefore(eventItem, eventsList.firstChild);
+    } else {
+        eventsList.appendChild(eventItem);
+    }
+    
+    // Удаляем сообщение об отсутствии логов, если оно есть
+    const noLogsMessage = eventsList.querySelector('.event-item p[style*="color: #666"]');
+    if (noLogsMessage) {
+        noLogsMessage.parentElement.parentElement.remove();
+    }
+}
+
+// Функции для работы с модальным окном действий
+function showActionsModal() {
+    const modal = document.getElementById('actionsModal');
+    modal.style.display = 'block';
+    
+    // Загружаем действия
+    loadActions();
+}
+
+function closeActionsModal() {
+    const modal = document.getElementById('actionsModal');
+    modal.style.display = 'none';
+}
+
+function loadActions() {
+    const content = document.getElementById('actionsList');
+    
+    // Показываем спиннер загрузки
+    content.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка действий...</p>
+        </div>
+    `;
+    
+    // Отправляем запрос на сервер
+    fetch(`/advertisements/${currentAdvertisementId}/actions`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayActions(data.actions);
+        } else {
+            throw new Error(data.message || 'Ошибка при загрузке действий');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #dc3545;">Ошибка при загрузке действий: ${error.message}</p>
+            </div>
+        `;
+    });
+}
+
+function displayActions(actions) {
+    const content = document.getElementById('actionsList');
+    
+    if (actions.length === 0) {
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #666; font-style: italic;">Действия отсутствуют</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const actionsList = document.createElement('div');
+    actionsList.className = 'actions-list';
+    
+    actions.forEach(action => {
+        const actionItem = document.createElement('div');
+        actionItem.className = `action-item ${action.status ? 'completed' : ''}`;
+        actionItem.setAttribute('data-action-id', action.id);
+        
+        const actionHeader = document.createElement('div');
+        actionHeader.className = 'action-header';
+        
+        const actionText = document.createElement('p');
+        actionText.className = 'action-text';
+        actionText.textContent = action.action;
+        
+        const actionDate = document.createElement('span');
+        actionDate.className = 'action-date';
+        actionDate.textContent = new Date(action.expired_at).toLocaleDateString('ru-RU');
+        
+        const actionButton = document.createElement('button');
+        actionButton.className = 'action-button';
+        actionButton.textContent = action.status ? 'Выполнено' : 'Я сделал';
+        actionButton.disabled = action.status;
+        
+        if (!action.status) {
+            actionButton.onclick = () => showActionCommentBlock(action.id, action.action);
+        }
+        
+        actionHeader.appendChild(actionText);
+        actionHeader.appendChild(actionDate);
+        actionHeader.appendChild(actionButton);
+        
+        actionItem.appendChild(actionHeader);
+        
+        // Добавляем блок для комментария
+        const commentBlock = document.createElement('div');
+        commentBlock.className = 'action-comment-block';
+        commentBlock.id = `comment-block-${action.id}`;
+        commentBlock.innerHTML = `
+            <textarea class="action-comment-textarea" placeholder="Введите комментарий о выполнении..."></textarea>
+            <div class="action-comment-buttons">
+                <button class="btn btn-secondary btn-sm" onclick="closeActionCommentBlock(${action.id})">Отмена</button>
+                <button class="btn btn-primary btn-sm" onclick="completeAction(${action.id})">Выполнить</button>
+            </div>
+        `;
+        
+        actionItem.appendChild(commentBlock);
+        actionsList.appendChild(actionItem);
+    });
+    
+    content.innerHTML = '';
+    content.appendChild(actionsList);
+}
+
+function showActionCommentBlock(actionId, actionText) {
+    currentActionId = actionId;
+    currentActionText = actionText;
+    
+    // Скрываем все блоки комментариев
+    document.querySelectorAll('.action-comment-block').forEach(block => {
+        block.classList.remove('show');
+    });
+    
+    // Показываем нужный блок
+    const commentBlock = document.getElementById(`comment-block-${actionId}`);
+    if (commentBlock) {
+        commentBlock.classList.add('show');
+        commentBlock.querySelector('.action-comment-textarea').focus();
+    }
+}
+
+function closeActionCommentBlock(actionId) {
+    const commentBlock = document.getElementById(`comment-block-${actionId}`);
+    if (commentBlock) {
+        commentBlock.classList.remove('show');
+        commentBlock.querySelector('.action-comment-textarea').value = '';
+    }
+}
+
+function completeAction(actionId) {
+    const commentBlock = document.getElementById(`comment-block-${actionId}`);
+    const comment = commentBlock.querySelector('.action-comment-textarea').value.trim();
+    
+    if (!comment) {
+        alert('Пожалуйста, введите комментарий о выполнении действия');
+        return;
+    }
+    
+    const actionButton = commentBlock.querySelector('.btn-primary');
+    const originalText = actionButton.textContent;
+    actionButton.textContent = 'Выполнение...';
+    actionButton.disabled = true;
+    
+    fetch(`/advertisements/${currentAdvertisementId}/actions/${actionId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            comment: comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение действия
+            const actionItem = document.querySelector(`[data-action-id="${actionId}"]`);
+            if (actionItem) {
+                actionItem.classList.add('completed');
+                const button = actionItem.querySelector('.action-button');
+                button.textContent = 'Выполнено';
+                button.disabled = true;
+                closeActionCommentBlock(actionId);
+            }
+            
+            // Обновляем лог событий, если получен новый лог
+            if (data.log) {
+                updateEventsLog(data.log);
+            }
+            
+            showNotification('Действие успешно выполнено', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при выполнении действия');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при выполнении действия', 'error');
+    })
+    .finally(() => {
+        actionButton.textContent = originalText;
+        actionButton.disabled = false;
+    });
+}
+
+// Функции для работы с модальным окном истории логов
+function showLogsHistory() {
+    const modal = document.getElementById('logsHistoryModal');
+    modal.style.display = 'block';
+    
+    // Загружаем логи
+    loadLogs();
+}
+
+function closeLogsHistory() {
+    const modal = document.getElementById('logsHistoryModal');
+    modal.style.display = 'none';
+}
+
+function loadLogs() {
+    const content = document.getElementById('logsHistoryContent');
+    
+    // Показываем спиннер загрузки
+    content.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка логов...</p>
+        </div>
+    `;
+    
+    // Отправляем запрос на сервер
+    fetch(`/advertisements/${currentAdvertisementId}/logs`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayLogs(data.logs);
+        } else {
+            throw new Error(data.message || 'Ошибка при загрузке логов');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #dc3545;">Ошибка при загрузке логов: ${error.message}</p>
+            </div>
+        `;
+    });
+}
+
+function displayLogs(logs) {
+    const content = document.getElementById('logsHistoryContent');
+    
+    if (logs.length === 0) {
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #666; font-style: italic;">Логи отсутствуют</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const logsList = document.createElement('div');
+    logsList.className = 'logs-history-list';
+    
+    logs.forEach(log => {
+        const logItem = document.createElement('div');
+        logItem.className = 'logs-history-item';
+        
+        const logHeader = document.createElement('div');
+        logHeader.className = 'logs-history-header';
+        
+        const logType = document.createElement('span');
+        logType.className = 'logs-history-type';
+        logType.textContent = log.type ? log.type.name : 'Неизвестный тип';
+        if (log.type && log.type.color) {
+            logType.style.backgroundColor = log.type.color;
+        }
+        
+        const logDate = document.createElement('span');
+        logDate.className = 'logs-history-date';
+        logDate.textContent = new Date(log.created_at).toLocaleString('ru-RU');
+        
+        logHeader.appendChild(logType);
+        logHeader.appendChild(logDate);
+        
+        const logContent = document.createElement('div');
+        logContent.className = 'logs-history-content';
+        const contentParagraph = document.createElement('p');
+        contentParagraph.textContent = log.log;
+        logContent.appendChild(contentParagraph);
+        
+        const logFooter = document.createElement('div');
+        logFooter.className = 'logs-history-footer';
+        logFooter.textContent = `Создал: ${log.user ? log.user.name : 'Система'}`;
+        
+        logItem.appendChild(logHeader);
+        logItem.appendChild(logContent);
+        logItem.appendChild(logFooter);
+        
+        logsList.appendChild(logItem);
+    });
+    
+    content.innerHTML = '';
+    content.appendChild(logsList);
+}
+
+// Обработчик для счетчика символов
+document.addEventListener('DOMContentLoaded', function() {
+    const actionDescription = document.getElementById('actionDescription');
+    const charCount = document.getElementById('charCount');
+    
+    if (actionDescription && charCount) {
+        actionDescription.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+    
+    // Устанавливаем цвета для типов событий
+    const eventTypes = document.querySelectorAll('.event-type[data-color]');
+    eventTypes.forEach(function(element) {
+        const color = element.getAttribute('data-color');
+        element.style.backgroundColor = color;
+    });
+});
+
+// Обновляем обработчики закрытия модальных окон
+document.addEventListener('click', function(event) {
+    const logsModal = document.getElementById('logsHistoryModal');
+    const actionsModal = document.getElementById('actionsModal');
+    const newActionModal = document.getElementById('newActionModal');
+    
+    if (event.target === logsModal) {
+        closeLogsHistory();
+    }
+    
+    if (event.target === actionsModal) {
+        closeActionsModal();
+    }
+    
+    if (event.target === newActionModal) {
+        closeNewActionModal();
+    }
+});
+
+// Обновляем обработчики закрытия по Escape
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const logsModal = document.getElementById('logsHistoryModal');
+        const actionsModal = document.getElementById('actionsModal');
+        const newActionModal = document.getElementById('newActionModal');
+        
+        if (logsModal && logsModal.style.display === 'block') {
+            closeLogsHistory();
+        }
+        
+        if (actionsModal && actionsModal.style.display === 'block') {
+            closeActionsModal();
+        }
+        
+        if (newActionModal && newActionModal.style.display === 'block') {
+            closeNewActionModal();
+        }
+    }
+});
 </script>
 
 @endsection 

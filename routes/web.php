@@ -49,7 +49,14 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/product/{product}/removal-status', [\App\Http\Controllers\Product\ProductController::class, 'updateRemovalStatus'])->name('products.update-removal-status');
     Route::patch('/product/{product}/check-status', [\App\Http\Controllers\Product\ProductController::class, 'updateCheckStatus'])->name('products.update-check-status');
     Route::patch('/product/{product}/payment-variants', [\App\Http\Controllers\Product\ProductController::class, 'updatePaymentVariants'])->name('products.update-payment-variants');
+    Route::patch('/product/{product}/characteristics', [\App\Http\Controllers\Product\ProductController::class, 'updateCharacteristics'])->name('products.update-characteristics');
     Route::patch('/product/{product}/status', [\App\Http\Controllers\Product\ProductController::class, 'updateStatus'])->name('products.update-status');
+    
+    // Маршруты для логов и действий товаров
+    Route::get('/product/{product}/logs', [\App\Http\Controllers\Product\ProductController::class, 'getLogs'])->name('products.logs');
+    Route::get('/product/{product}/actions', [\App\Http\Controllers\Product\ProductController::class, 'getActions'])->name('products.actions');
+    Route::post('/product/{product}/actions', [\App\Http\Controllers\Product\ProductController::class, 'storeAction'])->name('products.store-action');
+    Route::post('/product/{product}/actions/{actionId}/complete', [\App\Http\Controllers\Product\ProductController::class, 'completeAction'])->name('products.complete-action');
 
     Route::get('/adv', [\App\Http\Controllers\AdvPageController::class, 'index'])->name('adv.index');
 
@@ -75,6 +82,14 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/advertisements/{advertisement}/check-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCheckStatus'])->name('advertisements.update-check-status');
     Route::patch('/advertisements/{advertisement}/loading-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateLoadingStatus'])->name('advertisements.update-loading-status');
     Route::patch('/advertisements/{advertisement}/removal-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateRemovalStatus'])->name('advertisements.update-removal-status');
+    Route::patch('/advertisements/{advertisement}/sale-info', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateSaleInfo'])->name('advertisements.update-sale-info');
+    Route::patch('/advertisements/{advertisement}/characteristics', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCharacteristics'])->name('advertisements.update-characteristics');
+    
+    // Маршруты для логов и действий объявлений
+    Route::get('/advertisements/{advertisement}/logs', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getLogs'])->name('advertisements.logs');
+    Route::get('/advertisements/{advertisement}/actions', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getActions'])->name('advertisements.actions');
+    Route::post('/advertisements/{advertisement}/actions', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'storeAction'])->name('advertisements.store-action');
+    Route::post('/advertisements/{advertisement}/actions/{actionId}/complete', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'completeAction'])->name('advertisements.complete-action');
 
     Route::get('/guide', [GuidesMain::class, 'index']);
 });

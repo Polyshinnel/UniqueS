@@ -231,4 +231,33 @@ class Advertisement extends Model
         ];
         $this->save();
     }
+
+    // Связь с логами
+    public function logs(): HasMany
+    {
+        return $this->hasMany(AdvLog::class);
+    }
+
+    // Связь с действиями
+    public function actions(): HasMany
+    {
+        return $this->hasMany(AdvAction::class);
+    }
+
+    // Получить последнее доступное действие
+    public function getLastAvailableAction()
+    {
+        return $this->actions()
+            ->where('status', false)
+            ->latest('expired_at')
+            ->first();
+    }
+
+    // Получить активное объявление для товара
+    public function getActiveAdvertisement()
+    {
+        return $this->where('product_id', $this->product_id)
+                   ->where('status', 'active')
+                   ->first();
+    }
 }

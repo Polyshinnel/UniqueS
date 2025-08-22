@@ -91,4 +91,15 @@ class Product extends Model
     {
         return $this->hasOne(Advertisement::class)->where('status', 'active');
     }
+
+    // Связи для логов и действий
+    public function logs(): HasMany
+    {
+        return $this->hasMany(ProductLog::class);
+    }
+
+    public function actions(): HasMany
+    {
+        return $this->hasMany(ProductAction::class);
+    }
 }

@@ -26,7 +26,7 @@
                     <th>Категория</th>
                     <th>Поставщик</th>
                     <th>Характеристики</th>
-                    <th>Дата след. действия</th>
+                    <th>Следующее действие</th>
                     <th>Статус</th>
                 </tr>
             </thead>
@@ -193,8 +193,20 @@
 
                     <td class="action-cell">
                         <div class="action-info">
-                            <div class="action-date">{{ $advertisement->created_at->format('d.m.Y H:i') }}</div>
-                            <div class="action-text">Проверить статус объявления</div>
+                            @if($advertisement->getLastAvailableAction())
+                                @php $lastAction = $advertisement->getLastAvailableAction(); @endphp
+                                <div class="action-date">{{ $lastAction->expired_at->format('d.m.Y') }}</div>
+                                <div class="action-text">{{ Str::limit($lastAction->action, 80) }}</div>
+                                <div class="action-status">
+                                    <span class="status-indicator pending">Ожидает выполнения</span>
+                                </div>
+                            @else
+                                <div class="action-date">{{ $advertisement->created_at->format('d.m.Y H:i') }}</div>
+                                <div class="action-text">Нет активных действий</div>
+                                <div class="action-status">
+                                    <span class="status-indicator no-action">Действия не заданы</span>
+                                </div>
+                            @endif
                         </div>
                     </td>
 
@@ -703,6 +715,62 @@ window.onclick = function(event) {
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ffeaa7;
+    margin-bottom: 6px;
+}
+
+.action-status {
+    margin-top: 4px;
+}
+
+.status-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-indicator.no-action {
+    background-color: #6c757d;
+    color: white;
+}
+
+.action-buttons {
+    margin-top: 8px;
+}
+
+.action-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: #133E71;
+    text-decoration: none;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+    background: #e8f0fe;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+    border: 1px solid #c5d1e8;
+}
+
+.action-link:hover {
+    background: #133E71;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(19, 62, 113, 0.2);
+}
+
+.action-link svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* Стили для ячейки статуса */

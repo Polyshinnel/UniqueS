@@ -90,39 +90,56 @@
                 <div class="info-block">
                     <h3>Следующие действия</h3>
                     <div class="action-info">
-                        <div class="action-date">
-                            <span class="label">Дата:</span>
-                            <span class="value">{{ now()->format('d.m.Y') }}</span>
-                        </div>
-                        <div class="action-description">
-                            <span class="label">Что требуется сделать:</span>
-                            <p>Позвонить клиенту, уточнить по наличию оборудования</p>
-                        </div>
-                        <div class="action-buttons">
-                            <button class="btn btn-primary">Задать новое действие</button>
-                            <a href="#" class="btn btn-secondary">Подробнее</a>
-                        </div>
+                        @if($lastAction)
+                            <div class="action-date">
+                                <span class="label">Дата:</span>
+                                <span class="value">{{ $lastAction->expired_at->format('d.m.Y') }}</span>
+                            </div>
+                            <div class="action-description">
+                                <span class="label">Что требуется сделать:</span>
+                                <p>{{ $lastAction->action }}</p>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                                <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                            </div>
+                        @else
+                            <div class="action-description">
+                                <p style="color: #666; font-style: italic;">Нет активных действий</p>
+                            </div>
+                            <div class="action-buttons">
+                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                            </div>
+                        @endif
                     </div>
                 </div>
 
                 <div class="info-block">
                     <h3>Лог событий</h3>
                     <div class="events-list">
-                        <div class="event-item">
-                            <div class="event-header">
-                                <span class="event-type">Комментарий</span>
-                                <span class="event-date">{{ now()->format('d.m.Y H:i:s') }}</span>
+                        @if($lastLog)
+                            <div class="event-item">
+                                <div class="event-header">
+                                    <span class="event-type" data-color="{{ $lastLog->type ? $lastLog->type->color : '#133E71' }}">{{ $lastLog->type ? $lastLog->type->name : 'Неизвестный тип' }}</span>
+                                    <span class="event-date">{{ $lastLog->created_at->format('d.m.Y H:i:s') }}</span>
+                                </div>
+                                <div class="event-content">
+                                    <p>{{ $lastLog->log }}</p>
+                                </div>
+                                <div class="event-footer">
+                                    <span>Создал: {{ $lastLog->user_id ? ($lastLog->user ? $lastLog->user->name : 'Пользователь не найден') : 'Система' }}</span>
+                                </div>
                             </div>
-                            <div class="event-content">
-                                <p>Позвонил клиенту, уточнил по наличию оборудования</p>
+                        @else
+                            <div class="event-item">
+                                <div class="event-content">
+                                    <p style="color: #666; font-style: italic;">Логи событий отсутствуют</p>
+                                </div>
                             </div>
-                            <div class="event-footer">
-                                <span>Создал: {{ $product->owner->name ?? 'Создатель не указан' }}</span>
-                            </div>
-                        </div>
+                        @endif
                     </div>
                     <div class="events-actions">
-                        <button class="btn btn-secondary">История</button>
+                        <button class="btn btn-secondary" onclick="showLogsHistory()">История</button>
                     </div>
                 </div>
             </div>
@@ -233,113 +250,247 @@
                 </div>
             </div>
 
-            @if($product->main_chars || $product->complectation || $product->mark)
-                <div class="info-block">
+            <div class="info-block">
+                <div class="block-header">
                     <h3>Характеристики</h3>
-                    @if($product->main_chars)
-                        <div class="chars-item">
-                            <strong>Основные характеристики:</strong>
-                            <p>{{ $product->main_chars }}</p>
-                        </div>
-                    @endif
-                    @if($product->complectation)
-                        <div class="chars-item">
-                            <strong>Комплектация:</strong>
-                            <p>{{ $product->complectation }}</p>
-                        </div>
-                    @endif
-                    @if($product->mark)
-                        <div class="chars-item">
-                            <strong>Оценка:</strong>
-                            <p>{{ $product->mark }}</p>
-                        </div>
-                    @endif
+                    <button class="edit-comment-btn" onclick="editCharacteristicsBlock()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Редактировать
+                    </button>
                 </div>
-            @endif
-
-            @if($product->loading->count() > 0)
-                <div class="info-block">
-                    <h3>Информация о погрузке</h3>
-                    @php $loading = $product->loading->first(); @endphp
-                    <div class="loading-container">
-                        <div class="loading-status">
-                            <strong>Статус погрузки:</strong>
-                            <span class="status-badge">
-                                {{ $loading->installStatus->name ?? 'Не указан' }}
-                            </span>
-                        </div>
-                        <div class="comment-section" data-field="loading_comment">
-                            <div class="comment-header">
-                                <strong>Комментарий по погрузке:</strong>
-                                <button class="edit-comment-btn" onclick="editComment('loading_comment')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                    Редактировать
-                                </button>
-                            </div>
-                            <div class="comment-content" id="loading_comment_content">
-                                @if($loading->comment)
-                                    <p>{{ $loading->comment }}</p>
-                                @else
-                                    <p class="no-comment">Комментарий не указан</p>
-                                @endif
-                            </div>
-                            <div class="comment-edit" id="loading_comment_edit" style="display: none;">
-                                <textarea class="comment-textarea" id="loading_comment_textarea" rows="3">{{ $loading->comment }}</textarea>
-                                <div class="comment-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="saveComment('loading_comment')">Сохранить</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('loading_comment')">Отмена</button>
+                <div class="characteristics-container">
+                    <div class="characteristics-content" id="characteristics_content">
+                        @if($product->main_chars || $product->complectation || $product->mark)
+                            @if($product->main_chars)
+                                <div class="chars-item">
+                                    <strong>Основные характеристики:</strong>
+                                    <p>{{ $product->main_chars }}</p>
                                 </div>
-                            </div>
+                            @endif
+                            @if($product->complectation)
+                                <div class="chars-item">
+                                    <strong>Комплектация:</strong>
+                                    <p>{{ $product->complectation }}</p>
+                                </div>
+                            @endif
+                            @if($product->mark)
+                                <div class="chars-item">
+                                    <strong>Оценка:</strong>
+                                    <p>{{ $product->mark }}</p>
+                                </div>
+                            @endif
+                        @else
+                            <p class="no-comment">Характеристики не указаны</p>
+                        @endif
+                    </div>
+                    <div class="characteristics-edit" id="characteristics_edit" style="display: none;">
+                        <div class="form-group">
+                            <label for="main_chars_textarea">Основные характеристики:</label>
+                            <textarea class="comment-textarea" id="main_chars_textarea" rows="3" data-original="{{ $product->main_chars ?? '' }}">{{ $product->main_chars ?? '' }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="complectation_textarea">Комплектация:</label>
+                            <textarea class="comment-textarea" id="complectation_textarea" rows="3" data-original="{{ $product->complectation ?? '' }}">{{ $product->complectation ?? '' }}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="mark_textarea">Оценка:</label>
+                            <textarea class="comment-textarea" id="mark_textarea" rows="3" data-original="{{ $product->mark ?? '' }}">{{ $product->mark ?? '' }}</textarea>
                         </div>
                     </div>
-                </div>
-            @endif
-
-            @if($product->removal->count() > 0)
-                <div class="info-block">
-                    <h3>Информация о демонтаже</h3>
-                    @php $removal = $product->removal->first(); @endphp
-                    <div class="removal-container">
-                        <div class="removal-status">
-                            <strong>Статус демонтажа:</strong>
-                            <span class="status-badge">
-                                {{ $removal->installStatus->name ?? 'Не указан' }}
-                            </span>
-                        </div>
-                        <div class="comment-section" data-field="removal_comment">
-                            <div class="comment-header">
-                                <strong>Комментарий по демонтажу:</strong>
-                                <button class="edit-comment-btn" onclick="editComment('removal_comment')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                    Редактировать
-                                </button>
-                            </div>
-                            <div class="comment-content" id="removal_comment_content">
-                                @if($removal->comment)
-                                    <p>{{ $removal->comment }}</p>
-                                @else
-                                    <p class="no-comment">Комментарий не указан</p>
-                                @endif
-                            </div>
-                            <div class="comment-edit" id="removal_comment_edit" style="display: none;">
-                                <textarea class="comment-textarea" id="removal_comment_textarea" rows="3">{{ $removal->comment }}</textarea>
-                                <div class="comment-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="saveComment('removal_comment')">Сохранить</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('removal_comment')">Отмена</button>
-                                </div>
-                            </div>
-                        </div>
+                    <!-- Кнопки действий для блока характеристик -->
+                    <div class="characteristics-actions" id="characteristics_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveCharacteristicsBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelCharacteristicsEdit()">Отмена</button>
                     </div>
                 </div>
-            @endif
+            </div>
 
             <div class="info-block">
                 <div class="block-header">
-                    <h3>Информация об оплате</h3>
+                    <h3>Информация о проверке</h3>
+                    <button class="edit-comment-btn" onclick="editCheckBlock()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Редактировать
+                    </button>
+                </div>
+                @php
+                    $checkStatus = null;
+                    $check = $product->check->first();
+                    if ($check && $check->checkStatus) {
+                        $checkStatus = $check->checkStatus;
+                    }
+                @endphp
+                <div class="check-container">
+                    <div class="check-status">
+                        <strong>Статус проверки:</strong>
+                        <div class="status-content" id="check_status_content">
+                            <span class="status-badge" style="background-color: {{ $checkStatus->color ?? '#6c757d' }}; color: white;">
+                                {{ $checkStatus->name ?? 'Не указан' }}
+                            </span>
+                        </div>
+                        <div class="status-edit" id="check_status_edit" style="display: none;">
+                            <select class="form-control" id="check_status_select" data-original="{{ $check->check_status_id ?? '' }}">
+                                <option value="">Выберите статус</option>
+                                @foreach($checkStatuses as $status)
+                                    <option value="{{ $status->id }}" 
+                                            {{ ($check && $check->check_status_id == $status->id) ? 'selected' : '' }}
+                                            data-color="{{ $status->color }}">
+                                        {{ $status->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="comment-section" data-field="check_comment">
+                        <div class="comment-header">
+                            <strong>Комментарий к проверке:</strong>
+                        </div>
+                        <div class="comment-content" id="check_comment_content">
+                            @if($check && $check->comment)
+                                <p>{{ $check->comment }}</p>
+                            @else
+                                <p class="no-comment">Комментарий к проверке не указан</p>
+                            @endif
+                        </div>
+                        <div class="comment-edit" id="check_comment_edit" style="display: none;">
+                            <textarea class="comment-textarea" id="check_comment_textarea" rows="3" data-original="{{ $check->comment ?? '' }}">{{ $check->comment ?? '' }}</textarea>
+                        </div>
+                    </div>
+                    <!-- Кнопки действий для блока проверки -->
+                    <div class="check-actions" id="check_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveCheckBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelCheckEdit()">Отмена</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-block">
+                <div class="block-header">
+                    <h3>Информация о погрузке</h3>
+                    <button class="edit-comment-btn" onclick="editLoadingBlock()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Редактировать
+                    </button>
+                </div>
+                @php
+                    $loadingStatus = null;
+                    $loading = $product->loading->first();
+                    if ($loading && $loading->installStatus) {
+                        $loadingStatus = $loading->installStatus;
+                    }
+                @endphp
+                <div class="loading-container">
+                    <div class="loading-status">
+                        <strong>Статус погрузки:</strong>
+                        <div class="status-content" id="loading_status_content">
+                            <span class="status-badge">
+                                {{ $loadingStatus->name ?? 'Не указан' }}
+                            </span>
+                        </div>
+                        <div class="status-edit" id="loading_status_edit" style="display: none;">
+                            <select class="form-control" id="loading_status_select" data-original="{{ $loading->install_status_id ?? '' }}">
+                                <option value="">Выберите статус</option>
+                                @foreach($installStatuses as $status)
+                                    <option value="{{ $status->id }}" 
+                                            {{ ($loading && $loading->install_status_id == $status->id) ? 'selected' : '' }}>
+                                        {{ $status->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="comment-section" data-field="loading_comment">
+                        <div class="comment-header">
+                            <strong>Комментарий по погрузке:</strong>
+                        </div>
+                        <div class="comment-content" id="loading_comment_content">
+                            @if($loading && $loading->comment)
+                                <p>{{ $loading->comment }}</p>
+                            @else
+                                <p class="no-comment">Комментарий по погрузке не указан</p>
+                            @endif
+                        </div>
+                        <div class="comment-edit" id="loading_comment_edit" style="display: none;">
+                            <textarea class="comment-textarea" id="loading_comment_textarea" rows="3" data-original="{{ $loading->comment ?? '' }}">{{ $loading->comment ?? '' }}</textarea>
+                        </div>
+                    </div>
+                    <!-- Кнопки действий для блока погрузки -->
+                    <div class="loading-actions" id="loading_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveLoadingBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelLoadingEdit()">Отмена</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-block">
+                <div class="block-header">
+                    <h3>Информация о демонтаже</h3>
+                    <button class="edit-comment-btn" onclick="editRemovalBlock()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Редактировать
+                    </button>
+                </div>
+                @php
+                    $removalStatus = null;
+                    $removal = $product->removal->first();
+                    if ($removal && $removal->installStatus) {
+                        $removalStatus = $removal->installStatus;
+                    }
+                @endphp
+                <div class="removal-container">
+                    <div class="removal-status">
+                        <strong>Статус демонтажа:</strong>
+                        <div class="status-content" id="removal_status_content">
+                            <span class="status-badge">
+                                {{ $removalStatus->name ?? 'Не указан' }}
+                            </span>
+                        </div>
+                        <div class="status-edit" id="removal_status_edit" style="display: none;">
+                            <select class="form-control" id="removal_status_select" data-original="{{ $removal->install_status_id ?? '' }}">
+                                <option value="">Выберите статус</option>
+                                @foreach($installStatuses as $status)
+                                    <option value="{{ $status->id }}" 
+                                            {{ ($removal && $removal->install_status_id == $status->id) ? 'selected' : '' }}>
+                                        {{ $status->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="comment-section" data-field="removal_comment">
+                        <div class="comment-header">
+                            <strong>Комментарий по демонтажу:</strong>
+                        </div>
+                        <div class="comment-content" id="removal_comment_content">
+                            @if($removal && $removal->comment)
+                                <p>{{ $removal->comment }}</p>
+                            @else
+                                <p class="no-comment">Комментарий по демонтажу не указан</p>
+                            @endif
+                        </div>
+                        <div class="comment-edit" id="removal_comment_edit" style="display: none;">
+                            <textarea class="comment-textarea" id="removal_comment_textarea" rows="3" data-original="{{ $removal->comment ?? '' }}">{{ $removal->comment ?? '' }}</textarea>
+                        </div>
+                    </div>
+                    <!-- Кнопки действий для блока демонтажа -->
+                    <div class="removal-actions" id="removal_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveRemovalBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelRemovalEdit()">Отмена</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="info-block">
+                <div class="block-header">
+                    <h3>Информация о покупке</h3>
                     <button class="edit-payment-btn" onclick="editPaymentBlock()">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
@@ -420,21 +571,6 @@
                     </div>
                 </div>
 
-                <!-- Цена продажи -->
-                <div class="payment-item">
-                    <strong>Цена продажи:</strong>
-                    <div class="payment-content" id="sale_price_content">
-                        @if($product->activeAdvertisement && $product->activeAdvertisement->adv_price)
-                            <span class="price">{{ number_format($product->activeAdvertisement->adv_price, 0, ',', ' ') }} ₽</span>
-                            @if($product->activeAdvertisement->adv_price_comment)
-                                <div class="price-comment">{{ $product->activeAdvertisement->adv_price_comment }}</div>
-                            @endif
-                        @else
-                            <span class="no-value">Не указана</span>
-                        @endif
-                    </div>
-                </div>
-
                 <!-- Комментарий по оплате -->
                 <div class="payment-item">
                     <strong>Комментарий по оплате:</strong>
@@ -456,49 +592,6 @@
                     <button class="btn btn-secondary" onclick="cancelPaymentEdit()">Отмена</button>
                 </div>
             </div>
-            <div class="info-block">
-                <h3>Проверка</h3>
-                @if($product->check->count() > 0)
-                    @php $check = $product->check->first(); @endphp
-                    <div class="check-container">
-                        <div class="check-status">
-                            <strong>Статус проверки:</strong>
-                            <span class="status-badge" style="background-color: {{ $check->checkStatus->color ?? '#6c757d' }}; color: white;">
-                                {{ $check->checkStatus->name ?? 'Не указан' }}
-                            </span>
-                        </div>
-                        <div class="comment-section" data-field="check_comment">
-                            <div class="comment-header">
-                                <strong>Комментарий к проверке:</strong>
-                                <button class="edit-comment-btn" onclick="editComment('check_comment')">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                    </svg>
-                                    Редактировать
-                                </button>
-                            </div>
-                            <div class="comment-content" id="check_comment_content">
-                                @if($check->comment)
-                                    <p>{{ $check->comment }}</p>
-                                @else
-                                    <p class="no-comment">Комментарий не указан</p>
-                                @endif
-                            </div>
-                            <div class="comment-edit" id="check_comment_edit" style="display: none;">
-                                <textarea class="comment-textarea" id="check_comment_textarea" rows="3">{{ $check->comment }}</textarea>
-                                <div class="comment-actions">
-                                    <button class="btn btn-primary btn-sm" onclick="saveComment('check_comment')">Сохранить</button>
-                                    <button class="btn btn-secondary btn-sm" onclick="cancelEdit('check_comment')">Отмена</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                @else
-                    <p class="no-data">Информация о проверке не указана</p>
-                @endif
-            </div>
-
-            
         </div>
     </div>
 
@@ -1106,6 +1199,7 @@
 
 .payment-content {
     color: #495057;
+    margin-top: 10px;
 }
 
 .payment-content p {
@@ -1525,6 +1619,181 @@
     background: #f8f9fa;
     border-radius: 6px;
     border: 1px solid #e9ecef;
+    margin-bottom: 15px;
+}
+
+.check-status strong, .loading-status strong, .removal-status strong {
+    min-width: 120px;
+    flex-shrink: 0;
+}
+
+/* Стили для редактирования статусов */
+.status-content, .status-edit {
+    display: inline-block;
+}
+
+.status-edit {
+    margin-top: 10px;
+}
+
+.status-edit select {
+    min-width: 200px;
+}
+
+.check-actions, .loading-actions, .removal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    justify-content: flex-end;
+}
+
+/* Стили для заголовка блока */
+.block-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.block-header h3 {
+    margin: 0;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.edit-comment-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: 1px solid #133E71;
+    color: #133E71;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.edit-comment-btn:hover {
+    background-color: #133E71;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.edit-comment-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Стили для комментариев */
+.comment-section {
+    margin-top: 15px;
+}
+
+.comment-header {
+    margin-bottom: 10px;
+}
+
+.comment-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    border-left: 4px solid #133E71;
+}
+
+.comment-content p {
+    margin: 0;
+    color: #495057;
+    line-height: 1.5;
+}
+
+.comment-edit {
+    margin-top: 15px;
+}
+
+.comment-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.comment-textarea:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+}
+
+.no-comment {
+    color: #999;
+    font-style: italic;
+}
+
+/* Стили для кнопок */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background-color: #133E71;
+    color: white;
+    border-color: #133E71;
+}
+
+.btn-primary:hover {
+    background-color: #0f2d56;
+    border-color: #0f2d56;
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+    transform: translateY(-1px);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+}
+
+/* Стили для форм */
+.form-control {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+    font-family: inherit;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
 }
 
 .payment-variants {
@@ -1627,6 +1896,501 @@
         text-align: center;
     }
 }
+
+/* Стили для блока характеристик */
+.characteristics-container {
+    margin-top: 15px;
+}
+
+.characteristics-content {
+    margin-bottom: 15px;
+}
+
+.characteristics-edit {
+    margin-bottom: 15px;
+}
+
+.characteristics-edit .form-group {
+    margin-bottom: 15px;
+}
+
+.characteristics-edit .form-group label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+    font-size: 14px;
+}
+
+.characteristics-edit .form-group textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.3s ease;
+}
+
+.characteristics-edit .form-group textarea:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+}
+
+.characteristics-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-start;
+}
+
+.characteristics-actions .btn {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.characteristics-actions .btn-primary {
+    background-color: #133E71;
+    color: white;
+    border-color: #133E71;
+}
+
+.characteristics-actions .btn-primary:hover {
+    background-color: #0f2d56;
+    border-color: #0f2d56;
+}
+
+.characteristics-actions .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.characteristics-actions .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #5a6268;
+}
+
+    .characteristics-actions .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* Стили для модальных окон */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 10000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 5% auto;
+        padding: 0;
+        border-radius: 8px;
+        width: 90%;
+        max-width: 500px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+        padding: 20px 20px 0 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #133E71;
+        font-size: 18px;
+        font-weight: 600;
+    }
+
+    .close {
+        color: #aaa;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: #000;
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .modal-body p {
+        margin: 0 0 15px 0;
+        color: #666;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .form-group textarea {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 80px;
+    }
+
+    .form-group textarea:focus {
+        outline: none;
+        border-color: #133E71;
+        box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+    }
+
+    .form-group input[type="date"] {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        font-family: inherit;
+    }
+
+    .form-group input[type="date"]:focus {
+        outline: none;
+        border-color: #133E71;
+        box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+    }
+
+    .modal-footer {
+        padding: 0 20px 20px 20px;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .modal-footer .btn {
+        padding: 8px 16px;
+        border-radius: 4px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        border: 1px solid;
+        transition: all 0.3s ease;
+    }
+
+    .modal-footer .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+
+    .modal-footer .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #5a6268;
+    }
+
+    .modal-footer .btn-primary {
+        background-color: #133E71;
+        color: white;
+        border-color: #133E71;
+    }
+
+    .modal-footer .btn-primary:hover {
+        background-color: #0f2d56;
+        border-color: #0f2d56;
+    }
+
+    /* Стили для модального окна истории логов */
+    .logs-history-modal {
+        max-height: 600px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .logs-history-modal .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+
+    .logs-history-modal .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .logs-history-modal .modal-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .logs-history-modal .modal-body::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .logs-history-modal .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Стили для модального окна действий */
+    .actions-modal {
+        max-height: 600px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .actions-modal .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        max-height: 500px;
+    }
+
+    .actions-modal .modal-body::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .actions-modal .modal-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .actions-modal .modal-body::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .actions-modal .modal-body::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Стили для списка действий */
+    .actions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .action-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid #e9ecef;
+        transition: all 0.3s ease;
+    }
+
+    .action-item.completed {
+        background: #e8f5e8;
+        border-color: #28a745;
+    }
+
+    .action-item.completed .action-text {
+        text-decoration: line-through;
+        color: #666;
+    }
+
+    .action-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .action-text {
+        font-weight: 500;
+        color: #495057;
+        line-height: 1.5;
+        margin: 0;
+        flex-grow: 1;
+    }
+
+    .action-date {
+        color: #666;
+        font-size: 12px;
+        margin-left: 15px;
+    }
+
+    .action-button {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-left: 10px;
+    }
+
+    .action-button:hover {
+        background: #218838;
+    }
+
+    .action-button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+
+    .action-comment-block {
+        margin-top: 10px;
+        padding: 10px;
+        background: white;
+        border-radius: 4px;
+        border: 1px solid #e9ecef;
+        display: none;
+    }
+
+    .action-comment-block.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .action-comment-textarea {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+        resize: vertical;
+        min-height: 60px;
+        margin-bottom: 10px;
+    }
+
+    .action-comment-textarea:focus {
+        outline: none;
+        border-color: #133E71;
+        box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+    }
+
+    .action-comment-buttons {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Стили для спиннера загрузки */
+    .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .spinner {
+        width: 40px;
+        height: 40px;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #133E71;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 15px;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+
+    .loading-spinner p {
+        color: #666;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    /* Стили для счетчика символов */
+    .char-counter {
+        font-size: 12px;
+        color: #666;
+        text-align: right;
+        margin-top: 5px;
+    }
+
+    .char-counter span {
+        font-weight: bold;
+    }
+
+    /* Стили для списка логов в модальном окне */
+    .logs-history-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .logs-history-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 15px;
+        border: 1px solid #e9ecef;
+    }
+
+    .logs-history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .logs-history-type {
+        background: #133E71;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+    }
+
+    .logs-history-date {
+        color: #666;
+        font-size: 12px;
+    }
+
+    .logs-history-content {
+        margin-bottom: 10px;
+    }
+
+    .logs-history-content p {
+        color: #495057;
+        line-height: 1.5;
+        margin: 0;
+    }
+
+    .logs-history-footer {
+        color: #666;
+        font-size: 12px;
+    }
 </style>
 
 <script>
@@ -1886,6 +2650,402 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Функции для редактирования блока проверки
+function editCheckBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('check_status_content').style.display = 'none';
+    document.getElementById('check_status_edit').style.display = 'block';
+    document.getElementById('check_comment_content').style.display = 'none';
+    document.getElementById('check_comment_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('check_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#check_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelCheckEdit() {
+    // Восстанавливаем оригинальные значения
+    const statusSelect = document.getElementById('check_status_select');
+    const commentTextarea = document.getElementById('check_comment_textarea');
+    
+    if (statusSelect) {
+        const originalStatus = statusSelect.getAttribute('data-original') || '';
+        statusSelect.value = originalStatus;
+    }
+    
+    if (commentTextarea) {
+        const originalComment = commentTextarea.getAttribute('data-original') || '';
+        commentTextarea.value = originalComment;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('check_status_content').style.display = 'block';
+    document.getElementById('check_status_edit').style.display = 'none';
+    document.getElementById('check_comment_content').style.display = 'block';
+    document.getElementById('check_comment_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('check_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#check_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveCheckBlock() {
+    // Собираем данные
+    const checkData = {
+        status_id: document.getElementById('check_status_select').value || null,
+        comment: document.getElementById('check_comment_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#check_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/product/{{ $product->id }}/check-status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(checkData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateCheckDisplay(checkData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveCheckOriginals(checkData);
+            
+            // Скрываем формы редактирования
+            cancelCheckEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о проверке успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о проверке', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции для редактирования блока погрузки
+function editLoadingBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('loading_status_content').style.display = 'none';
+    document.getElementById('loading_status_edit').style.display = 'block';
+    document.getElementById('loading_comment_content').style.display = 'none';
+    document.getElementById('loading_comment_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('loading_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#loading_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelLoadingEdit() {
+    // Восстанавливаем оригинальные значения
+    const statusSelect = document.getElementById('loading_status_select');
+    const commentTextarea = document.getElementById('loading_comment_textarea');
+    
+    if (statusSelect) {
+        const originalStatus = statusSelect.getAttribute('data-original') || '';
+        statusSelect.value = originalStatus;
+    }
+    
+    if (commentTextarea) {
+        const originalComment = commentTextarea.getAttribute('data-original') || '';
+        commentTextarea.value = originalComment;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('loading_status_content').style.display = 'block';
+    document.getElementById('loading_status_edit').style.display = 'none';
+    document.getElementById('loading_comment_content').style.display = 'block';
+    document.getElementById('loading_comment_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('loading_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#loading_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveLoadingBlock() {
+    // Собираем данные
+    const loadingData = {
+        status_id: document.getElementById('loading_status_select').value || null,
+        comment: document.getElementById('loading_comment_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#loading_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/product/{{ $product->id }}/loading-status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(loadingData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateLoadingDisplay(loadingData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveLoadingOriginals(loadingData);
+            
+            // Скрываем формы редактирования
+            cancelLoadingEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о погрузке успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о погрузке', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции для редактирования блока демонтажа
+function editRemovalBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('removal_status_content').style.display = 'none';
+    document.getElementById('removal_status_edit').style.display = 'block';
+    document.getElementById('removal_comment_content').style.display = 'none';
+    document.getElementById('removal_comment_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('removal_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#removal_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelRemovalEdit() {
+    // Восстанавливаем оригинальные значения
+    const statusSelect = document.getElementById('removal_status_select');
+    const commentTextarea = document.getElementById('removal_comment_textarea');
+    
+    if (statusSelect) {
+        const originalStatus = statusSelect.getAttribute('data-original') || '';
+        statusSelect.value = originalStatus;
+    }
+    
+    if (commentTextarea) {
+        const originalComment = commentTextarea.getAttribute('data-original') || '';
+        commentTextarea.value = originalComment;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('removal_status_content').style.display = 'block';
+    document.getElementById('removal_status_edit').style.display = 'none';
+    document.getElementById('removal_comment_content').style.display = 'block';
+    document.getElementById('removal_comment_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('removal_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#removal_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveRemovalBlock() {
+    // Собираем данные
+    const removalData = {
+        status_id: document.getElementById('removal_status_select').value || null,
+        comment: document.getElementById('removal_comment_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#removal_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/product/{{ $product->id }}/removal-status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(removalData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateRemovalDisplay(removalData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveRemovalOriginals(removalData);
+            
+            // Скрываем формы редактирования
+            cancelRemovalEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Информация о демонтаже успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении информации о демонтаже', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции обновления отображения
+function updateCheckDisplay(checkData) {
+    // Обновляем отображение статуса проверки
+    const statusContent = document.getElementById('check_status_content');
+    if (checkData.status_id) {
+        const statusSelect = document.getElementById('check_status_select');
+        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+        const statusName = selectedOption.text;
+        
+        // Получаем цвет из data-атрибута или используем цвет по умолчанию
+        const statusColor = selectedOption.getAttribute('data-color') || '#6c757d';
+        
+        statusContent.innerHTML = `
+            <span class="status-badge" style="background-color: ${statusColor}; color: white;">
+                ${statusName}
+            </span>
+        `;
+    } else {
+        statusContent.innerHTML = '<span class="status-badge" style="background-color: #6c757d; color: white;">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария
+    const commentContent = document.getElementById('check_comment_content');
+    if (checkData.comment) {
+        commentContent.innerHTML = `<p>${checkData.comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<p class="no-comment">Комментарий к проверке не указан</p>';
+    }
+}
+
+function updateLoadingDisplay(loadingData) {
+    // Обновляем отображение статуса погрузки
+    const statusContent = document.getElementById('loading_status_content');
+    if (loadingData.status_id) {
+        const statusSelect = document.getElementById('loading_status_select');
+        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+        const statusName = selectedOption.text;
+        
+        statusContent.innerHTML = `<span class="status-badge">${statusName}</span>`;
+    } else {
+        statusContent.innerHTML = '<span class="status-badge">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария
+    const commentContent = document.getElementById('loading_comment_content');
+    if (loadingData.comment) {
+        commentContent.innerHTML = `<p>${loadingData.comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<p class="no-comment">Комментарий по погрузке не указан</p>';
+    }
+}
+
+function updateRemovalDisplay(removalData) {
+    // Обновляем отображение статуса демонтажа
+    const statusContent = document.getElementById('removal_status_content');
+    if (removalData.status_id) {
+        const statusSelect = document.getElementById('removal_status_select');
+        const selectedOption = statusSelect.options[statusSelect.selectedIndex];
+        const statusName = selectedOption.text;
+        
+        statusContent.innerHTML = `<span class="status-badge">${statusName}</span>`;
+    } else {
+        statusContent.innerHTML = '<span class="status-badge">Не указан</span>';
+    }
+    
+    // Обновляем отображение комментария
+    const commentContent = document.getElementById('removal_comment_content');
+    if (removalData.comment) {
+        commentContent.innerHTML = `<p>${removalData.comment}</p>`;
+    } else {
+        commentContent.innerHTML = '<p class="no-comment">Комментарий по демонтажу не указан</p>';
+    }
+}
+
+// Функции сохранения оригинальных значений
+function saveCheckOriginals(checkData) {
+    const statusSelect = document.getElementById('check_status_select');
+    const commentTextarea = document.getElementById('check_comment_textarea');
+    
+    if (statusSelect) {
+        statusSelect.setAttribute('data-original', checkData.status_id || '');
+    }
+    
+    if (commentTextarea) {
+        commentTextarea.setAttribute('data-original', checkData.comment || '');
+    }
+}
+
+function saveLoadingOriginals(loadingData) {
+    const statusSelect = document.getElementById('loading_status_select');
+    const commentTextarea = document.getElementById('loading_comment_textarea');
+    
+    if (statusSelect) {
+        statusSelect.setAttribute('data-original', loadingData.status_id || '');
+    }
+    
+    if (commentTextarea) {
+        commentTextarea.setAttribute('data-original', loadingData.comment || '');
+    }
+}
+
+function saveRemovalOriginals(removalData) {
+    const statusSelect = document.getElementById('removal_status_select');
+    const commentTextarea = document.getElementById('removal_comment_textarea');
+    
+    if (statusSelect) {
+        statusSelect.setAttribute('data-original', removalData.status_id || '');
+    }
+    
+    if (commentTextarea) {
+        commentTextarea.setAttribute('data-original', removalData.comment || '');
+    }
+}
 
 // Инициализация оригинальных значений для textarea
 document.addEventListener('DOMContentLoaded', function() {
@@ -2185,12 +3345,70 @@ function toggleProductStatusDropdown() {
     }
 }
 
+// Глобальные переменные для хранения данных о смене статуса товара
+let pendingProductStatusChange = null;
+
 function changeProductStatus(statusId, statusName, statusColor) {
+    // Получаем данные о смене статуса
+    pendingProductStatusChange = {
+        statusId: statusId,
+        statusName: statusName,
+        statusColor: statusColor
+    };
+    
+    // Показываем модальное окно для комментария
+    showProductStatusModal();
+}
+
+function showProductStatusModal() {
+    const modal = document.getElementById('productStatusCommentModal');
+    const textarea = document.getElementById('productStatusComment');
+    
+    // Очищаем поле комментария
+    textarea.value = '';
+    
+    // Показываем модальное окно
+    modal.style.display = 'block';
+    
+    // Фокусируемся на поле комментария
+    textarea.focus();
+}
+
+function closeProductStatusModal() {
+    const modal = document.getElementById('productStatusCommentModal');
+    modal.style.display = 'none';
+}
+
+function cancelProductStatusChange() {
+    const modal = document.getElementById('productStatusCommentModal');
+    modal.style.display = 'none';
+    
+    // Сбрасываем данные о смене статуса при отмене
+    pendingProductStatusChange = null;
+}
+
+function saveProductStatusChange() {
+    const comment = document.getElementById('productStatusComment').value.trim();
+    
+    if (!comment) {
+        alert('Пожалуйста, введите комментарий');
+        return;
+    }
+    
+    if (!pendingProductStatusChange || !pendingProductStatusChange.statusId || !pendingProductStatusChange.statusName) {
+        alert('Ошибка: данные о смене статуса не найдены. Пожалуйста, выберите статус заново.');
+        closeProductStatusModal();
+        return;
+    }
+    
     // Показываем индикатор загрузки
     const statusBadge = document.querySelector('.status-badge.clickable');
     const originalContent = statusBadge.innerHTML;
     const originalStyle = statusBadge.getAttribute('style');
     statusBadge.innerHTML = '<span>Обновление...</span>';
+    
+    // Закрываем модальное окно
+    closeProductStatusModal();
     
     // Отправляем запрос на сервер
     fetch(`/product/{{ $product->id }}/status`, {
@@ -2200,17 +3418,18 @@ function changeProductStatus(statusId, statusName, statusColor) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: JSON.stringify({
-            status_id: statusId
+            status_id: pendingProductStatusChange.statusId,
+            comment: comment
         })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Обновляем отображение статуса с цветом из базы данных
+            // Обновляем отображение статуса
             statusBadge.className = 'status-badge clickable';
-            statusBadge.style.cssText = `background-color: ${statusColor}; color: white;`;
+            statusBadge.style.cssText = `background-color: ${pendingProductStatusChange.statusColor}; color: white;`;
             statusBadge.innerHTML = `
-                ${statusName}
+                ${pendingProductStatusChange.statusName}
                 <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <polyline points="6,9 12,15 18,9"></polyline>
                 </svg>
@@ -2218,6 +3437,11 @@ function changeProductStatus(statusId, statusName, statusColor) {
             
             // Закрываем выпадающий список
             toggleProductStatusDropdown();
+            
+            // Обновляем лог событий, если получен новый лог
+            if (data.log) {
+                updateProductEventsLog(data.log);
+            }
             
             // Показываем уведомление об успехе
             showNotification('Статус товара успешно обновлен', 'success');
@@ -2231,7 +3455,67 @@ function changeProductStatus(statusId, statusName, statusColor) {
         statusBadge.innerHTML = originalContent;
         statusBadge.setAttribute('style', originalStyle);
         showNotification('Ошибка при обновлении статуса товара', 'error');
+    })
+    .finally(() => {
+        // Сбрасываем данные о смене статуса только после завершения операции
+        if (pendingProductStatusChange) {
+            pendingProductStatusChange = null;
+        }
     });
+}
+
+function updateProductEventsLog(log) {
+    const eventsList = document.querySelector('.events-list');
+    
+    // Создаем новый элемент лога
+    const eventItem = document.createElement('div');
+    eventItem.className = 'event-item';
+    
+    const eventHeader = document.createElement('div');
+    eventHeader.className = 'event-header';
+    
+    const eventType = document.createElement('span');
+    eventType.className = 'event-type';
+    eventType.textContent = log.type ? log.type.name : 'Неизвестный тип';
+    if (log.type && log.type.color) {
+        eventType.style.backgroundColor = log.type.color;
+    }
+    
+    const eventDate = document.createElement('span');
+    eventDate.className = 'event-date';
+    eventDate.textContent = new Date(log.created_at).toLocaleString('ru-RU');
+    
+    eventHeader.appendChild(eventType);
+    eventHeader.appendChild(eventDate);
+    
+    const eventContent = document.createElement('div');
+    eventContent.className = 'event-content';
+    const contentParagraph = document.createElement('p');
+    contentParagraph.textContent = log.log;
+    eventContent.appendChild(contentParagraph);
+    
+    const eventFooter = document.createElement('div');
+    eventFooter.className = 'event-footer';
+    const footerSpan = document.createElement('span');
+    footerSpan.textContent = `Создал: ${log.user ? log.user.name : 'Система'}`;
+    eventFooter.appendChild(footerSpan);
+    
+    eventItem.appendChild(eventHeader);
+    eventItem.appendChild(eventContent);
+    eventItem.appendChild(eventFooter);
+    
+    // Добавляем новый лог в начало списка
+    if (eventsList.firstChild) {
+        eventsList.insertBefore(eventItem, eventsList.firstChild);
+    } else {
+        eventsList.appendChild(eventItem);
+    }
+    
+    // Удаляем сообщение об отсутствии логов, если оно есть
+    const noLogsMessage = eventsList.querySelector('.event-item p[style*="color: #666"]');
+    if (noLogsMessage) {
+        noLogsMessage.parentElement.parentElement.remove();
+    }
 }
 
 // Закрытие выпадающего списка статусов при клике вне его
@@ -2241,6 +3525,735 @@ document.addEventListener('click', function(event) {
     
     if (!statusSelector.contains(event.target) && dropdown && dropdown.classList.contains('show')) {
         toggleProductStatusDropdown();
+    }
+});
+
+// Функции для редактирования блока характеристик
+function editCharacteristicsBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('characteristics_content').style.display = 'none';
+    document.getElementById('characteristics_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('characteristics_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#characteristics_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+}
+
+function cancelCharacteristicsEdit() {
+    // Восстанавливаем оригинальные значения
+    const mainCharsTextarea = document.getElementById('main_chars_textarea');
+    const complectationTextarea = document.getElementById('complectation_textarea');
+    const markTextarea = document.getElementById('mark_textarea');
+    
+    if (mainCharsTextarea) {
+        const originalMainChars = mainCharsTextarea.getAttribute('data-original') || '';
+        mainCharsTextarea.value = originalMainChars;
+    }
+    
+    if (complectationTextarea) {
+        const originalComplectation = complectationTextarea.getAttribute('data-original') || '';
+        complectationTextarea.value = originalComplectation;
+    }
+    
+    if (markTextarea) {
+        const originalMark = markTextarea.getAttribute('data-original') || '';
+        markTextarea.value = originalMark;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('characteristics_content').style.display = 'block';
+    document.getElementById('characteristics_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('characteristics_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#characteristics_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveCharacteristicsBlock() {
+    // Собираем данные
+    const characteristicsData = {
+        main_chars: document.getElementById('main_chars_textarea').value.trim(),
+        complectation: document.getElementById('complectation_textarea').value.trim(),
+        mark: document.getElementById('mark_textarea').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#characteristics_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/product/{{ $product->id }}/characteristics`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(characteristicsData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateCharacteristicsDisplay(characteristicsData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveCharacteristicsOriginals(characteristicsData);
+            
+            // Скрываем формы редактирования
+            cancelCharacteristicsEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Характеристики товара успешно обновлены', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении характеристик товара', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+function updateCharacteristicsDisplay(data) {
+    const contentDiv = document.getElementById('characteristics_content');
+    let html = '';
+    
+    if (data.main_chars || data.complectation || data.mark) {
+        if (data.main_chars) {
+            html += `<div class="chars-item">
+                <strong>Основные характеристики:</strong>
+                <p>${data.main_chars}</p>
+            </div>`;
+        }
+        if (data.complectation) {
+            html += `<div class="chars-item">
+                <strong>Комплектация:</strong>
+                <p>${data.complectation}</p>
+            </div>`;
+        }
+        if (data.mark) {
+            html += `<div class="chars-item">
+                <strong>Оценка:</strong>
+                <p>${data.mark}</p>
+            </div>`;
+        }
+    } else {
+        html = '<p class="no-comment">Характеристики не указаны</p>';
+    }
+    
+    contentDiv.innerHTML = html;
+}
+
+function saveCharacteristicsOriginals(data) {
+    const mainCharsTextarea = document.getElementById('main_chars_textarea');
+    const complectationTextarea = document.getElementById('complectation_textarea');
+    const markTextarea = document.getElementById('mark_textarea');
+    
+    if (mainCharsTextarea) {
+        mainCharsTextarea.setAttribute('data-original', data.main_chars);
+    }
+    if (complectationTextarea) {
+        complectationTextarea.setAttribute('data-original', data.complectation);
+    }
+    if (markTextarea) {
+        markTextarea.setAttribute('data-original', data.mark);
+    }
+}
+
+// Глобальные переменные для работы с товаром
+let currentProductId = '{{ $product->id }}';
+
+// Функции для работы с историей логов
+function showLogsHistory() {
+    const modal = document.getElementById('logsHistoryModal');
+    modal.style.display = 'block';
+    
+    // Загружаем логи
+    loadLogsHistory();
+}
+
+function closeLogsHistory() {
+    const modal = document.getElementById('logsHistoryModal');
+    modal.style.display = 'none';
+}
+
+function loadLogsHistory() {
+    const content = document.getElementById('logsHistoryContent');
+    
+    // Показываем спиннер загрузки
+    content.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка логов...</p>
+        </div>
+    `;
+    
+    // Отправляем запрос на сервер
+    fetch(`/product/${currentProductId}/logs`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayLogsHistory(data.logs);
+        } else {
+            throw new Error(data.message || 'Ошибка при загрузке логов');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #dc3545;">Ошибка при загрузке логов: ${error.message}</p>
+            </div>
+        `;
+    });
+}
+
+function displayLogsHistory(logs) {
+    const content = document.getElementById('logsHistoryContent');
+    
+    if (logs.length === 0) {
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #666; font-style: italic;">Логи отсутствуют</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const logsList = document.createElement('div');
+    logsList.className = 'logs-history-list';
+    
+    logs.forEach(log => {
+        const logItem = document.createElement('div');
+        logItem.className = 'logs-history-item';
+        
+        const logHeader = document.createElement('div');
+        logHeader.className = 'logs-history-header';
+        
+        const logType = document.createElement('span');
+        logType.className = 'logs-history-type';
+        logType.textContent = log.type ? log.type.name : 'Неизвестный тип';
+        if (log.type && log.type.color) {
+            logType.style.backgroundColor = log.type.color;
+        }
+        
+        const logDate = document.createElement('span');
+        logDate.className = 'logs-history-date';
+        logDate.textContent = new Date(log.created_at).toLocaleString('ru-RU');
+        
+        logHeader.appendChild(logType);
+        logHeader.appendChild(logDate);
+        
+        const logContent = document.createElement('div');
+        logContent.className = 'logs-history-content';
+        const contentParagraph = document.createElement('p');
+        contentParagraph.textContent = log.log;
+        logContent.appendChild(contentParagraph);
+        
+        const logFooter = document.createElement('div');
+        logFooter.className = 'logs-history-footer';
+        const footerSpan = document.createElement('span');
+        footerSpan.textContent = `Создал: ${log.user ? log.user.name : 'Система'}`;
+        logFooter.appendChild(footerSpan);
+        
+        logItem.appendChild(logHeader);
+        logItem.appendChild(logContent);
+        logItem.appendChild(logFooter);
+        
+        logsList.appendChild(logItem);
+    });
+    
+    content.innerHTML = '';
+    content.appendChild(logsList);
+}
+
+// Глобальные переменные для работы с действиями
+let currentActionId = null;
+let currentActionText = null;
+
+// Функции для работы с модальным окном действий
+function showActionsModal() {
+    const modal = document.getElementById('actionsModal');
+    modal.style.display = 'block';
+    
+    // Загружаем действия
+    loadActions();
+}
+
+function closeActionsModal() {
+    const modal = document.getElementById('actionsModal');
+    modal.style.display = 'none';
+}
+
+function loadActions() {
+    const content = document.getElementById('actionsList');
+    
+    // Показываем спиннер загрузки
+    content.innerHTML = `
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Загрузка действий...</p>
+        </div>
+    `;
+    
+    // Отправляем запрос на сервер
+    fetch(`/product/${currentProductId}/actions`, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayActions(data.actions);
+        } else {
+            throw new Error(data.message || 'Ошибка при загрузке действий');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #dc3545;">Ошибка при загрузке действий: ${error.message}</p>
+            </div>
+        `;
+    });
+}
+
+function displayActions(actions) {
+    const content = document.getElementById('actionsList');
+    
+    if (actions.length === 0) {
+        content.innerHTML = `
+            <div class="loading-spinner">
+                <p style="color: #666; font-style: italic;">Действия отсутствуют</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const actionsList = document.createElement('div');
+    actionsList.className = 'actions-list';
+    
+    actions.forEach(action => {
+        const actionItem = document.createElement('div');
+        actionItem.className = `action-item ${action.status ? 'completed' : ''}`;
+        actionItem.setAttribute('data-action-id', action.id);
+        
+        const actionHeader = document.createElement('div');
+        actionHeader.className = 'action-header';
+        
+        const actionText = document.createElement('p');
+        actionText.className = 'action-text';
+        actionText.textContent = action.action;
+        
+        const actionDate = document.createElement('span');
+        actionDate.className = 'action-date';
+        actionDate.textContent = new Date(action.expired_at).toLocaleDateString('ru-RU');
+        
+        const actionButton = document.createElement('button');
+        actionButton.className = 'action-button';
+        actionButton.textContent = action.status ? 'Выполнено' : 'Я сделал';
+        actionButton.disabled = action.status;
+        
+        if (!action.status) {
+            actionButton.onclick = () => showActionCommentBlock(action.id, action.action);
+        }
+        
+        actionHeader.appendChild(actionText);
+        actionHeader.appendChild(actionDate);
+        actionHeader.appendChild(actionButton);
+        
+        const commentBlock = document.createElement('div');
+        commentBlock.className = 'action-comment-block';
+        commentBlock.id = `comment-block-${action.id}`;
+        
+        const commentTextarea = document.createElement('textarea');
+        commentTextarea.className = 'action-comment-textarea';
+        commentTextarea.placeholder = 'Введите комментарий о выполнении...';
+        
+        const commentButtons = document.createElement('div');
+        commentButtons.className = 'action-comment-buttons';
+        
+        const cancelButton = document.createElement('button');
+        cancelButton.className = 'btn btn-secondary';
+        cancelButton.textContent = 'Отмена';
+        cancelButton.onclick = () => hideActionCommentBlock(action.id);
+        
+        const saveButton = document.createElement('button');
+        saveButton.className = 'btn btn-primary';
+        saveButton.textContent = 'Сохранить';
+        saveButton.onclick = () => saveActionComment(action.id, action.action);
+        
+        commentButtons.appendChild(cancelButton);
+        commentButtons.appendChild(saveButton);
+        
+        commentBlock.appendChild(commentTextarea);
+        commentBlock.appendChild(commentButtons);
+        
+        actionItem.appendChild(actionHeader);
+        actionItem.appendChild(commentBlock);
+        
+        actionsList.appendChild(actionItem);
+    });
+    
+    content.innerHTML = '';
+    content.appendChild(actionsList);
+}
+
+function showActionCommentBlock(actionId, actionText) {
+    // Скрываем все другие блоки комментариев
+    const allCommentBlocks = document.querySelectorAll('.action-comment-block');
+    allCommentBlocks.forEach(block => {
+        block.classList.remove('show');
+    });
+    
+    // Показываем нужный блок
+    const commentBlock = document.getElementById(`comment-block-${actionId}`);
+    if (commentBlock) {
+        commentBlock.classList.add('show');
+        const textarea = commentBlock.querySelector('.action-comment-textarea');
+        textarea.focus();
+    }
+}
+
+function hideActionCommentBlock(actionId) {
+    const commentBlock = document.getElementById(`comment-block-${actionId}`);
+    if (commentBlock) {
+        commentBlock.classList.remove('show');
+        const textarea = commentBlock.querySelector('.action-comment-textarea');
+        textarea.value = '';
+    }
+}
+
+function saveActionComment(actionId, actionText) {
+    const commentBlock = document.getElementById(`comment-block-${actionId}`);
+    const textarea = commentBlock.querySelector('.action-comment-textarea');
+    const comment = textarea.value.trim();
+    
+    if (!comment) {
+        alert('Пожалуйста, введите комментарий');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const actionItem = document.querySelector(`[data-action-id="${actionId}"]`);
+    const actionButton = actionItem.querySelector('.action-button');
+    const originalText = actionButton.textContent;
+    actionButton.textContent = 'Сохранение...';
+    actionButton.disabled = true;
+    
+    // Отправляем запрос на сервер
+    fetch(`/product/${currentProductId}/actions/${actionId}/complete`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            comment: comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение действия
+            actionItem.classList.add('completed');
+            actionItem.querySelector('.action-text').style.textDecoration = 'line-through';
+            actionItem.querySelector('.action-text').style.color = '#666';
+            actionButton.textContent = 'Выполнено';
+            actionButton.disabled = true;
+            
+            // Скрываем блок комментария
+            hideActionCommentBlock(actionId);
+            
+            // Обновляем лог событий, если получен новый лог
+            if (data.log) {
+                updateEventsLog(data.log);
+            }
+            
+            // Показываем уведомление об успехе
+            showNotification('Действие успешно выполнено', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении действия');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Возвращаем оригинальное состояние при ошибке
+        actionButton.textContent = originalText;
+        actionButton.disabled = false;
+        showNotification('Ошибка при сохранении действия', 'error');
+    });
+}
+
+// Функции для работы с модальным окном создания нового действия
+function showNewActionModal() {
+    const modal = document.getElementById('newActionModal');
+    const form = document.getElementById('newActionForm');
+    
+    // Очищаем форму
+    form.reset();
+    
+    // Устанавливаем минимальную дату (завтра)
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    document.getElementById('actionExpiredAt').min = tomorrowStr;
+    
+    // Сбрасываем счетчик символов
+    document.getElementById('charCount').textContent = '0';
+    
+    // Показываем модальное окно
+    modal.style.display = 'block';
+    
+    // Фокусируемся на поле описания
+    document.getElementById('actionDescription').focus();
+}
+
+function closeNewActionModal() {
+    const modal = document.getElementById('newActionModal');
+    modal.style.display = 'none';
+}
+
+function saveNewAction() {
+    const form = document.getElementById('newActionForm');
+    const expiredAt = document.getElementById('actionExpiredAt').value;
+    const action = document.getElementById('actionDescription').value.trim();
+    
+    if (!expiredAt) {
+        alert('Пожалуйста, выберите дату истечения срока');
+        return;
+    }
+    
+    if (!action) {
+        alert('Пожалуйста, опишите задачу');
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const saveButton = document.querySelector('#newActionModal .btn-primary');
+    const originalText = saveButton.textContent;
+    saveButton.textContent = 'Создание...';
+    saveButton.disabled = true;
+    
+    // Отправляем запрос на сервер
+    fetch(`/product/${currentProductId}/actions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            action: action,
+            expired_at: expiredAt
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Закрываем модальное окно
+            closeNewActionModal();
+            
+            // Обновляем отображение действий
+            updateActionsDisplay(data.action);
+            
+            // Обновляем лог событий, если получен новый лог
+            if (data.log) {
+                updateEventsLog(data.log);
+            }
+            
+            // Показываем уведомление об успехе
+            showNotification('Действие успешно создано', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при создании действия');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при создании действия', 'error');
+    })
+    .finally(() => {
+        // Возвращаем оригинальное состояние кнопки
+        saveButton.textContent = originalText;
+        saveButton.disabled = false;
+    });
+}
+
+function updateActionsDisplay(newAction) {
+    // Обновляем блок действий
+    const actionInfo = document.querySelector('.action-info');
+    if (actionInfo) {
+        const actionDate = actionInfo.querySelector('.action-date');
+        const actionDescription = actionInfo.querySelector('.action-description');
+        const actionButtons = actionInfo.querySelector('.action-buttons');
+        
+        if (actionDate && actionDescription) {
+            // Форматируем дату
+            const expiredDate = new Date(newAction.expired_at);
+            const formattedDate = expiredDate.toLocaleDateString('ru-RU');
+            
+            // Обновляем содержимое
+            actionDate.innerHTML = `
+                <span class="label">Дата:</span>
+                <span class="value">${formattedDate}</span>
+            `;
+            
+            actionDescription.innerHTML = `
+                <span class="label">Что требуется сделать:</span>
+                <p>${newAction.action}</p>
+            `;
+            
+            // Убеждаемся, что кнопки на месте
+            if (!actionButtons.querySelector('.btn-secondary')) {
+                actionButtons.innerHTML = `
+                    <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                    <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                `;
+            }
+        }
+    }
+}
+
+function updateEventsLog(log) {
+    const eventsList = document.querySelector('.events-list');
+    
+    // Создаем новый элемент лога
+    const eventItem = document.createElement('div');
+    eventItem.className = 'event-item';
+    
+    const eventHeader = document.createElement('div');
+    eventHeader.className = 'event-header';
+    
+    const eventType = document.createElement('span');
+    eventType.className = 'event-type';
+    eventType.textContent = log.type ? log.type.name : 'Неизвестный тип';
+    if (log.type && log.type.color) {
+        eventType.style.backgroundColor = log.type.color;
+    }
+    
+    const eventDate = document.createElement('span');
+    eventDate.className = 'event-date';
+    eventDate.textContent = new Date(log.created_at).toLocaleString('ru-RU');
+    
+    eventHeader.appendChild(eventType);
+    eventHeader.appendChild(eventDate);
+    
+    const eventContent = document.createElement('div');
+    eventContent.className = 'event-content';
+    const contentParagraph = document.createElement('p');
+    contentParagraph.textContent = log.log;
+    eventContent.appendChild(contentParagraph);
+    
+    const eventFooter = document.createElement('div');
+    eventFooter.className = 'event-footer';
+    const footerSpan = document.createElement('span');
+    footerSpan.textContent = `Создал: ${log.user ? log.user.name : 'Система'}`;
+    eventFooter.appendChild(footerSpan);
+    
+    eventItem.appendChild(eventHeader);
+    eventItem.appendChild(eventContent);
+    eventItem.appendChild(eventFooter);
+    
+    // Добавляем новый лог в начало списка
+    if (eventsList.firstChild) {
+        eventsList.insertBefore(eventItem, eventsList.firstChild);
+    } else {
+        eventsList.appendChild(eventItem);
+    }
+    
+    // Удаляем сообщение об отсутствии логов, если оно есть
+    const noLogsMessage = eventsList.querySelector('.event-item p[style*="color: #666"]');
+    if (noLogsMessage) {
+        noLogsMessage.parentElement.parentElement.remove();
+    }
+}
+
+// Обработчик для счетчика символов
+document.addEventListener('DOMContentLoaded', function() {
+    const actionDescription = document.getElementById('actionDescription');
+    const charCount = document.getElementById('charCount');
+    
+    if (actionDescription && charCount) {
+        actionDescription.addEventListener('input', function() {
+            charCount.textContent = this.value.length;
+        });
+    }
+    
+    // Устанавливаем цвета для типов событий
+    const eventTypes = document.querySelectorAll('.event-type[data-color]');
+    eventTypes.forEach(function(element) {
+        const color = element.getAttribute('data-color');
+        element.style.backgroundColor = color;
+    });
+});
+
+// Обновляем обработчики закрытия модальных окон
+document.addEventListener('click', function(event) {
+    const logsModal = document.getElementById('logsHistoryModal');
+    const actionsModal = document.getElementById('actionsModal');
+    const newActionModal = document.getElementById('newActionModal');
+    const productStatusModal = document.getElementById('productStatusCommentModal');
+    
+    if (event.target === logsModal) {
+        closeLogsHistory();
+    }
+    
+    if (event.target === actionsModal) {
+        closeActionsModal();
+    }
+    
+    if (event.target === newActionModal) {
+        closeNewActionModal();
+    }
+    
+    if (event.target === productStatusModal) {
+        cancelProductStatusChange();
+    }
+});
+
+// Обновляем обработчики закрытия по Escape
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const logsModal = document.getElementById('logsHistoryModal');
+        const actionsModal = document.getElementById('actionsModal');
+        const newActionModal = document.getElementById('newActionModal');
+        const productStatusModal = document.getElementById('productStatusCommentModal');
+        
+        if (logsModal && logsModal.style.display === 'block') {
+            closeLogsHistory();
+        }
+        
+        if (actionsModal && actionsModal.style.display === 'block') {
+            closeActionsModal();
+        }
+        
+        if (newActionModal && newActionModal.style.display === 'block') {
+            closeNewActionModal();
+        }
+        
+        if (productStatusModal && productStatusModal.style.display === 'block') {
+            cancelProductStatusChange();
+        }
     }
 });
 </script>
@@ -2278,6 +4291,113 @@ document.addEventListener('click', function(event) {
                 <label>Мессенджеры:</label>
                 <div id="contactMessengers" class="contact-messengers"></div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для истории логов -->
+<div id="logsHistoryModal" class="modal" style="display: none;">
+    <div class="modal-content logs-history-modal">
+        <div class="modal-header">
+            <h3>История логов товара</h3>
+            <span class="close" onclick="closeLogsHistory()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="logsHistoryContent">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка логов...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для действий -->
+<div id="actionsModal" class="modal" style="display: none;">
+    <div class="modal-content actions-modal">
+        <div class="modal-header">
+            <h3>Список необходимых действий</h3>
+            <span class="close" onclick="closeActionsModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="actionsList">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка действий...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для комментария к выполненному действию -->
+<div id="actionCommentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Завершение действия</h3>
+            <span class="close" onclick="closeActionCommentModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Оставьте комментарий о выполнении действия.</p>
+            <div class="form-group">
+                <label for="actionComment">Комментарий:</label>
+                <textarea id="actionComment" rows="4" placeholder="Введите комментарий..." required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeActionCommentModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="saveActionComment()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для комментария при смене статуса товара -->
+<div id="productStatusCommentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Смена статуса товара</h3>
+            <span class="close" onclick="cancelProductStatusChange()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Оставьте комментарий по причине смены статуса товара.</p>
+            <div class="form-group">
+                <label for="productStatusComment">Комментарий:</label>
+                <textarea id="productStatusComment" rows="4" placeholder="Введите комментарий..." required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="cancelProductStatusChange()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="saveProductStatusChange()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для создания нового действия -->
+<div id="newActionModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Создать новое действие</h3>
+            <span class="close" onclick="closeNewActionModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="newActionForm">
+                <div class="form-group">
+                    <label for="actionExpiredAt">Дата истечения срока задачи:</label>
+                    <input type="date" id="actionExpiredAt" name="expired_at" required min="{{ date('Y-m-d', strtotime('+1 day')) }}">
+                </div>
+                <div class="form-group">
+                    <label for="actionDescription">Что требуется сделать:</label>
+                    <textarea id="actionDescription" name="action" rows="4" placeholder="Опишите задачу..." required maxlength="1000"></textarea>
+                    <div class="char-counter">
+                        <span id="charCount">0</span>/1000
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeNewActionModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="saveNewAction()">Создать</button>
         </div>
     </div>
 </div>
