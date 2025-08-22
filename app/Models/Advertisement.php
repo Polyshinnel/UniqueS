@@ -26,7 +26,7 @@ class Advertisement extends Model
         'adv_price',
         'adv_price_comment',
         'main_img',
-        'status',
+        'status_id',
         'created_by',
         'published_at',
     ];
@@ -54,6 +54,12 @@ class Advertisement extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    // Связь со статусом объявления
+    public function status(): BelongsTo
+    {
+        return $this->belongsTo(AdvertisementStatus::class, 'status_id');
     }
 
     // Связь с медиафайлами
@@ -144,46 +150,44 @@ class Advertisement extends Model
     // Статусы объявлений
     public static function getStatuses(): array
     {
-        return [
-            'draft' => 'Черновик',
-            'active' => 'Активно',
-            'inactive' => 'Неактивно',
-            'archived' => 'Архив',
-        ];
+        return AdvertisementStatus::all()->pluck('name', 'id')->toArray();
     }
 
     // Получить название статуса
     public function getStatusNameAttribute(): string
     {
-        return self::getStatuses()[$this->status] ?? $this->status;
+        return $this->status?->name ?? 'Неизвестный статус';
     }
 
     // Проверить, опубликовано ли объявление
     public function isPublished(): bool
     {
-        return $this->status === 'active' && $this->published_at !== null;
+        return $this->status?->is_published === true && $this->published_at !== null;
     }
 
     // Опубликовать объявление
     public function publish(): void
     {
-        $this->status = 'active';
-        $this->published_at = now();
-        $this->save();
+        $activeStatus = AdvertisementStatus::where('name', 'Активное')->first();
+        if ($activeStatus) {
+            $this->status_id = $activeStatus->id;
+            $this->published_at = now();
+            $this->save();
+        }
     }
 
     // Методы для работы с данными проверки
-    public function getCheckStatusId()
+    public function getCheckStatusId(): ?int
     {
         return $this->check_data['status_id'] ?? null;
     }
 
-    public function getCheckComment()
+    public function getCheckComment(): ?string
     {
         return $this->check_data['comment'] ?? null;
     }
 
-    public function setCheckData($statusId, $comment = null)
+    public function setCheckData(?int $statusId, ?string $comment = null): void
     {
         $this->check_data = [
             'status_id' => $statusId,
@@ -193,17 +197,17 @@ class Advertisement extends Model
     }
 
     // Методы для работы с данными погрузки
-    public function getLoadingStatusId()
+    public function getLoadingStatusId(): ?int
     {
         return $this->loading_data['status_id'] ?? null;
     }
 
-    public function getLoadingComment()
+    public function getLoadingComment(): ?string
     {
         return $this->loading_data['comment'] ?? null;
     }
 
-    public function setLoadingData($statusId, $comment = null)
+    public function setLoadingData(?int $statusId, ?string $comment = null): void
     {
         $this->loading_data = [
             'status_id' => $statusId,
@@ -213,17 +217,17 @@ class Advertisement extends Model
     }
 
     // Методы для работы с данными демонтажа
-    public function getRemovalStatusId()
+    public function getRemovalStatusId(): ?int
     {
         return $this->removal_data['status_id'] ?? null;
     }
 
-    public function getRemovalComment()
+    public function getRemovalComment(): ?string
     {
         return $this->removal_data['comment'] ?? null;
     }
 
-    public function setRemovalData($statusId, $comment = null)
+    public function setRemovalData(?int $statusId, ?string $comment = null): void
     {
         $this->removal_data = [
             'status_id' => $statusId,
@@ -256,8 +260,13 @@ class Advertisement extends Model
     // Получить активное объявление для товара
     public function getActiveAdvertisement()
     {
+        $activeStatus = AdvertisementStatus::where('name', 'Активное')->first();
+        if (!$activeStatus) {
+            return null;
+        }
+        
         return $this->where('product_id', $this->product_id)
-                   ->where('status', 'active')
+                   ->where('status_id', $activeStatus->id)
                    ->first();
     }
 }

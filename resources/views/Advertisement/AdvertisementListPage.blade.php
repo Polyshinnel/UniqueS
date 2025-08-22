@@ -214,7 +214,7 @@
                         <div class="status-list">
                             <div class="status-item">
                                 <div class="status-label">Статус объявления</div>
-                                <div class="status-badge status-{{ $advertisement->status }}">
+                                <div class="status-badge" style="background-color: {{ $advertisement->status?->color ?? '#6c757d' }}; color: white;">
                                     {{ $advertisement->status_name }}
                                 </div>
                             </div>

@@ -89,7 +89,12 @@ class Product extends Model
     // Получить активное объявление
     public function activeAdvertisement()
     {
-        return $this->hasOne(Advertisement::class)->where('status', 'active');
+        $activeStatus = \App\Models\AdvertisementStatus::where('name', 'Активное')->first();
+        if (!$activeStatus) {
+            return $this->hasOne(Advertisement::class)->whereNull('id'); // Возвращаем пустую связь
+        }
+        
+        return $this->hasOne(Advertisement::class)->where('status_id', $activeStatus->id);
     }
 
     // Связи для логов и действий

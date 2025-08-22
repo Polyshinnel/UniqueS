@@ -23,9 +23,21 @@
             </div>
         </div>
         <div class="advertisement-status">
-            <span class="status-badge" style="background-color: {{ $advertisement->status === 'active' ? '#28a745' : ($advertisement->status === 'draft' ? '#ffc107' : '#6c757d') }}; color: white;">
-                {{ $advertisement->status_name }}
-            </span>
+            <div class="status-selector">
+                <div class="status-badge clickable" onclick="toggleAdvertisementStatusDropdown()" style="background-color: {{ $advertisement->status?->color ?? '#6c757d' }}; color: white;">
+                    {{ $advertisement->status_name }}
+                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6,9 12,15 18,9"></polyline>
+                    </svg>
+                </div>
+                <div class="status-dropdown" id="advertisementStatusDropdown">
+                    @foreach($advertisementStatuses as $status)
+                        <div class="status-option" onclick="changeAdvertisementStatus({{ $status->id }}, '{{ $status->name }}', '{{ $status->color }}')">
+                            <div class="status-badge" style="background-color: {{ $status->color }}; color: white;">{{ $status->name }}</div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
         </div>
     </div>
 
@@ -848,6 +860,27 @@
     </div>
 </div>
 
+<!-- Модальное окно для комментария при смене статуса объявления -->
+<div id="advertisementStatusCommentModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Смена статуса объявления</h3>
+            <span class="close" onclick="cancelAdvertisementStatusChange()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Оставьте комментарий по причине смены статуса объявления.</p>
+            <div class="form-group">
+                <label for="advertisementStatusComment">Комментарий:</label>
+                <textarea id="advertisementStatusComment" rows="4" placeholder="Введите комментарий..." required></textarea>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="cancelAdvertisementStatusChange()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="saveAdvertisementStatusChange()">Сохранить</button>
+        </div>
+    </div>
+</div>
+
 <style>
 /* Стили для отображения HTML-контента из редактора */
 .html-content {
@@ -1017,6 +1050,77 @@
 
 .advertisement-status {
     margin-top: 10px;
+}
+
+.status-selector {
+    position: relative;
+    display: inline-block;
+}
+
+.status-badge.clickable {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.3s ease;
+}
+
+.status-badge.clickable:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.dropdown-arrow {
+    transition: transform 0.3s ease;
+}
+
+.status-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    display: none;
+    min-width: 150px;
+    margin-top: 5px;
+}
+
+.status-dropdown.show {
+    display: block;
+    animation: fadeInDown 0.3s ease;
+}
+
+.status-option {
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.status-option:hover {
+    background-color: #f8f9fa;
+}
+
+.status-option:first-child {
+    border-radius: 8px 8px 0 0;
+}
+
+.status-option:last-child {
+    border-radius: 0 0 8px 8px;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .status-badge {
@@ -4286,11 +4390,209 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Глобальные переменные для хранения данных о смене статуса объявления
+let pendingAdvertisementStatusChange = null;
+
+// Функции для работы с выпадающим списком статусов объявления
+function toggleAdvertisementStatusDropdown() {
+    const dropdown = document.getElementById('advertisementStatusDropdown');
+    const arrow = document.querySelector('.advertisement-status .status-badge.clickable .dropdown-arrow');
+    
+    if (dropdown.classList.contains('show')) {
+        dropdown.classList.remove('show');
+        arrow.style.transform = 'rotate(0deg)';
+    } else {
+        dropdown.classList.add('show');
+        arrow.style.transform = 'rotate(180deg)';
+    }
+}
+
+function changeAdvertisementStatus(statusId, statusName, statusColor) {
+    // Получаем данные о смене статуса
+    pendingAdvertisementStatusChange = {
+        statusId: statusId,
+        statusName: statusName,
+        statusColor: statusColor
+    };
+    
+    // Показываем модальное окно для комментария
+    showAdvertisementStatusModal();
+}
+
+function showAdvertisementStatusModal() {
+    const modal = document.getElementById('advertisementStatusCommentModal');
+    const textarea = document.getElementById('advertisementStatusComment');
+    
+    // Очищаем поле комментария
+    textarea.value = '';
+    
+    // Показываем модальное окно
+    modal.style.display = 'block';
+    
+    // Фокусируемся на поле комментария
+    textarea.focus();
+}
+
+function closeAdvertisementStatusModal() {
+    const modal = document.getElementById('advertisementStatusCommentModal');
+    modal.style.display = 'none';
+}
+
+function cancelAdvertisementStatusChange() {
+    const modal = document.getElementById('advertisementStatusCommentModal');
+    modal.style.display = 'none';
+    
+    // Сбрасываем данные о смене статуса при отмене
+    pendingAdvertisementStatusChange = null;
+}
+
+function saveAdvertisementStatusChange() {
+    const comment = document.getElementById('advertisementStatusComment').value.trim();
+    
+    if (!comment) {
+        alert('Пожалуйста, введите комментарий');
+        return;
+    }
+    
+    if (!pendingAdvertisementStatusChange || !pendingAdvertisementStatusChange.statusId || !pendingAdvertisementStatusChange.statusName) {
+        alert('Ошибка: данные о смене статуса не найдены. Пожалуйста, выберите статус заново.');
+        closeAdvertisementStatusModal();
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const statusBadge = document.querySelector('.advertisement-status .status-badge.clickable');
+    const originalContent = statusBadge.innerHTML;
+    const originalStyle = statusBadge.getAttribute('style');
+    statusBadge.innerHTML = '<span>Обновление...</span>';
+    
+    // Закрываем модальное окно
+    closeAdvertisementStatusModal();
+    
+    // Отправляем запрос на сервер
+    fetch(`/advertisements/{{ $advertisement->id }}/status`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            status_id: pendingAdvertisementStatusChange.statusId,
+            comment: comment
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение статуса
+            statusBadge.className = 'status-badge clickable';
+            statusBadge.style.cssText = `background-color: ${pendingAdvertisementStatusChange.statusColor}; color: white;`;
+            statusBadge.innerHTML = `
+                ${pendingAdvertisementStatusChange.statusName}
+                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="6,9 12,15 18,9"></polyline>
+                </svg>
+            `;
+            
+            // Закрываем выпадающий список
+            toggleAdvertisementStatusDropdown();
+            
+            // Обновляем лог событий, если получен новый лог
+            if (data.log) {
+                updateAdvertisementEventsLog(data.log);
+            }
+            
+            // Показываем уведомление об успехе
+            showNotification('Статус объявления успешно обновлен', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при обновлении статуса');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Возвращаем оригинальное содержимое при ошибке
+        statusBadge.innerHTML = originalContent;
+        statusBadge.setAttribute('style', originalStyle);
+        showNotification('Ошибка при обновлении статуса объявления', 'error');
+    })
+    .finally(() => {
+        // Сбрасываем данные о смене статуса только после завершения операции
+        if (pendingAdvertisementStatusChange) {
+            pendingAdvertisementStatusChange = null;
+        }
+    });
+}
+
+function updateAdvertisementEventsLog(log) {
+    const eventsList = document.querySelector('.events-list');
+    
+    // Создаем новый элемент лога
+    const eventItem = document.createElement('div');
+    eventItem.className = 'event-item';
+    
+    const eventHeader = document.createElement('div');
+    eventHeader.className = 'event-header';
+    
+    const eventType = document.createElement('span');
+    eventType.className = 'event-type';
+    eventType.textContent = log.type ? log.type.name : 'Неизвестный тип';
+    if (log.type && log.type.color) {
+        eventType.style.backgroundColor = log.type.color;
+    }
+    
+    const eventDate = document.createElement('span');
+    eventDate.className = 'event-date';
+    eventDate.textContent = new Date(log.created_at).toLocaleString('ru-RU');
+    
+    eventHeader.appendChild(eventType);
+    eventHeader.appendChild(eventDate);
+    
+    const eventContent = document.createElement('div');
+    eventContent.className = 'event-content';
+    const contentParagraph = document.createElement('p');
+    contentParagraph.textContent = log.log;
+    eventContent.appendChild(contentParagraph);
+    
+    const eventFooter = document.createElement('div');
+    eventFooter.className = 'event-footer';
+    const footerSpan = document.createElement('span');
+    footerSpan.textContent = `Создал: ${log.user ? log.user.name : 'Система'}`;
+    eventFooter.appendChild(footerSpan);
+    
+    eventItem.appendChild(eventHeader);
+    eventItem.appendChild(eventContent);
+    eventItem.appendChild(eventFooter);
+    
+    // Добавляем новый лог в начало списка
+    if (eventsList.firstChild) {
+        eventsList.insertBefore(eventItem, eventsList.firstChild);
+    } else {
+        eventsList.appendChild(eventItem);
+    }
+    
+    // Удаляем сообщение об отсутствии логов, если оно есть
+    const noLogsMessage = eventsList.querySelector('.event-item p[style*="color: #666"]');
+    if (noLogsMessage) {
+        noLogsMessage.parentElement.parentElement.remove();
+    }
+}
+
+// Закрытие выпадающего списка статусов при клике вне его
+document.addEventListener('click', function(event) {
+    const statusSelector = document.querySelector('.advertisement-status .status-selector');
+    const dropdown = document.getElementById('advertisementStatusDropdown');
+    
+    if (!statusSelector.contains(event.target) && dropdown && dropdown.classList.contains('show')) {
+        toggleAdvertisementStatusDropdown();
+    }
+});
+
 // Обновляем обработчики закрытия модальных окон
 document.addEventListener('click', function(event) {
     const logsModal = document.getElementById('logsHistoryModal');
     const actionsModal = document.getElementById('actionsModal');
     const newActionModal = document.getElementById('newActionModal');
+    const advertisementStatusModal = document.getElementById('advertisementStatusCommentModal');
     
     if (event.target === logsModal) {
         closeLogsHistory();
@@ -4303,6 +4605,10 @@ document.addEventListener('click', function(event) {
     if (event.target === newActionModal) {
         closeNewActionModal();
     }
+    
+    if (event.target === advertisementStatusModal) {
+        cancelAdvertisementStatusChange();
+    }
 });
 
 // Обновляем обработчики закрытия по Escape
@@ -4311,6 +4617,7 @@ document.addEventListener('keydown', function(event) {
         const logsModal = document.getElementById('logsHistoryModal');
         const actionsModal = document.getElementById('actionsModal');
         const newActionModal = document.getElementById('newActionModal');
+        const advertisementStatusModal = document.getElementById('advertisementStatusCommentModal');
         
         if (logsModal && logsModal.style.display === 'block') {
             closeLogsHistory();
@@ -4322,6 +4629,10 @@ document.addEventListener('keydown', function(event) {
         
         if (newActionModal && newActionModal.style.display === 'block') {
             closeNewActionModal();
+        }
+        
+        if (advertisementStatusModal && advertisementStatusModal.style.display === 'block') {
+            cancelAdvertisementStatusChange();
         }
     }
 });

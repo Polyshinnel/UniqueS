@@ -84,6 +84,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/advertisements/{advertisement}/removal-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateRemovalStatus'])->name('advertisements.update-removal-status');
     Route::patch('/advertisements/{advertisement}/sale-info', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateSaleInfo'])->name('advertisements.update-sale-info');
     Route::patch('/advertisements/{advertisement}/characteristics', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCharacteristics'])->name('advertisements.update-characteristics');
+    Route::patch('/advertisements/{advertisement}/status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateStatus'])->name('advertisements.update-status');
     
     // Маршруты для логов и действий объявлений
     Route::get('/advertisements/{advertisement}/logs', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getLogs'])->name('advertisements.logs');

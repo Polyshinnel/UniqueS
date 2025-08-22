@@ -16,6 +16,7 @@ use App\Models\ProductCheck;
 use App\Models\ProductLoading;
 use App\Models\ProductRemoval;
 use App\Models\ProductPaymentVariants;
+use App\Models\AdvertisementStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -33,6 +34,7 @@ class AdvertisementController extends Controller
             'product.warehouse',
             'product.regional.role',
             'product.status',
+            'status',
             'creator',
             'mainImage',
             'tags'
@@ -149,7 +151,7 @@ class AdvertisementController extends Controller
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
             'main_img' => $request->main_img,
-            'status' => 'draft',
+            'status_id' => AdvertisementStatus::where('name', 'Ревизия')->first()->id,
             'created_by' => auth()->id() ?? 1, // Временно используем id=1
         ]);
 
@@ -187,6 +189,7 @@ class AdvertisementController extends Controller
             'category',
             'product.company.addresses',
             'product.paymentVariants.priceType',
+            'status',
             'creator',
             'mediaOrdered',
             'tags',
@@ -213,8 +216,9 @@ class AdvertisementController extends Controller
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();
+        $advertisementStatuses = AdvertisementStatus::all();
 
-        return view('Advertisement.AdvertisementShowPage', compact('advertisement', 'checkStatuses', 'installStatuses', 'priceTypes', 'lastLog', 'lastAction'));
+        return view('Advertisement.AdvertisementShowPage', compact('advertisement', 'checkStatuses', 'installStatuses', 'priceTypes', 'advertisementStatuses', 'lastLog', 'lastAction'));
     }
 
     public function edit(Advertisement $advertisement)
@@ -225,6 +229,7 @@ class AdvertisementController extends Controller
             'product.loading.installStatus',
             'product.removal.installStatus',
             'product.paymentVariants.priceType',
+            'status',
             'mediaOrdered'
         ]);
         $categories = ProductCategories::all();
@@ -1279,5 +1284,46 @@ class AdvertisementController extends Controller
                 'type_id' => $systemLogType ? $systemLogType->id : null
             ]);
         }
+    }
+
+    /**
+     * Обновляет статус объявления
+     */
+    public function updateStatus(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'status_id' => 'required|exists:advertisement_statuses,id',
+            'comment' => 'required|string|min:1'
+        ]);
+
+        $oldStatus = $advertisement->status;
+        $newStatus = AdvertisementStatus::find($request->status_id);
+
+        // Обновляем статус объявления
+        $advertisement->update([
+            'status_id' => $request->status_id
+        ]);
+
+        // Создаем запись в логе
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $oldStatusName = $oldStatus ? $oldStatus->name : 'Не указан';
+        $newStatusName = $newStatus->name;
+        
+        $logMessage = "Пользователь {$userName} изменил статус объявления с '{$oldStatusName}' на '{$newStatusName}'. Комментарий: {$request->comment}";
+        
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        
+        $log = AdvLog::create([
+            'advertisement_id' => $advertisement->id,
+            'user_id' => auth()->id(),
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Статус объявления успешно обновлен',
+            'log' => $log->load(['type', 'user'])
+        ]);
     }
 }
