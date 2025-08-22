@@ -552,10 +552,11 @@
                         <option value="">Выберите товар</option>
                         @foreach($products as $productItem)
                             <option value="{{ $productItem->id }}" {{ $product && $product->id == $productItem->id ? 'selected' : '' }}>
-                                {{ $productItem->name }} ({{ $productItem->category->name }})
+                                {{ $productItem->name }} ({{ $productItem->category->name }}) - {{ $productItem->status ? $productItem->status->name : 'Без статуса' }}
                             </option>
                         @endforeach
                     </select>
+                    <small class="form-text text-muted">Товары со статусом "Холд" и "Отказ" недоступны для создания объявлений</small>
                     <button type="button" id="copyFromProduct" class="btn btn-secondary mt-2">Заполнить данными товара</button>
                 </div>
 

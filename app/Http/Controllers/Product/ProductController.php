@@ -237,7 +237,7 @@ class ProductController extends Controller
             'warehouse_id' => $warehouse->id,
             'company_id' => $validated['company_id'],
             'category_id' => $validated['category_id'],
-            'owner_id' => $currentUserId, // Владелец товара - авторизованный пользователь
+            'owner_id' => $company->owner_user_id, // Владелец товара - владелец компании
             'regional_id' => $regionalUserId, // Региональный представитель из выбранной компании
             'status_id' => 1, // Статус "В работе"
             'product_address' => $validated['product_address'] ?? '',
@@ -470,6 +470,9 @@ class ProductController extends Controller
         $company = Company::with('warehouses')->find($request->company_id);
         $warehouse = $company ? $company->warehouses->first() : null;
 
+        // Сохраняем старое значение комментария для сравнения
+        $oldCommentary = $product->common_commentary_after;
+
         // Обновляем товар
         $product->update([
             'name' => $request->name,
@@ -490,6 +493,24 @@ class ProductController extends Controller
             'payment_comment' => $request->payment_comment,
             'common_commentary_after' => $request->common_commentary_after,
         ]);
+
+        // Создаем системный лог при изменении общего комментария после осмотра
+        if ($oldCommentary !== $request->common_commentary_after) {
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            if ($systemLogType) {
+                $oldText = $oldCommentary ?: 'пустой комментарий';
+                $newText = $request->common_commentary_after ?: 'пустой комментарий';
+                
+                $logMessage = "Изменен Общий комментарий после осмотра, с \"{$oldText}\" на \"{$newText}\"";
+                
+                ProductLog::create([
+                    'product_id' => $product->id,
+                    'type_id' => $systemLogType->id,
+                    'log' => $logMessage,
+                    'user_id' => null // От имени системы
+                ]);
+            }
+        }
 
         // Удаляем выбранные медиафайлы
         if ($request->has('delete_media') && is_array($request->delete_media)) {
@@ -571,7 +592,28 @@ class ProductController extends Controller
         } elseif ($field === 'payment_comment') {
             $product->update([$field => $value]);
         } elseif ($field === 'common_commentary_after') {
+            // Сохраняем старое значение для логирования
+            $oldCommentary = $product->common_commentary_after;
+            
             $product->update([$field => $value]);
+            
+            // Создаем системный лог при изменении общего комментария после осмотра
+            if ($oldCommentary !== $value) {
+                $systemLogType = LogType::where('name', 'Системный')->first();
+                if ($systemLogType) {
+                    $oldText = $oldCommentary ?: 'пустой комментарий';
+                    $newText = $value ?: 'пустой комментарий';
+                    
+                    $logMessage = "Изменен Общий комментарий после осмотра, с \"{$oldText}\" на \"{$newText}\"";
+                    
+                    ProductLog::create([
+                        'product_id' => $product->id,
+                        'type_id' => $systemLogType->id,
+                        'log' => $logMessage,
+                        'user_id' => null // От имени системы
+                    ]);
+                }
+            }
         }
 
         return response()->json([

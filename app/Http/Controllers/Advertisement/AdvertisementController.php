@@ -63,7 +63,24 @@ class AdvertisementController extends Controller
         }
 
         $categories = ProductCategories::all();
-        $products = Product::with('category', 'company')->where('owner_id', auth()->id())->get();
+        
+        // Получаем ID статусов "Холд" и "Отказ"
+        $holdStatus = ProductStatus::where('name', 'Холд')->first();
+        $refuseStatus = ProductStatus::where('name', 'Отказ')->first();
+        
+        // Фильтруем товары, исключая статусы "Холд" и "Отказ"
+        $productsQuery = Product::with('category', 'company', 'status')->where('owner_id', auth()->id());
+        
+        if ($holdStatus && $refuseStatus) {
+            $productsQuery->whereNotIn('status_id', [$holdStatus->id, $refuseStatus->id]);
+        } elseif ($holdStatus) {
+            $productsQuery->where('status_id', '!=', $holdStatus->id);
+        } elseif ($refuseStatus) {
+            $productsQuery->where('status_id', '!=', $refuseStatus->id);
+        }
+        
+        $products = $productsQuery->get();
+        
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();
@@ -103,11 +120,16 @@ class AdvertisementController extends Controller
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        $product = Product::with('status')->findOrFail($request->product_id);
 
         // Проверяем, что товар принадлежит авторизованному пользователю
         if ($product->owner_id !== auth()->id()) {
             abort(403, 'Вы можете создавать объявления только для своих товаров.');
+        }
+
+        // Проверяем, что товар не находится в статусе "Холд" или "Отказ"
+        if ($product->status && in_array($product->status->name, ['Холд', 'Отказ'])) {
+            abort(403, 'Нельзя создавать объявления для товаров со статусом "' . $product->status->name . '".');
         }
 
         // Подготавливаем данные для JSON полей

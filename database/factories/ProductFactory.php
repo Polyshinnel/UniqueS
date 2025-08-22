@@ -22,12 +22,14 @@ class ProductFactory extends Factory
      */
     public function definition(): array
     {
+        $company = Company::factory();
+        
         return [
             'name' => $this->faker->words(3, true),
             'description' => $this->faker->paragraph(),
             'category_id' => ProductCategories::factory(),
-            'company_id' => Company::factory(),
-            'owner_id' => User::factory(),
+            'company_id' => $company,
+            'owner_id' => $company->owner_user_id, // Владелец товара - владелец компании
             'regional_id' => User::factory(),
             'status_id' => ProductStatus::factory(),
             'warehouse_id' => Warehouses::factory(),
