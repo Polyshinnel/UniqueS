@@ -23,6 +23,9 @@ use App\Models\User;
 use App\Models\ProductLog;
 use App\Models\ProductAction;
 use App\Models\LogType;
+use App\Models\AdvertisementStatus;
+use App\Models\AdvLog;
+use App\Models\AdvAction;
 use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
@@ -888,6 +891,16 @@ class ProductController extends Controller
             // Получаем новый статус
             $newStatus = $product->status;
 
+            // Специальная обработка для статуса "Холд"
+            if ($newStatus->name === 'Холд') {
+                $this->handleProductHoldStatus($product, auth()->user());
+            }
+
+            // Специальная обработка для статуса "Отказ"
+            if ($newStatus->name === 'Отказ') {
+                $this->handleProductRefuseStatus($product, auth()->user());
+            }
+
             // Создаем запись в логе
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
@@ -1352,5 +1365,115 @@ class ProductController extends Controller
             'log' => $logMessage,
             'type_id' => $systemLogType ? $systemLogType->id : null
         ]);
+    }
+
+    /**
+     * Обрабатывает перевод товара в статус "Холд"
+     */
+    private function handleProductHoldStatus(Product $product, $user)
+    {
+        // 1. Создаем задачу для товара со сроком сейчас + 3 месяца
+        $expiredAt = now()->addMonths(3);
+        
+        ProductAction::create([
+            'product_id' => $product->id,
+            'user_id' => $product->owner_id,
+            'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
+            'expired_at' => $expiredAt,
+            'status' => false
+        ]);
+
+        // 2. Находим связанные объявления для товара
+        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив', 'Холд'])->pluck('id');
+        
+        $advertisementsToUpdate = $product->advertisements()
+            ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+            ->get();
+
+        // 3. Получаем статус "Холд" для объявлений
+        $holdAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Холд')->first();
+
+        if ($holdAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
+            // Обновляем статусы объявлений
+            $product->advertisements()
+                ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                ->update(['status_id' => $holdAdvertisementStatus->id]);
+
+            // 4. Создаем системные логи для каждого объявления
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            foreach ($advertisementsToUpdate as $advertisement) {
+                \App\Models\AdvLog::create([
+                    'advertisement_id' => $advertisement->id,
+                    'type_id' => $systemLogType ? $systemLogType->id : null,
+                    'log' => "В связи с переводом товара в статус Холд, объявление переводится в статус Холд.",
+                    'user_id' => null // От имени системы
+                ]);
+
+                // Создаем задачу для объявления
+                \App\Models\AdvAction::create([
+                    'advertisement_id' => $advertisement->id,
+                    'user_id' => $advertisement->created_by,
+                    'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                    'expired_at' => $expiredAt,
+                    'status' => false
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Обрабатывает перевод товара в статус "Отказ"
+     */
+    private function handleProductRefuseStatus(Product $product, $user)
+    {
+        // 1. Создаем задачу для товара со сроком сейчас + 6 месяцев
+        $expiredAt = now()->addMonths(6);
+        
+        ProductAction::create([
+            'product_id' => $product->id,
+            'user_id' => $product->owner_id,
+            'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
+            'expired_at' => $expiredAt,
+            'status' => false
+        ]);
+
+        // 2. Находим связанные объявления для товара
+        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
+        
+        $advertisementsToUpdate = $product->advertisements()
+            ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+            ->get();
+
+        // 3. Получаем статус "Архив" для объявлений
+        $archiveAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Архив')->first();
+
+        if ($archiveAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
+            // Обновляем статусы объявлений
+            $product->advertisements()
+                ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                ->update(['status_id' => $archiveAdvertisementStatus->id]);
+
+            // 4. Создаем системные логи для каждого объявления
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            foreach ($advertisementsToUpdate as $advertisement) {
+                \App\Models\AdvLog::create([
+                    'advertisement_id' => $advertisement->id,
+                    'type_id' => $systemLogType ? $systemLogType->id : null,
+                    'log' => "В связи с переводом товара в статус Отказ, объявление переводится в статус Архив.",
+                    'user_id' => null // От имени системы
+                ]);
+
+                // Создаем задачу для объявления
+                \App\Models\AdvAction::create([
+                    'advertisement_id' => $advertisement->id,
+                    'user_id' => $advertisement->created_by,
+                    'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                    'expired_at' => $expiredAt,
+                    'status' => false
+                ]);
+            }
+        }
     }
 }

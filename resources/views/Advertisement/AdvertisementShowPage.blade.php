@@ -1,5 +1,9 @@
 @extends('layouts.layout')
 
+@section('header-title')
+    <h1 class="header-title">{{ $advertisement->title }}</h1>
+@endsection
+
 @section('content')
 <!-- CSRF токен для AJAX запросов -->
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -881,11 +885,87 @@
     </div>
 </div>
 
+<!-- Модальное окно для предупреждения о статусе товара -->
+<div id="productStatusWarningModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Внимание!</h3>
+            <span class="close" onclick="closeProductStatusWarning()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div class="warning-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FFC107" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <div id="productStatusWarningMessage"></div>
+            <div class="warning-actions">
+                <p><strong>Для продолжения необходимо:</strong></p>
+                <ol>
+                    <li>Перейти к товару</li>
+                    <li>Изменить статус товара с текущего на другой</li>
+                    <li>Вернуться к объявлению и повторить смену статуса</li>
+                </ol>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeProductStatusWarning()">Закрыть</button>
+            <button type="button" class="btn btn-primary" onclick="goToProduct()">Перейти к товару</button>
+        </div>
+    </div>
+</div>
+
 <style>
 /* Стили для отображения HTML-контента из редактора */
 .html-content {
     line-height: 1.6;
     color: #333;
+}
+
+/* Стили для модального окна предупреждения о статусе товара */
+.warning-icon {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.warning-icon svg {
+    width: 48px;
+    height: 48px;
+}
+
+#productStatusWarningMessage {
+    background-color: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 20px;
+    color: #856404;
+    font-weight: 500;
+}
+
+.warning-actions {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.warning-actions p {
+    margin-bottom: 10px;
+    color: #495057;
+}
+
+.warning-actions ol {
+    margin: 0;
+    padding-left: 20px;
+    color: #495057;
+}
+
+.warning-actions li {
+    margin-bottom: 5px;
 }
 
 .html-content h1,
@@ -4505,7 +4585,12 @@ function saveAdvertisementStatusChange() {
             // Показываем уведомление об успехе
             showNotification('Статус объявления успешно обновлен', 'success');
         } else {
-            throw new Error(data.message || 'Ошибка при обновлении статуса');
+            // Проверяем, является ли ошибка связанной со статусом товара
+            if (data.product_status && (data.product_status === 'Холд' || data.product_status === 'Отказ')) {
+                showProductStatusWarning(data.message, data.product_id, data.product_status);
+            } else {
+                throw new Error(data.message || 'Ошибка при обновлении статуса');
+            }
         }
     })
     .catch(error => {
@@ -4587,12 +4672,47 @@ document.addEventListener('click', function(event) {
     }
 });
 
+// Глобальные переменные для хранения данных о предупреждении статуса товара
+let productStatusWarningData = null;
+
+// Функции для работы с модальным окном предупреждения о статусе товара
+function showProductStatusWarning(message, productId, productStatus) {
+    productStatusWarningData = {
+        productId: productId,
+        productStatus: productStatus
+    };
+    
+    const modal = document.getElementById('productStatusWarningModal');
+    const messageElement = document.getElementById('productStatusWarningMessage');
+    
+    messageElement.innerHTML = `<p>${message}</p>`;
+    
+    modal.style.display = 'block';
+}
+
+function closeProductStatusWarning() {
+    const modal = document.getElementById('productStatusWarningModal');
+    modal.style.display = 'none';
+    productStatusWarningData = null;
+}
+
+function goToProduct() {
+    if (productStatusWarningData && productStatusWarningData.productId) {
+        // Переходим к странице товара
+        window.location.href = `/product/${productStatusWarningData.productId}`;
+    } else {
+        // Если нет данных о товаре, переходим к списку товаров
+        window.location.href = '/products';
+    }
+}
+
 // Обновляем обработчики закрытия модальных окон
 document.addEventListener('click', function(event) {
     const logsModal = document.getElementById('logsHistoryModal');
     const actionsModal = document.getElementById('actionsModal');
     const newActionModal = document.getElementById('newActionModal');
     const advertisementStatusModal = document.getElementById('advertisementStatusCommentModal');
+    const productStatusWarningModal = document.getElementById('productStatusWarningModal');
     
     if (event.target === logsModal) {
         closeLogsHistory();
@@ -4609,6 +4729,10 @@ document.addEventListener('click', function(event) {
     if (event.target === advertisementStatusModal) {
         cancelAdvertisementStatusChange();
     }
+    
+    if (event.target === productStatusWarningModal) {
+        closeProductStatusWarning();
+    }
 });
 
 // Обновляем обработчики закрытия по Escape
@@ -4618,6 +4742,7 @@ document.addEventListener('keydown', function(event) {
         const actionsModal = document.getElementById('actionsModal');
         const newActionModal = document.getElementById('newActionModal');
         const advertisementStatusModal = document.getElementById('advertisementStatusCommentModal');
+        const productStatusWarningModal = document.getElementById('productStatusWarningModal');
         
         if (logsModal && logsModal.style.display === 'block') {
             closeLogsHistory();
@@ -4633,6 +4758,10 @@ document.addEventListener('keydown', function(event) {
         
         if (advertisementStatusModal && advertisementStatusModal.style.display === 'block') {
             cancelAdvertisementStatusChange();
+        }
+        
+        if (productStatusWarningModal && productStatusWarningModal.style.display === 'block') {
+            closeProductStatusWarning();
         }
     }
 });

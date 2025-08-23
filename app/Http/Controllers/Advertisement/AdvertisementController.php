@@ -222,6 +222,7 @@ class AdvertisementController extends Controller
             'category',
             'product.company.addresses',
             'product.paymentVariants.priceType',
+            'product.status',
             'status',
             'creator',
             'mediaOrdered',
@@ -1330,6 +1331,30 @@ class AdvertisementController extends Controller
 
         $oldStatus = $advertisement->status;
         $newStatus = AdvertisementStatus::find($request->status_id);
+
+        // Проверяем, что объявление связано с товаром
+        if (!$advertisement->product) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Объявление не связано с товаром'
+            ], 400);
+        }
+
+        // Проверяем статус товара при переводе объявления в статусы: Ревизия, Активное, Резерв
+        $restrictedStatuses = ['Ревизия', 'Активное', 'Резерв'];
+        if (in_array($newStatus->name, $restrictedStatuses)) {
+            $product = $advertisement->product;
+            $productStatus = $product->status;
+            
+            if ($productStatus && in_array($productStatus->name, ['Холд', 'Отказ'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Нельзя перевести объявление в статус '{$newStatus->name}', так как связанный товар находится в статусе '{$productStatus->name}'. Сначала переведите товар из статуса '{$productStatus->name}'.",
+                    'product_status' => $productStatus->name,
+                    'product_id' => $product->id
+                ], 400);
+            }
+        }
 
         // Обновляем статус объявления
         $advertisement->update([

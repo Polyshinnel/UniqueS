@@ -16,6 +16,11 @@ use App\Models\Sources;
 use App\Models\User;
 use App\Models\Warehouses;
 use App\Models\ProductStatus;
+use App\Models\ProductLog;
+use App\Models\ProductAction;
+use App\Models\AdvLog;
+use App\Models\AdvAction;
+use App\Models\AdvertisementStatus;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -408,37 +413,14 @@ class CompanyController extends Controller
             // Получаем новый статус компании
             $newStatus = $company->status;
 
-            // Проверяем, нужно ли обновить статусы товаров
-            if (in_array($newStatus->name, ['Холд', 'Отказ'])) {
-                // Находим соответствующие статусы товаров
-                $productStatus = \App\Models\ProductStatus::where('name', $newStatus->name)->first();
-                
-                if ($productStatus) {
-                    // Обновляем статусы всех товаров компании
-                    $updatedProductsCount = $company->products()->update([
-                        'status_id' => $productStatus->id
-                    ]);
-
-                    // Добавляем информацию о количестве обновленных товаров в лог
-                    $productsLogText = $updatedProductsCount > 0 
-                        ? " Обновлен статус {$updatedProductsCount} товаров на '{$newStatus->name}'."
-                        : " Товары для обновления не найдены.";
-                }
+            // Специальная обработка для статуса "Холд"
+            if ($newStatus->name === 'Холд') {
+                $this->handleCompanyHoldStatus($company, $user);
             }
 
-            // Если статус "Отказ", создаем действие
+            // Специальная обработка для статуса "Отказ"
             if ($newStatus->name === 'Отказ') {
-                $expiredAt = now()->addMonths(6);
-                
-                CompanyActions::create([
-                    'company_id' => $company->id,
-                    'user_id' => $user->id,
-                    'action' => 'Уточнить наличие станков и дальнейший статус компании',
-                    'expired_at' => $expiredAt,
-                    'status' => false
-                ]);
-
-                $actionLogText = " Создано действие 'Уточнить наличие станков и дальнейший статус компании' со сроком до " . $expiredAt->format('d.m.Y') . ".";
+                $this->handleCompanyRefuseStatus($company, $user);
             }
 
             // Создаем запись в логе
@@ -860,6 +842,192 @@ class CompanyController extends Controller
                 'success' => false,
                 'message' => 'Ошибка при выполнении действия: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Обрабатывает перевод компании в статус "Холд"
+     */
+    private function handleCompanyHoldStatus(Company $company, $user)
+    {
+        // 1. Создаем задачу для компании со сроком сейчас + 3 месяца
+        $expiredAt = now()->addMonths(3);
+        
+        CompanyActions::create([
+            'company_id' => $company->id,
+            'user_id' => $user->id,
+            'action' => 'Актуализировать данные, уточнить по оборудованию и ценам',
+            'expired_at' => $expiredAt,
+            'status' => false
+        ]);
+
+        // 2. Получаем статусы товаров, которые НЕ нужно переводить в "Холд"
+        $excludedProductStatuses = \App\Models\ProductStatus::whereIn('name', ['Продано', 'Холд', 'Отказ'])->pluck('id');
+
+        // 3. Получаем товары компании, которые нужно перевести в "Холд"
+        $productsToUpdate = $company->products()
+            ->whereNotIn('status_id', $excludedProductStatuses)
+            ->get();
+
+        // 4. Получаем статус "Холд" для товаров
+        $holdProductStatus = \App\Models\ProductStatus::where('name', 'Холд')->first();
+
+        if ($holdProductStatus && $productsToUpdate->count() > 0) {
+            // Обновляем статусы товаров
+            $company->products()
+                ->whereNotIn('status_id', $excludedProductStatuses)
+                ->update(['status_id' => $holdProductStatus->id]);
+
+            // 5. Создаем системные логи для каждого товара
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            foreach ($productsToUpdate as $product) {
+                // Создаем системный лог для товара
+                \App\Models\ProductLog::create([
+                    'product_id' => $product->id,
+                    'type_id' => $systemLogType ? $systemLogType->id : null,
+                    'log' => "В связи с переводом компании \"{$company->name}\" в статус Холд, товар переводится в статус холд.",
+                    'user_id' => null // От имени системы
+                ]);
+
+                // Создаем задачу для товара
+                \App\Models\ProductAction::create([
+                    'product_id' => $product->id,
+                    'user_id' => $product->owner_id,
+                    'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
+                    'expired_at' => $expiredAt,
+                    'status' => false
+                ]);
+
+                // 6. Находим связанные объявления для товара
+                $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив', 'Холд'])->pluck('id');
+                
+                $advertisementsToUpdate = $product->advertisements()
+                    ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                    ->get();
+
+                // 7. Получаем статус "Холд" для объявлений
+                $holdAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Холд')->first();
+
+                if ($holdAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
+                    // Обновляем статусы объявлений
+                    $product->advertisements()
+                        ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                        ->update(['status_id' => $holdAdvertisementStatus->id]);
+
+                    // 8. Создаем системные логи для каждого объявления
+                    foreach ($advertisementsToUpdate as $advertisement) {
+                        \App\Models\AdvLog::create([
+                            'advertisement_id' => $advertisement->id,
+                            'type_id' => $systemLogType ? $systemLogType->id : null,
+                            'log' => "В связи с переводом компании \"{$company->name}\" в статус Холд, объявление переводится в статус Холд.",
+                            'user_id' => null // От имени системы
+                        ]);
+
+                        // Создаем задачу для объявления
+                        \App\Models\AdvAction::create([
+                            'advertisement_id' => $advertisement->id,
+                            'user_id' => $advertisement->created_by,
+                            'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                            'expired_at' => $expiredAt,
+                            'status' => false
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Обрабатывает перевод компании в статус "Отказ"
+     */
+    private function handleCompanyRefuseStatus(Company $company, $user)
+    {
+        // 1. Создаем задачу для компании со сроком сейчас + 6 месяцев
+        $expiredAt = now()->addMonths(6);
+        
+        CompanyActions::create([
+            'company_id' => $company->id,
+            'user_id' => $user->id,
+            'action' => 'Актуализировать данные, уточнить по оборудованию и ценам',
+            'expired_at' => $expiredAt,
+            'status' => false
+        ]);
+
+        // 2. Получаем статусы товаров, которые НЕ нужно переводить в "Отказ"
+        $excludedProductStatuses = \App\Models\ProductStatus::whereIn('name', ['Продано', 'Отказ'])->pluck('id');
+
+        // 3. Получаем товары компании, которые нужно перевести в "Отказ"
+        $productsToUpdate = $company->products()
+            ->whereNotIn('status_id', $excludedProductStatuses)
+            ->get();
+
+        // 4. Получаем статус "Отказ" для товаров
+        $refuseProductStatus = \App\Models\ProductStatus::where('name', 'Отказ')->first();
+
+        if ($refuseProductStatus && $productsToUpdate->count() > 0) {
+            // Обновляем статусы товаров
+            $company->products()
+                ->whereNotIn('status_id', $excludedProductStatuses)
+                ->update(['status_id' => $refuseProductStatus->id]);
+
+            // 5. Создаем системные логи для каждого товара
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            foreach ($productsToUpdate as $product) {
+                // Создаем системный лог для товара
+                \App\Models\ProductLog::create([
+                    'product_id' => $product->id,
+                    'type_id' => $systemLogType ? $systemLogType->id : null,
+                    'log' => "В связи с переводом компании \"{$company->name}\" в статус Отказ, товар переводится в статус Отказ.",
+                    'user_id' => null // От имени системы
+                ]);
+
+                // Создаем задачу для товара
+                \App\Models\ProductAction::create([
+                    'product_id' => $product->id,
+                    'user_id' => $product->owner_id,
+                    'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
+                    'expired_at' => $expiredAt,
+                    'status' => false
+                ]);
+
+                // 6. Находим связанные объявления для товара
+                $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
+                
+                $advertisementsToUpdate = $product->advertisements()
+                    ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                    ->get();
+
+                // 7. Получаем статус "Архив" для объявлений
+                $archiveAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Архив')->first();
+
+                if ($archiveAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
+                    // Обновляем статусы объявлений
+                    $product->advertisements()
+                        ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                        ->update(['status_id' => $archiveAdvertisementStatus->id]);
+
+                    // 8. Создаем системные логи для каждого объявления
+                    foreach ($advertisementsToUpdate as $advertisement) {
+                        \App\Models\AdvLog::create([
+                            'advertisement_id' => $advertisement->id,
+                            'type_id' => $systemLogType ? $systemLogType->id : null,
+                            'log' => "В связи с переводом компании \"{$company->name}\" в статус Отказ, объявление переводится в статус Архив.",
+                            'user_id' => null // От имени системы
+                        ]);
+
+                        // Создаем задачу для объявления
+                        \App\Models\AdvAction::create([
+                            'advertisement_id' => $advertisement->id,
+                            'user_id' => $advertisement->created_by,
+                            'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                            'expired_at' => $expiredAt,
+                            'status' => false
+                        ]);
+                    }
+                }
+            }
         }
     }
 }
