@@ -40,11 +40,10 @@ class ProductController extends Controller
             'loading.installStatus',
             'removal.installStatus',
             'paymentVariants.priceType',
-            'activeAdvertisement',
+            'advertisements.status',
             'actions' => function($query) {
                 $query->where('status', false)
-                      ->latest('expired_at')
-                      ->limit(1);
+                      ->orderBy('expired_at', 'asc');
             }
         ])->get();
 
@@ -349,6 +348,13 @@ class ProductController extends Controller
     {
         $sortOrder = 0;
 
+        // Получаем артикул организации и товара для создания структуры папок
+        $companySku = $this->transliterate($product->company->sku ?? 'unknown');
+        $productSku = $this->transliterate($product->sku ?? 'unknown');
+
+        // Создаем структуру папок: Артикул_Организации/Артикул_Товара/
+        $folderPath = "products/{$companySku}/{$productSku}";
+
         foreach ($files as $file) {
             if ($file->isValid()) {
                 // Определяем тип файла
@@ -358,8 +364,8 @@ class ProductController extends Controller
                 // Генерируем уникальное имя файла
                 $fileName = $this->generateUniqueFileName($file);
 
-                // Сохраняем файл в папку products
-                $filePath = $file->storeAs('products', $fileName, 'public');
+                // Сохраняем файл в созданную структуру папок
+                $filePath = $file->storeAs($folderPath, $fileName, 'public');
 
                 // Создаем запись в базе данных
                 ProductMedia::create([
@@ -373,6 +379,57 @@ class ProductController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * Транслитерирует строку, заменяя кириллицу на латиницу и тире на нижнее подчеркивание
+     */
+    private function transliterate($string)
+    {
+        // Заменяем тире на нижнее подчеркивание
+        $string = str_replace('-', '_', $string);
+        
+        // Массив соответствий кириллицы и латиницы
+        $converter = [
+            'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd',
+            'е' => 'e', 'ё' => 'e', 'ж' => 'zh', 'з' => 'z', 'и' => 'i',
+            'й' => 'y', 'к' => 'k', 'л' => 'l', 'м' => 'm', 'н' => 'n',
+            'о' => 'o', 'п' => 'p', 'р' => 'r', 'с' => 's', 'т' => 't',
+            'у' => 'u', 'ф' => 'f', 'х' => 'h', 'ц' => 'c', 'ч' => 'ch',
+            'ш' => 'sh', 'щ' => 'sch', 'ь' => '', 'ы' => 'y', 'ъ' => '',
+            'э' => 'e', 'ю' => 'yu', 'я' => 'ya',
+            
+            'А' => 'A', 'Б' => 'B', 'В' => 'V', 'Г' => 'G', 'Д' => 'D',
+            'Е' => 'E', 'Ё' => 'E', 'Ж' => 'Zh', 'З' => 'Z', 'И' => 'I',
+            'Й' => 'Y', 'К' => 'K', 'Л' => 'L', 'М' => 'M', 'Н' => 'N',
+            'О' => 'O', 'П' => 'P', 'Р' => 'R', 'С' => 'S', 'Т' => 'T',
+            'У' => 'U', 'Ф' => 'F', 'Х' => 'H', 'Ц' => 'C', 'Ч' => 'Ch',
+            'Ш' => 'Sh', 'Щ' => 'Sch', 'Ь' => '', 'Ы' => 'Y', 'Ъ' => '',
+            'Э' => 'E', 'Ю' => 'Yu', 'Я' => 'Ya',
+        ];
+        
+        // Заменяем кириллицу на латиницу
+        $string = strtr($string, $converter);
+        
+        // Удаляем все символы, кроме букв, цифр и нижнего подчеркивания
+        $string = preg_replace('/[^a-zA-Z0-9_]/', '', $string);
+        
+        // Убираем множественные подчеркивания
+        $string = preg_replace('/_+/', '_', $string);
+        
+        // Убираем подчеркивания в начале и конце
+        $string = trim($string, '_');
+        
+        // Если строка пустая, возвращаем 'unknown'
+        return $string ?: 'unknown';
+    }
+
+    /**
+     * Публичный метод для тестирования транслитерации
+     */
+    public function testTransliterate($string)
+    {
+        return $this->transliterate($string);
     }
 
     private function getFileType($mimeType)
@@ -419,10 +476,10 @@ class ProductController extends Controller
             ->latest()
             ->first();
 
-        // Получаем последнее невыполненное действие товара
+        // Получаем первое невыполненное действие товара (сортировка по сроку выполнения ASC)
         $lastAction = ProductAction::where('product_id', $product->id)
             ->where('status', false)
-            ->latest('expired_at')
+            ->orderBy('expired_at', 'asc')
             ->first();
 
         $statuses = ProductStatus::all();

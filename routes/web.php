@@ -95,6 +95,21 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/advertisements/{advertisement}/actions/{actionId}/complete', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'completeAction'])->name('advertisements.complete-action');
 
     Route::get('/guide', [GuidesMain::class, 'index']);
+    
+    // Тестовый маршрут для проверки транслитерации (удалить после тестирования)
+    Route::get('/test-transliterate/{string}', function($string) {
+        $controller = new \App\Http\Controllers\Product\ProductController();
+        $result = $controller->testTransliterate($string);
+        return response()->json([
+            'original' => $string,
+            'transliterated' => $result
+        ]);
+    });
+    
+    // Тестовая страница для проверки транслитерации (удалить после тестирования)
+    Route::get('/test-transliterate-page', function() {
+        return view('test-transliterate');
+    });
 });
 // Роуты авторизации
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

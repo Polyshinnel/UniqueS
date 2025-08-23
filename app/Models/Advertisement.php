@@ -248,12 +248,12 @@ class Advertisement extends Model
         return $this->hasMany(AdvAction::class);
     }
 
-    // Получить последнее доступное действие
+    // Получить первое доступное действие (сортировка по сроку выполнения ASC)
     public function getLastAvailableAction()
     {
         return $this->actions()
             ->where('status', false)
-            ->latest('expired_at')
+            ->orderBy('expired_at', 'asc')
             ->first();
     }
 

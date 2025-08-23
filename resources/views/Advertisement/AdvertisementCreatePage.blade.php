@@ -503,6 +503,157 @@
 .tag-remove:hover {
     color: #ff6b6b;
 }
+
+/* Стили для select с поиском */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 48px;
+}
+
+.select-input:hover {
+    border-color: #133E71;
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.select-input.active {
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.select-placeholder {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.select-value {
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.select-arrow {
+    color: #6c757d;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.select-input.active .select-arrow {
+    transform: rotate(180deg);
+}
+
+.select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 2px;
+    display: none;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.select-dropdown.active {
+    display: block;
+    animation: selectFadeIn 0.15s ease-out;
+}
+
+@keyframes selectFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.select-search {
+    padding: 12px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.select-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.select-search-input:focus {
+    border-color: #133E71;
+}
+
+.select-options {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.select-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 14px;
+    color: #495057;
+}
+
+.select-option:hover {
+    background: #f8f9fa;
+}
+
+.select-option.selected {
+    background: #e3f2fd;
+    color: #133E71;
+    font-weight: 500;
+}
+
+/* Стили для скроллбара в select */
+.select-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.select-options::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.select-options::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.select-options::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
 </style>
 
 <div class="product-create-container">
@@ -548,16 +699,32 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="product_id">Товар</label>
-                    <select name="product_id" id="product_id" class="form-control" required>
-                        <option value="">Выберите товар</option>
-                        @foreach($products as $productItem)
-                            <option value="{{ $productItem->id }}" {{ $product && $product->id == $productItem->id ? 'selected' : '' }}>
-                                {{ $productItem->name }} ({{ $productItem->category->name }}) - {{ $productItem->status ? $productItem->status->name : 'Без статуса' }}
-                            </option>
-                        @endforeach
-                    </select>
-                    <small class="form-text text-muted">Товары со статусом "Холд" и "Отказ" недоступны для создания объявлений</small>
-                    <button type="button" id="copyFromProduct" class="btn btn-secondary mt-2">Заполнить данными товара</button>
+                    <div class="select-wrapper">
+                        <div class="select-input" id="product_select" tabindex="0">
+                            <span class="select-placeholder">Выберите товар</span>
+                            <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="select-dropdown" id="product_select_dropdown">
+                            <div class="select-search">
+                                <input type="text" id="product_select_search" placeholder="Поиск товаров..." class="select-search-input">
+                            </div>
+                            <div class="select-options" id="product_select_options">
+                                <!-- Опции будут заполнены JavaScript -->
+                            </div>
+                        </div>
+                        <select name="product_id" id="product_id" class="form-control" required style="display: none;">
+                            <option value="">Выберите товар</option>
+                            @foreach($products as $productItem)
+                                <option value="{{ $productItem->id }}" {{ $product && $product->id == $productItem->id ? 'selected' : '' }}>
+                                    {{ $productItem->name }} ({{ $productItem->category->name }}) - {{ $productItem->status ? $productItem->status->name : 'Без статуса' }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <small class="form-text text-muted">Доступны для создания товары в статусах: В продаже, Вторая очередь</small>
+                    <button type="button" id="copyFromProduct" class="btn btn-secondary mt-2" style="margin-top: 7px;">Заполнить данными товара</button>
                 </div>
 
                 <div class="form-group">
@@ -902,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', function() {
     copyButton.addEventListener('click', function() {
         const productId = productSelect.value;
         if (!productId) {
-            alert('Сначала выберите товар');
+            showNotification('Сначала выберите товар', 'error');
             return;
         }
 
@@ -955,11 +1122,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.getElementById('adv_price_comment').value = data.payment_data.adv_price_comment || '';
             }
             
-            alert('Данные успешно скопированы из товара!');
+            showNotification('Данные успешно скопированы из товара!', 'success');
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('Ошибка при копировании данных');
+            showNotification('Ошибка при копировании данных', 'error');
         });
     });
 
@@ -1670,5 +1837,258 @@ function initializeTreeSelect(treeselectId, selectId, categories) {
         }
     }
 }
+
+// Инициализация select с поиском для товаров
+document.addEventListener('DOMContentLoaded', function() {
+    initializeProductSelect();
+});
+
+// Функция инициализации select с поиском для товаров
+function initializeProductSelect() {
+    const selectInput = document.getElementById('product_select');
+    const selectDropdown = document.getElementById('product_select_dropdown');
+    const selectOptions = document.getElementById('product_select_options');
+    const selectSearch = document.getElementById('product_select_search');
+    const hiddenSelect = document.getElementById('product_id');
+    
+    if (!selectInput || !selectDropdown || !selectOptions || !hiddenSelect) return;
+    
+    // Получаем данные товаров из скрытого select
+    const products = [];
+    const options = hiddenSelect.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value) {
+            products.push({
+                id: option.value,
+                name: option.textContent.trim()
+            });
+        }
+    });
+    
+    let isOpen = false;
+    let selectedValue = hiddenSelect.value;
+    
+    // Обновляем опции
+    function updateOptions(filteredProducts = null) {
+        const productsToUse = filteredProducts || products;
+        
+        let html = '';
+        productsToUse.forEach(product => {
+            const isSelected = selectedValue && selectedValue.toString() === product.id.toString();
+            html += `<div class="select-option ${isSelected ? 'selected' : ''}" data-value="${product.id}">
+                <span>${product.name}</span>
+            </div>`;
+        });
+        
+        selectOptions.innerHTML = html;
+        attachOptionEvents();
+    }
+    
+    // Привязываем события к опциям
+    function attachOptionEvents() {
+        const optionElements = selectOptions.querySelectorAll('.select-option');
+        optionElements.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.dataset.value;
+                const productData = products.find(prod => prod.id.toString() === value);
+                
+                selectedValue = value;
+                updateSelectedDisplay(productData);
+                updateHiddenSelect();
+                closeDropdown();
+                
+                // Триггерим событие изменения для совместимости с существующим кодом
+                const event = new Event('change', { bubbles: true });
+                hiddenSelect.dispatchEvent(event);
+            });
+        });
+    }
+    
+    // Обновляем отображение выбранного значения
+    function updateSelectedDisplay(productData) {
+        const placeholder = selectInput.querySelector('.select-placeholder');
+        const valueElement = selectInput.querySelector('.select-value');
+        
+        if (!productData) {
+            placeholder.style.display = 'block';
+            if (valueElement) {
+                valueElement.style.display = 'none';
+            }
+            return;
+        }
+        
+        placeholder.style.display = 'none';
+        
+        if (!valueElement) {
+            const newValueElement = document.createElement('span');
+            newValueElement.className = 'select-value';
+            selectInput.insertBefore(newValueElement, selectInput.querySelector('.select-arrow'));
+        }
+        
+        const currentValueElement = selectInput.querySelector('.select-value');
+        currentValueElement.textContent = productData.name;
+        currentValueElement.style.display = 'block';
+    }
+    
+    // Обновляем скрытый select
+    function updateHiddenSelect() {
+        // Очищаем все опции
+        hiddenSelect.innerHTML = '';
+        
+        if (selectedValue) {
+            const option = document.createElement('option');
+            option.value = selectedValue;
+            option.selected = true;
+            option.textContent = products.find(prod => prod.id.toString() === selectedValue.toString())?.name || '';
+            hiddenSelect.appendChild(option);
+        }
+    }
+    
+    // Открытие/закрытие выпадающего списка
+    function toggleDropdown() {
+        isOpen = !isOpen;
+        
+        if (isOpen) {
+            selectInput.classList.add('active');
+            selectDropdown.classList.add('active');
+            updateOptions();
+            selectSearch.focus();
+        } else {
+            closeDropdown();
+        }
+    }
+    
+    function closeDropdown() {
+        isOpen = false;
+        selectInput.classList.remove('active');
+        selectDropdown.classList.remove('active');
+    }
+    
+    // Фильтрация
+    function filterOptions(searchTerm) {
+        if (!searchTerm) {
+            updateOptions();
+            return;
+        }
+        
+        const searchTermLower = searchTerm.toLowerCase();
+        const filteredProducts = products.filter(product => 
+            product.name.toLowerCase().includes(searchTermLower)
+        );
+        
+        updateOptions(filteredProducts);
+    }
+    
+    // События
+    selectInput.addEventListener('click', toggleDropdown);
+    
+    selectInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) {
+                toggleDropdown();
+            }
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    selectSearch.addEventListener('input', function() {
+        filterOptions(this.value);
+    });
+    
+    selectSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    // Закрытие при клике вне
+    document.addEventListener('click', function(e) {
+        if (!selectInput.contains(e.target) && !selectDropdown.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+    
+    // Инициализация с текущими значениями
+    if (selectedValue) {
+        const productData = products.find(prod => prod.id.toString() === selectedValue.toString());
+        if (productData) {
+            updateSelectedDisplay(productData);
+            updateHiddenSelect();
+        }
+    }
+}
+
+// Функция для показа уведомлений (аналогично ProductItemPage)
+function showNotification(message, type = 'info') {
+    // Создаем уведомление
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // Добавляем стили
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        z-index: 3000;
+        animation: slideIn 0.3s ease;
+        max-width: 300px;
+    `;
+    
+    // Цвета для разных типов уведомлений
+    if (type === 'success') {
+        notification.style.backgroundColor = '#28a745';
+    } else if (type === 'error') {
+        notification.style.backgroundColor = '#dc3545';
+    } else {
+        notification.style.backgroundColor = '#17a2b8';
+    }
+    
+    document.body.appendChild(notification);
+    
+    // Удаляем уведомление через 3 секунды
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+// Добавляем CSS анимации для уведомлений
+const notificationStyle = document.createElement('style');
+notificationStyle.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(notificationStyle);
 </script>
 @endsection 

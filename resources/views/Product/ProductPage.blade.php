@@ -56,15 +56,6 @@
                                 @endif
                             </div>
                             
-                            <!-- Цена продажи под фото -->
-                            <div class="sale-price-info">
-                                @if($product->activeAdvertisement && $product->activeAdvertisement->adv_price)
-                                    <div class="sale-price-value">{{ number_format($product->activeAdvertisement->adv_price, 0, ',', ' ') }} ₽</div>
-                                @else
-                                    <div class="no-sale-price">Цена продажи не указана</div>
-                                @endif
-                            </div>
-                            
                             <!-- Адрес станка под фото -->
                             <div class="machine-address-info">
                                 @if($product->product_address)
@@ -251,14 +242,46 @@
                             </div>
                             <div class="status-item">
                                 <div class="status-label">Статус объявления</div>
-                                <div class="status-badge status-active">
-                                    Актив
-                                </div>
+                                @if($product->advertisements->isNotEmpty())
+                                    @php $activeAd = $product->advertisements->where('status.name', 'Активное')->first(); @endphp
+                                    @if($activeAd)
+                                        <div class="status-badge status-active">
+                                            {{ $activeAd->status->name }}
+                                        </div>
+                                    @else
+                                        @php $lastAd = $product->advertisements->first(); @endphp
+                                        <div class="status-badge status-{{ strtolower($lastAd->status->name ?? 'unknown') }}" style="background-color: {{ $lastAd->status->color ?? '#6c757d' }}">
+                                            {{ $lastAd->status->name ?? 'Не указан' }}
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="status-badge status-not-created">
+                                        Не создано
+                                    </div>
+                                    <div class="create-advertisement-btn">
+                                        <a href="{{ route('advertisements.create', ['product_id' => $product->id]) }}" class="btn-create-ad">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                            </svg>
+                                            Создать объявление
+                                        </a>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                         <div class="price-info">
                             <div class="price-label">Цена продажи:</div>
-                            <div class="price-value">0 руб</div>
+                            @if($product->advertisements->isNotEmpty())
+                                @php $adWithPrice = $product->advertisements->where('adv_price', '!=', null)->where('adv_price', '>', 0)->first(); @endphp
+                                @if($adWithPrice)
+                                    <div class="price-value">{{ number_format($adWithPrice->adv_price, 0, ',', ' ') }} ₽</div>
+                                @else
+                                    <div class="price-value">Не указана</div>
+                                @endif
+                            @else
+                                <div class="price-value">Не указана</div>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -729,6 +752,34 @@ window.onclick = function(event) {
     display: inline-block;
 }
 
+/* Стили для цены продажи под фото */
+.sale-price-info {
+    margin-top: 6px;
+    text-align: left;
+}
+
+.sale-price-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #dc3545;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: inline-block;
+}
+
+.no-sale-price {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+    padding: 6px 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    display: inline-block;
+}
+
 /* Стили для адреса станка под фото */
 .machine-address-info {
     margin-top: 6px;
@@ -913,6 +964,38 @@ window.onclick = function(event) {
 
 .status-unknown {
     background-color: #6c757d !important;
+}
+
+.status-not-created {
+    background-color: #dc3545 !important;
+}
+
+.create-advertisement-btn {
+    margin-top: 8px;
+}
+
+.btn-create-ad {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: #133E71;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.btn-create-ad:hover {
+    background: #1C5BA4;
+    transform: translateY(-1px);
+}
+
+.btn-create-ad svg {
+    width: 12px;
+    height: 12px;
 }
 
 .price-info {

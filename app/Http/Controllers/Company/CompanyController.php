@@ -37,8 +37,7 @@ class CompanyController extends Controller
             'status',
             'actions' => function($query) {
                 $query->where('status', false)
-                      ->latest('expired_at')
-                      ->limit(1);
+                      ->orderBy('expired_at', 'asc');
             }
         ]);
 
@@ -350,10 +349,10 @@ class CompanyController extends Controller
             ->latest()
             ->first();
 
-        // Получаем последнее невыполненное действие компании
+        // Получаем первое невыполненное действие компании (сортировка по сроку выполнения ASC)
         $lastAction = CompanyActions::where('company_id', $company->id)
             ->where('status', false)
-            ->latest('expired_at')
+            ->orderBy('expired_at', 'asc')
             ->first();
 
         $statuses = \App\Models\CompanyStatus::all();

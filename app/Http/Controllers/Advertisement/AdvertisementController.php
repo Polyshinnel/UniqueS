@@ -63,32 +63,40 @@ class AdvertisementController extends Controller
         }
 
         $categories = ProductCategories::all();
-        
-        // Получаем ID статусов "Холд" и "Отказ"
-        $holdStatus = ProductStatus::where('name', 'Холд')->first();
-        $refuseStatus = ProductStatus::where('name', 'Отказ')->first();
-        
-        // Фильтруем товары, исключая статусы "Холд" и "Отказ"
+
+        // Получаем ID статусов "Холд", "Отказ", "В работе" и "Продано"
+
+        $productStatusList = ProductStatus::all();
+        $interestingStatus = ['Холд', 'Отказ', 'В работе', 'Продано', 'Резерв'];
+
+
+        // Фильтруем товары, исключая статусы "Холд", "Отказ", "В работе" и "Продано"
         $productsQuery = Product::with('category', 'company', 'status')->where('owner_id', auth()->id());
-        
-        if ($holdStatus && $refuseStatus) {
-            $productsQuery->whereNotIn('status_id', [$holdStatus->id, $refuseStatus->id]);
-        } elseif ($holdStatus) {
-            $productsQuery->where('status_id', '!=', $holdStatus->id);
-        } elseif ($refuseStatus) {
-            $productsQuery->where('status_id', '!=', $refuseStatus->id);
+
+        $excludedStatusIds = [];
+
+        foreach ($productStatusList as $item)
+        {
+            if(in_array($item->name, $interestingStatus))
+            {
+                $excludedStatusIds[] = $item->id;
+            }
         }
-        
+
+        if (!empty($excludedStatusIds)) {
+            $productsQuery->whereNotIn('status_id', $excludedStatusIds);
+        }
+
         $products = $productsQuery->get();
-        
+
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();
 
         return view('Advertisement.AdvertisementCreatePage', compact(
-            'categories', 
-            'products', 
-            'product', 
+            'categories',
+            'products',
+            'product',
             'checkStatuses',
             'installStatuses',
             'priceTypes'
@@ -127,8 +135,8 @@ class AdvertisementController extends Controller
             abort(403, 'Вы можете создавать объявления только для своих товаров.');
         }
 
-        // Проверяем, что товар не находится в статусе "Холд" или "Отказ"
-        if ($product->status && in_array($product->status->name, ['Холд', 'Отказ'])) {
+        // Проверяем, что товар не находится в статусе "Холд", "Отказ", "В работе" или "Продано"
+        if ($product->status && in_array($product->status->name, ['Холд', 'Отказ', 'В работе', 'Продано'])) {
             abort(403, 'Нельзя создавать объявления для товаров со статусом "' . $product->status->name . '".');
         }
 
@@ -202,6 +210,9 @@ class AdvertisementController extends Controller
             }
         }
 
+        // Создаем лог о создании объявления
+        $this->logAdvertisementCreation($advertisement);
+
         return redirect()->route('advertisements.index')->with('success', 'Объявление успешно создано!');
     }
 
@@ -217,8 +228,7 @@ class AdvertisementController extends Controller
             'tags',
             'actions' => function($query) {
                 $query->where('status', false)
-                      ->latest('expired_at')
-                      ->limit(1);
+                      ->orderBy('expired_at', 'asc');
             }
         ]);
 
@@ -228,10 +238,10 @@ class AdvertisementController extends Controller
             ->latest()
             ->first();
 
-        // Получаем последнее невыполненное действие объявления
+        // Получаем первое невыполненное действие объявления (сортировка по сроку выполнения ASC)
         $lastAction = AdvAction::where('advertisement_id', $advertisement->id)
             ->where('status', false)
-            ->latest('expired_at')
+            ->orderBy('expired_at', 'asc')
             ->first();
 
         // Загружаем статусы для отображения
@@ -246,7 +256,7 @@ class AdvertisementController extends Controller
     public function edit(Advertisement $advertisement)
     {
         $advertisement->load([
-            'product.mediaOrdered', 
+            'product.mediaOrdered',
             'product.check.checkStatus',
             'product.loading.installStatus',
             'product.removal.installStatus',
@@ -261,9 +271,9 @@ class AdvertisementController extends Controller
         $priceTypes = ProductPriceType::all();
 
         return view('Advertisement.AdvertisementEditPage', compact(
-            'advertisement', 
-            'categories', 
-            'products', 
+            'advertisement',
+            'categories',
+            'products',
             'checkStatuses',
             'installStatuses',
             'priceTypes'
@@ -345,7 +355,7 @@ class AdvertisementController extends Controller
         if ($request->has('tags')) {
             // Удаляем старые теги
             $advertisement->tags()->delete();
-            
+
             // Добавляем новые теги
             if ($request->tags) {
                 $tags = json_decode($request->tags, true);
@@ -466,7 +476,7 @@ class AdvertisementController extends Controller
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();
-        
+
         return response()->json([
             'check_statuses' => $checkStatuses,
             'install_statuses' => $installStatuses,
@@ -489,9 +499,9 @@ class AdvertisementController extends Controller
             if (!$media->is_selected_from_product && Storage::disk('public')->exists($media->file_path)) {
                 Storage::disk('public')->delete($media->file_path);
             }
-            
+
             $media->delete();
-            
+
             return response()->json(['success' => true]);
         }
 
@@ -511,7 +521,7 @@ class AdvertisementController extends Controller
         try {
             // Сохраняем старые значения для логирования
             $oldValue = null;
-            
+
             if ($field === 'technical_characteristics') {
                 $oldValue = $advertisement->technical_characteristics;
                 $advertisement->update(['technical_characteristics' => $value]);
@@ -564,13 +574,13 @@ class AdvertisementController extends Controller
             $oldPurchasePrice = null;
             $oldPaymentComment = null;
             $oldPaymentVariants = [];
-            
+
             if ($advertisement->product) {
                 $oldPurchasePrice = $advertisement->product->purchase_price;
                 $oldPaymentComment = $advertisement->product->payment_comment;
                 $oldPaymentVariants = $advertisement->product->paymentVariants->pluck('price_type')->toArray();
             }
-            
+
             // Нормализуем значения для сравнения
             $oldAdvPriceCommentNormalized = $oldAdvPriceComment ? trim($oldAdvPriceComment) : '';
             $newAdvPriceCommentNormalized = $request->adv_price_comment ? trim($request->adv_price_comment) : '';
@@ -580,12 +590,12 @@ class AdvertisementController extends Controller
             // Обновляем данные в связанном товаре
             if ($advertisement->product) {
                 $product = $advertisement->product;
-                
+
                 // Обновляем варианты оплаты
                 if ($request->has('payment_types')) {
                     // Удаляем старые варианты
                     $product->paymentVariants()->delete();
-                    
+
                     // Добавляем новые варианты
                     foreach ($request->payment_types as $typeId) {
                         ProductPaymentVariants::create([
@@ -629,11 +639,11 @@ class AdvertisementController extends Controller
             $oldCheckData = $advertisement->check_data ?? [];
             $oldStatusId = $oldCheckData['status_id'] ?? null;
             $oldComment = $oldCheckData['comment'] ?? null;
-            
+
             // Получаем названия статусов
             $oldStatusName = $oldStatusId ? ProductCheckStatuses::find($oldStatusId)->name : null;
             $newStatusName = $request->status_id ? ProductCheckStatuses::find($request->status_id)->name : null;
-            
+
             // Нормализуем значения для сравнения
             $oldCommentNormalized = $oldComment ? trim($oldComment) : '';
             $newCommentNormalized = $request->comment ? trim($request->comment) : '';
@@ -666,11 +676,11 @@ class AdvertisementController extends Controller
             $oldLoadingData = $advertisement->loading_data ?? [];
             $oldStatusId = $oldLoadingData['status_id'] ?? null;
             $oldComment = $oldLoadingData['comment'] ?? null;
-            
+
             // Получаем названия статусов
             $oldStatusName = $oldStatusId ? ProductInstallStatuses::find($oldStatusId)->name : null;
             $newStatusName = $request->status_id ? ProductInstallStatuses::find($request->status_id)->name : null;
-            
+
             // Нормализуем значения для сравнения
             $oldCommentNormalized = $oldComment ? trim($oldComment) : '';
             $newCommentNormalized = $request->comment ? trim($request->comment) : '';
@@ -703,11 +713,11 @@ class AdvertisementController extends Controller
             $oldRemovalData = $advertisement->removal_data ?? [];
             $oldStatusId = $oldRemovalData['status_id'] ?? null;
             $oldComment = $oldRemovalData['comment'] ?? null;
-            
+
             // Получаем названия статусов
             $oldStatusName = $oldStatusId ? ProductInstallStatuses::find($oldStatusId)->name : null;
             $newStatusName = $request->status_id ? ProductInstallStatuses::find($request->status_id)->name : null;
-            
+
             // Нормализуем значения для сравнения
             $oldCommentNormalized = $oldComment ? trim($oldComment) : '';
             $newCommentNormalized = $request->comment ? trim($request->comment) : '';
@@ -739,7 +749,7 @@ class AdvertisementController extends Controller
             // Сохраняем старые значения для логирования
             $oldAdvPrice = $advertisement->adv_price;
             $oldAdvPriceComment = $advertisement->adv_price_comment;
-            
+
             // Нормализуем значения для сравнения
             $oldAdvPriceCommentNormalized = $oldAdvPriceComment ? trim($oldAdvPriceComment) : '';
             $newAdvPriceCommentNormalized = $request->adv_price_comment ? trim($request->adv_price_comment) : '';
@@ -770,7 +780,7 @@ class AdvertisementController extends Controller
             // Сохраняем старые значения для логирования
             $oldMainCharacteristics = $advertisement->main_characteristics;
             $oldComplectation = $advertisement->complectation;
-            
+
             // Нормализуем значения для сравнения
             $oldMainCharacteristicsNormalized = $oldMainCharacteristics ? trim($oldMainCharacteristics) : '';
             $newMainCharacteristicsNormalized = $request->main_characteristics ? trim($request->main_characteristics) : '';
@@ -925,9 +935,9 @@ class AdvertisementController extends Controller
 
             // Создаем лог о создании действия
             $commentType = LogType::where('name', 'Комментарий')->first();
-            
+
             $logMessage = "Пользователь: " . auth()->user()->name . ", создал новую задачу: \"{$validated['action']}\" со сроком до {$validated['expired_at']}";
-            
+
             $log = AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'type_id' => $commentType ? $commentType->id : null,
@@ -987,9 +997,9 @@ class AdvertisementController extends Controller
 
             // Создаем лог о выполнении действия
             $commentType = LogType::where('name', 'Комментарий')->first();
-            
+
             $logMessage = "Пользователь: " . auth()->user()->name . ", выполнил задачу \"{$action->action}\" с комментарием: {$validated['comment']}";
-            
+
             $log = AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'type_id' => $commentType ? $commentType->id : null,
@@ -1016,28 +1026,28 @@ class AdvertisementController extends Controller
     private function logAdvertisementLoadingChanges(Advertisement $advertisement, $oldStatusName, $newStatusName, $oldComment, $newComment)
     {
         $changes = [];
-        
+
         // Проверяем изменение статуса
         if ($oldStatusName !== $newStatusName) {
             $oldStatusText = $oldStatusName ? "'{$oldStatusName}'" : "'Не указан'";
             $newStatusText = $newStatusName ? "'{$newStatusName}'" : "'Не указан'";
             $changes[] = "сменил статус с {$oldStatusText} на {$newStatusText}";
         }
-        
+
         // Проверяем изменение комментария
         if ($oldComment !== $newComment) {
             $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
             $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
             $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
             $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $logMessage = "Пользователь {$userName} изменил блок Информация о погрузке, " . implode(', ', $changes);
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1053,28 +1063,28 @@ class AdvertisementController extends Controller
     private function logAdvertisementRemovalChanges(Advertisement $advertisement, $oldStatusName, $newStatusName, $oldComment, $newComment)
     {
         $changes = [];
-        
+
         // Проверяем изменение статуса
         if ($oldStatusName !== $newStatusName) {
             $oldStatusText = $oldStatusName ? "'{$oldStatusName}'" : "'Не указан'";
             $newStatusText = $newStatusName ? "'{$newStatusName}'" : "'Не указан'";
             $changes[] = "сменил статус с {$oldStatusText} на {$newStatusText}";
         }
-        
+
         // Проверяем изменение комментария
         if ($oldComment !== $newComment) {
             $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
             $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
             $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
             $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $logMessage = "Пользователь {$userName} изменил блок Информация о демонтаже, " . implode(', ', $changes);
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1090,68 +1100,68 @@ class AdvertisementController extends Controller
     private function logAdvertisementPaymentChanges(Advertisement $advertisement, $oldAdvPrice, $newAdvPrice, $oldAdvPriceComment, $newAdvPriceComment, $oldPurchasePrice, $newPurchasePrice, $oldPaymentComment, $newPaymentComment, $oldVariants, $newVariants)
     {
         $changes = [];
-        
+
         // Проверяем изменение цены объявления
         if ($oldAdvPrice != $newAdvPrice) {
             $oldAdvPriceText = $oldAdvPrice ? number_format($oldAdvPrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
             $newAdvPriceText = $newAdvPrice ? number_format($newAdvPrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
             $changes[] = "изменил цену объявления с {$oldAdvPriceText} на {$newAdvPriceText}";
         }
-        
+
         // Проверяем изменение комментария к цене объявления
         if ($oldAdvPriceComment !== $newAdvPriceComment) {
             $oldAdvPriceCommentText = $oldAdvPriceComment ? "'{$oldAdvPriceComment}'" : "'Не указан'";
             $newAdvPriceCommentText = $newAdvPriceComment ? "'{$newAdvPriceComment}'" : "'Не указан'";
             $changes[] = "изменил комментарий к цене объявления с {$oldAdvPriceCommentText} на {$newAdvPriceCommentText}";
         }
-        
+
         // Проверяем изменение закупочной цены
         if ($oldPurchasePrice != $newPurchasePrice) {
             $oldPurchasePriceText = $oldPurchasePrice ? number_format($oldPurchasePrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
             $newPurchasePriceText = $newPurchasePrice ? number_format($newPurchasePrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
             $changes[] = "изменил закупочную цену с {$oldPurchasePriceText} на {$newPurchasePriceText}";
         }
-        
+
         // Проверяем изменение комментария к оплате
         if ($oldPaymentComment !== $newPaymentComment) {
             $oldPaymentCommentText = $oldPaymentComment ? "'{$oldPaymentComment}'" : "'Не указан'";
             $newPaymentCommentText = $newPaymentComment ? "'{$newPaymentComment}'" : "'Не указан'";
             $changes[] = "изменил комментарий к оплате с {$oldPaymentCommentText} на {$newPaymentCommentText}";
         }
-        
+
         // Проверяем изменение вариантов оплаты
         $oldVariantsSorted = sort($oldVariants);
         $newVariantsSorted = sort($newVariants);
         if ($oldVariantsSorted != $newVariantsSorted) {
             $oldVariantsNames = [];
             $newVariantsNames = [];
-            
+
             foreach ($oldVariants as $variantId) {
                 $variant = ProductPriceType::find($variantId);
                 if ($variant) {
                     $oldVariantsNames[] = $variant->name;
                 }
             }
-            
+
             foreach ($newVariants as $variantId) {
                 $variant = ProductPriceType::find($variantId);
                 if ($variant) {
                     $newVariantsNames[] = $variant->name;
                 }
             }
-            
+
             $oldVariantsText = !empty($oldVariantsNames) ? "'" . implode(', ', $oldVariantsNames) . "'" : "'Не указаны'";
             $newVariantsText = !empty($newVariantsNames) ? "'" . implode(', ', $newVariantsNames) . "'" : "'Не указаны'";
             $changes[] = "изменил варианты оплаты с {$oldVariantsText} на {$newVariantsText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
             $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $logMessage = "Пользователь {$userName} изменил блок Информация о покупке, " . implode(', ', $changes);
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1167,28 +1177,28 @@ class AdvertisementController extends Controller
     private function logAdvertisementCheckChanges(Advertisement $advertisement, $oldStatusName, $newStatusName, $oldComment, $newComment)
     {
         $changes = [];
-        
+
         // Проверяем изменение статуса
         if ($oldStatusName !== $newStatusName) {
             $oldStatusText = $oldStatusName ? "'{$oldStatusName}'" : "'Не указан'";
             $newStatusText = $newStatusName ? "'{$newStatusName}'" : "'Не указан'";
             $changes[] = "сменил статус с {$oldStatusText} на {$newStatusText}";
         }
-        
+
         // Проверяем изменение комментария
         if ($oldComment !== $newComment) {
             $oldCommentText = $oldComment ? "'{$oldComment}'" : "'Не указан'";
             $newCommentText = $newComment ? "'{$newComment}'" : "'Не указан'";
             $changes[] = "изменил комментарий с {$oldCommentText} на {$newCommentText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
             $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $logMessage = "Пользователь {$userName} изменил блок Информация о проверки, " . implode(', ', $changes);
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1204,28 +1214,28 @@ class AdvertisementController extends Controller
     private function logAdvertisementSaleChanges(Advertisement $advertisement, $oldAdvPrice, $newAdvPrice, $oldAdvPriceComment, $newAdvPriceComment)
     {
         $changes = [];
-        
+
         // Проверяем изменение цены объявления
         if ($oldAdvPrice != $newAdvPrice) {
             $oldAdvPriceText = $oldAdvPrice ? number_format($oldAdvPrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
             $newAdvPriceText = $newAdvPrice ? number_format($newAdvPrice, 0, ',', ' ') . ' ₽' : "'Не указана'";
             $changes[] = "изменил цену продажи с {$oldAdvPriceText} на {$newAdvPriceText}";
         }
-        
+
         // Проверяем изменение комментария к цене продажи
         if ($oldAdvPriceComment !== $newAdvPriceComment) {
             $oldAdvPriceCommentText = $oldAdvPriceComment ? "'{$oldAdvPriceComment}'" : "'Не указан'";
             $newAdvPriceCommentText = $newAdvPriceComment ? "'{$newAdvPriceComment}'" : "'Не указан'";
             $changes[] = "изменил комментарий к цене продажи с {$oldAdvPriceCommentText} на {$newAdvPriceCommentText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
             $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $logMessage = "Пользователь {$userName} изменил блок Информация о продаже, " . implode(', ', $changes);
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1241,28 +1251,28 @@ class AdvertisementController extends Controller
     private function logAdvertisementCharacteristicsChanges(Advertisement $advertisement, $oldMainCharacteristics, $newMainCharacteristics, $oldComplectation, $newComplectation)
     {
         $changes = [];
-        
+
         // Проверяем изменение основных характеристик
         if ($oldMainCharacteristics !== $newMainCharacteristics) {
             $oldMainCharacteristicsText = $oldMainCharacteristics ? "'{$oldMainCharacteristics}'" : "'Не указаны'";
             $newMainCharacteristicsText = $newMainCharacteristics ? "'{$newMainCharacteristics}'" : "'Не указаны'";
             $changes[] = "изменил основные характеристики с {$oldMainCharacteristicsText} на {$newMainCharacteristicsText}";
         }
-        
+
         // Проверяем изменение комплектации
         if ($oldComplectation !== $newComplectation) {
             $oldComplectationText = $oldComplectation ? "'{$oldComplectation}'" : "'Не указана'";
             $newComplectationText = $newComplectation ? "'{$newComplectation}'" : "'Не указана'";
             $changes[] = "изменил комплектацию с {$oldComplectationText} на {$newComplectationText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
             $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $logMessage = "Пользователь {$userName} изменил блок Характеристики, " . implode(', ', $changes);
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1278,17 +1288,17 @@ class AdvertisementController extends Controller
     private function logAdvertisementBlockChanges(Advertisement $advertisement, $field, $oldValue, $newValue)
     {
         $changes = [];
-        
+
         // Проверяем изменение значения
         if ($oldValue !== $newValue) {
             $oldValueText = $oldValue ? "'{$oldValue}'" : "'Не указан'";
             $newValueText = $newValue ? "'{$newValue}'" : "'Не указан'";
             $changes[] = "изменил значение с {$oldValueText} на {$newValueText}";
         }
-        
+
         // Если есть изменения, создаем запись в логе
         if (!empty($changes)) {
-                                     $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
             $blockName = match($field) {
                 'technical_characteristics' => 'Технические характеристики',
                 'main_info' => 'Основная информация',
@@ -1296,9 +1306,9 @@ class AdvertisementController extends Controller
                 default => ucfirst($field)
             };
             $logMessage = "Пользователь {$userName} изменил {$blockName}";
-            
+
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             AdvLog::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => null, // От имени системы
@@ -1328,13 +1338,13 @@ class AdvertisementController extends Controller
 
         // Создаем запись в логе
         $userName = auth()->user()->name ?? 'Неизвестный пользователь';
-        $oldStatusName = $oldStatus ? $oldStatus->name : 'Не указан';
+        $oldStatusName = $oldStatus && $oldStatus instanceof \App\Models\AdvertisementStatus ? $oldStatus->name : 'Не указан';
         $newStatusName = $newStatus->name;
-        
+
         $logMessage = "Пользователь {$userName} изменил статус объявления с '{$oldStatusName}' на '{$newStatusName}'. Комментарий: {$request->comment}";
-        
+
         $systemLogType = LogType::where('name', 'Системный')->first();
-        
+
         $log = AdvLog::create([
             'advertisement_id' => $advertisement->id,
             'user_id' => auth()->id(),
@@ -1346,6 +1356,24 @@ class AdvertisementController extends Controller
             'success' => true,
             'message' => 'Статус объявления успешно обновлен',
             'log' => $log->load(['type', 'user'])
+        ]);
+    }
+
+    /**
+     * Логирует создание объявления
+     */
+    private function logAdvertisementCreation(Advertisement $advertisement)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $logMessage = "Пользователь {$userName} создал объявление {$advertisement->title}";
+
+        $systemLogType = LogType::where('name', 'Системный')->first();
+
+        AdvLog::create([
+            'advertisement_id' => $advertisement->id,
+            'user_id' => auth()->id(),
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
         ]);
     }
 }
