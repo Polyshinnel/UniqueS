@@ -1,5 +1,7 @@
 @extends('layouts.layout')
 
+@section('title', $advertisement->title  ?? 'Обьявление')
+
 @section('header-title')
     <h1 class="header-title">{{ $advertisement->title }}</h1>
 @endsection

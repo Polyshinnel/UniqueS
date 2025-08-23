@@ -35,6 +35,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/company/regionals/warehouse/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getRegionalsByWarehouse'])->name('companies.regionals-by-warehouse');
     Route::get('/company/warehouse-region/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getWarehouseRegion'])->name('companies.warehouse-region');
     Route::get('/company/{company}/info', [\App\Http\Controllers\Company\CompanyController::class, 'getCompanyInfo'])->name('companies.info');
+    Route::patch('/company/{company}/common-info', [\App\Http\Controllers\Company\CompanyController::class, 'updateCommonInfo'])->name('companies.update-common-info');
+    Route::patch('/company/{company}/contact-info', [\App\Http\Controllers\Company\CompanyController::class, 'updateContactInfo'])->name('companies.update-contact-info');
+    Route::patch('/company/{company}/contacts', [\App\Http\Controllers\Company\CompanyController::class, 'updateContacts'])->name('companies.update-contacts');
+    Route::patch('/company/{company}/addresses', [\App\Http\Controllers\Company\CompanyController::class, 'updateAddresses'])->name('companies.update-addresses');
+    Route::patch('/company/{company}/legal-info', [\App\Http\Controllers\Company\CompanyController::class, 'updateLegalInfo'])->name('companies.update-legal-info');
 
     Route::get('/product', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
     Route::get('/product/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');

@@ -65,7 +65,7 @@ class CompanyController extends Controller
             $query->whereRaw('1 = 0'); // Всегда false
         }
 
-        $companies = $query->get();
+        $companies = $query->orderBy('created_at', 'desc')->paginate(20);
 
         $warehouses = Warehouses::all();
         $sources = Sources::all();
@@ -935,6 +935,555 @@ class CompanyController extends Controller
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Обновляет общую информацию о компании
+     */
+    public function updateCommonInfo(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на обновление компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'common_info' => 'nullable|string|max:2000'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Сохраняем старое значение для лога
+            $oldCommonInfo = $company->common_info;
+
+            // Обновляем общую информацию
+            $company->update([
+                'common_info' => $validated['common_info']
+            ]);
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $oldValue = $oldCommonInfo ?: 'пустое';
+                $newValue = $validated['common_info'] ?: 'пустое';
+                $logText = "Пользователь {$user->name} изменил Описание с \"{$oldValue}\" на \"{$newValue}\"";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Общая информация успешно обновлена',
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении общей информации: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновляет контактную информацию компании
+     */
+    public function updateContactInfo(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на обновление компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string|max:20',
+            'site' => 'nullable|url'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Обновляем контактную информацию
+            $company->update([
+                'email' => $validated['email'],
+                'phone' => $validated['phone'],
+                'site' => $validated['site']
+            ]);
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Обновлена контактная информация компании";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Контактная информация успешно обновлена',
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении контактной информации: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновляет контакты компании
+     */
+    public function updateContacts(Request $request, Company $company)
+    {
+        // Отладочная информация
+        \Log::info('updateContacts method called', [
+            'company_id' => $company->id,
+            'request_data' => $request->all(),
+            'existing_contacts_count' => $company->contacts()->count()
+        ]);
+
+        // Проверяем права пользователя на обновление компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'contacts' => 'required|array',
+            'contacts.*.name' => 'required|string|max:255',
+            'contacts.*.position' => 'required|string|max:255',
+            'contacts.*.phones' => 'array',
+            'contacts.*.phones.*' => 'string|max:20',
+            'contacts.*.emails' => 'array',
+            'contacts.*.emails.*' => 'email|max:255',
+            'contacts.*.main_contact' => 'boolean'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Получаем существующие контакты
+            $existingContacts = $company->contacts()->with(['phones', 'emails'])->get();
+            $existingContactIds = $existingContacts->pluck('id')->toArray();
+
+            // Обрабатываем каждый контакт
+            $updatedContacts = [];
+            foreach ($validated['contacts'] as $index => $contactData) {
+                \Log::info("Processing contact {$index}", [
+                    'contact_data' => $contactData,
+                    'has_id' => isset($contactData['id']),
+                    'id_value' => $contactData['id'] ?? 'null'
+                ]);
+                
+                if (isset($contactData['id']) && $contactData['id'] && $contactData['id'] !== '') {
+                    // Обновляем существующий контакт
+                    $contact = $existingContacts->find($contactData['id']);
+                    if ($contact) {
+                        $contact->update([
+                            'name' => $contactData['name'],
+                            'position' => $contactData['position'],
+                            'main_contact' => $contactData['main_contact'] ?? false
+                        ]);
+
+                        // Обновляем телефоны
+                        $contact->phones()->delete();
+                        if (isset($contactData['phones'])) {
+                            foreach ($contactData['phones'] as $phone) {
+                                if (!empty($phone)) {
+                                    $contact->phones()->create(['phone' => $phone]);
+                                }
+                            }
+                        }
+
+                        // Обновляем email
+                        $contact->emails()->delete();
+                        if (isset($contactData['emails'])) {
+                            foreach ($contactData['emails'] as $index => $email) {
+                                if (!empty($email)) {
+                                    $contact->emails()->create([
+                                        'email' => $email,
+                                        'is_primary' => $index === 0 // Первый email считается основным
+                                    ]);
+                                }
+                            }
+                        }
+
+                        $updatedContacts[] = $contact->fresh(['phones', 'emails']);
+                    }
+                } else {
+                    // Создаем новый контакт
+                    $contact = $company->contacts()->create([
+                        'name' => $contactData['name'],
+                        'position' => $contactData['position'],
+                        'main_contact' => $contactData['main_contact'] ?? false
+                    ]);
+
+                    // Добавляем телефоны
+                    if (isset($contactData['phones'])) {
+                        foreach ($contactData['phones'] as $phone) {
+                            if (!empty($phone)) {
+                                $contact->phones()->create(['phone' => $phone]);
+                            }
+                        }
+                    }
+
+                    // Добавляем email
+                    if (isset($contactData['emails'])) {
+                        foreach ($contactData['emails'] as $index => $email) {
+                            if (!empty($email)) {
+                                $contact->emails()->create([
+                                    'email' => $email,
+                                    'is_primary' => $index === 0 // Первый email считается основным
+                                ]);
+                            }
+                        }
+                    }
+
+                    $updatedContacts[] = $contact->fresh(['phones', 'emails']);
+                }
+            }
+
+            // Удаляем контакты, которые больше не нужны
+            $updatedContactIds = collect($updatedContacts)->pluck('id')->toArray();
+            $contactsToDelete = array_diff($existingContactIds, $updatedContactIds);
+            
+            \Log::info('Contacts deletion info', [
+                'existing_contact_ids' => $existingContactIds,
+                'updated_contact_ids' => $updatedContactIds,
+                'contacts_to_delete' => $contactsToDelete
+            ]);
+            
+            if (!empty($contactsToDelete)) {
+                // Сначала удаляем все связанные записи для контактов, которые нужно удалить
+                foreach ($contactsToDelete as $contactId) {
+                    $contactToDelete = $existingContacts->find($contactId);
+                    if ($contactToDelete) {
+                        // Удаляем телефоны
+                        $contactToDelete->phones()->delete();
+                        // Удаляем email
+                        $contactToDelete->emails()->delete();
+                        // Удаляем сам контакт
+                        $contactToDelete->delete();
+                    }
+                }
+            }
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Обновлены контакты компании";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Контакты успешно обновлены',
+                'contacts' => $updatedContacts,
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error updating contacts', [
+                'company_id' => $company->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении контактов: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновляет адреса компании
+     */
+    public function updateAddresses(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на обновление компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'addresses' => 'required|array',
+            'addresses.*.address' => 'required|string|max:500',
+            'addresses.*.main_address' => 'boolean'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Получаем существующие адреса
+            $existingAddresses = $company->addresses()->get();
+            $existingAddressIds = $existingAddresses->pluck('id')->toArray();
+
+            // Обрабатываем каждый адрес
+            $updatedAddresses = [];
+            foreach ($validated['addresses'] as $index => $addressData) {
+                if (isset($addressData['id']) && $addressData['id'] && $addressData['id'] !== '') {
+                    // Обновляем существующий адрес
+                    $address = $existingAddresses->find($addressData['id']);
+                    if ($address) {
+                        $address->update([
+                            'address' => $addressData['address'],
+                            'main_address' => $addressData['main_address'] ?? false
+                        ]);
+                        $updatedAddresses[] = $address->fresh();
+                    }
+                } else {
+                    // Создаем новый адрес
+                    $address = $company->addresses()->create([
+                        'address' => $addressData['address'],
+                        'main_address' => $addressData['main_address'] ?? false
+                    ]);
+                    $updatedAddresses[] = $address->fresh();
+                }
+            }
+
+            // Удаляем адреса, которые больше не нужны
+            $updatedAddressIds = collect($updatedAddresses)->pluck('id')->toArray();
+            $addressesToDelete = array_diff($existingAddressIds, $updatedAddressIds);
+            
+            if (!empty($addressesToDelete)) {
+                $company->addresses()->whereIn('id', $addressesToDelete)->delete();
+            }
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Обновлены адреса компании";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Адреса успешно обновлены',
+                'addresses' => $updatedAddresses,
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении адресов: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновляет юридическую информацию компании
+     */
+    public function updateLegalInfo(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на обновление компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'inn' => 'nullable|string|max:12'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Обновляем юридическую информацию
+            $company->update([
+                'name' => $validated['name'],
+                'inn' => $validated['inn']
+            ]);
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Обновлена юридическая информация компании";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Юридическая информация успешно обновлена',
+                'company' => [
+                    'name' => $company->name,
+                    'inn' => $company->inn
+                ],
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении юридической информации: ' . $e->getMessage()
+            ], 500);
         }
     }
 

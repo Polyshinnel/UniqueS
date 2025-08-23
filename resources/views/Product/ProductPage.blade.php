@@ -300,6 +300,71 @@
             </tbody>
         </table>
     </div>
+    
+    <!-- Пагинация -->
+    @if($products->total() > 0)
+    <div class="pagination-wrapper">
+        <div class="pagination-info">
+            Показано {{ $products->firstItem() ?? 0 }} - {{ $products->lastItem() ?? 0 }} из {{ $products->total() }} товаров
+        </div>
+        @if($products->hasPages())
+        <div class="pagination-links">
+            <ul class="pagination">
+                {{-- Предыдущая страница --}}
+                @if ($products->onFirstPage())
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15,18 9,12 15,6"></polyline>
+                            </svg>
+                        </span>
+                    </li>
+                @else
+                    <li class="page-item">
+                        <a class="page-link" href="{{ $products->previousPageUrl() }}" rel="prev">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="15,18 9,12 15,6"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                @endif
+
+                {{-- Номера страниц --}}
+                @foreach ($products->getUrlRange(1, $products->lastPage()) as $page => $url)
+                    @if ($page == $products->currentPage())
+                        <li class="page-item active">
+                            <span class="page-link">{{ $page }}</span>
+                        </li>
+                    @else
+                        <li class="page-item">
+                            <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                        </li>
+                    @endif
+                @endforeach
+
+                {{-- Следующая страница --}}
+                @if ($products->hasMorePages())
+                    <li class="page-item">
+                        <a class="page-link" href="{{ $products->nextPageUrl() }}" rel="next">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9,18 15,12 9,6"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                @else
+                    <li class="page-item disabled">
+                        <span class="page-link">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="9,18 15,12 9,6"></polyline>
+                            </svg>
+                        </span>
+                    </li>
+                @endif
+            </ul>
+        </div>
+        @endif
+    </div>
+    @endif
 </div>
 @endsection
 
@@ -1043,6 +1108,122 @@ window.onclick = function(event) {
     margin: 0;
 }
 
+/* Стили для пагинации */
+.pagination-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 30px;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.pagination-info {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.pagination-links {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pagination-links .pagination {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 6px;
+    align-items: center;
+}
+
+.pagination-links .page-item {
+    margin: 0;
+}
+
+.pagination-links .page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: #f8f9fa;
+    color: #133E71;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 14px;
+    border: 1px solid #e9ecef;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.pagination-links .page-link:hover {
+    background: #133E71;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(19, 62, 113, 0.3);
+}
+
+.pagination-links .page-item.active .page-link {
+    background: #133E71;
+    color: white;
+    border-color: #133E71;
+    box-shadow: 0 4px 8px rgba(19, 62, 113, 0.3);
+}
+
+.pagination-links .page-item.disabled .page-link {
+    background: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    border-color: #e9ecef;
+    opacity: 0.6;
+}
+
+.pagination-links .page-item.disabled .page-link:hover {
+    background: #f5f5f5;
+    color: #999;
+    transform: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Стили для стрелок */
+.pagination-links .page-link svg {
+    width: 16px;
+    height: 16px;
+    color: inherit;
+}
+
+.pagination-links .page-item:first-child .page-link,
+.pagination-links .page-item:last-child .page-link {
+    background: #e8f0fe;
+    border-color: #133E71;
+    color: #133E71;
+}
+
+.pagination-links .page-item:first-child .page-link:hover,
+.pagination-links .page-item:last-child .page-link:hover {
+    background: #133E71;
+    color: white;
+}
+
+.pagination-links .page-item:first-child.disabled .page-link,
+.pagination-links .page-item:last-child.disabled .page-link {
+    background: #f5f5f5;
+    color: #999;
+    border-color: #e9ecef;
+}
+
+.pagination-links .page-item:first-child.disabled .page-link:hover,
+.pagination-links .page-item:last-child.disabled .page-link:hover {
+    background: #f5f5f5;
+    color: #999;
+}
+
 /* Адаптивность */
 @media (max-width: 1200px) {
     .products-table {
@@ -1100,6 +1281,24 @@ window.onclick = function(event) {
     .action-btn svg {
         width: 12px;
         height: 12px;
+    }
+    
+    /* Адаптивность для пагинации */
+    .pagination-wrapper {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .pagination-links .page-link {
+        width: 36px;
+        height: 36px;
+        font-size: 13px;
+    }
+    
+    .pagination-links .page-link svg {
+        width: 14px;
+        height: 14px;
     }
 }
 

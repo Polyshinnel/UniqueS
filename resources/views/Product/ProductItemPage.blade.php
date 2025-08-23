@@ -1,4 +1,5 @@
 @extends('layouts.layout')
+@section('title', $product->name ?? 'Товар')
 
 @section('header-title')
     <h1 class="header-title">{{ $product->name }}</h1>

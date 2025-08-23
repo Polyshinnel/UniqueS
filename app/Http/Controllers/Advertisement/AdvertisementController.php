@@ -38,7 +38,7 @@ class AdvertisementController extends Controller
             'creator',
             'mainImage',
             'tags'
-        ])->get();
+        ])->paginate(20);
 
         return view('Advertisement.AdvertisementListPage', compact('advertisements'));
     }

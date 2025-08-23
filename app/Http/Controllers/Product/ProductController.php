@@ -48,7 +48,7 @@ class ProductController extends Controller
                 $query->where('status', false)
                       ->orderBy('expired_at', 'asc');
             }
-        ])->get();
+        ])->paginate(20);
 
         return view('Product.ProductPage', compact('products'));
     }
