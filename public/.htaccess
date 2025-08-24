@@ -20,39 +20,3 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Увеличение лимитов для загрузки больших файлов
-<IfModule mod_php.c>
-    php_value upload_max_filesize 1000M
-    php_value post_max_size 1000M
-    php_value max_execution_time 300
-    php_value max_input_time 300
-    php_value memory_limit 512M
-    php_value max_file_uploads 50
-</IfModule>
-
-# Альтернативный способ для PHP-FPM
-<IfModule mod_fastcgi.c>
-    php_value upload_max_filesize 1000M
-    php_value post_max_size 1000M
-    php_value max_execution_time 300
-    php_value max_input_time 300
-    php_value memory_limit 512M
-    php_value max_file_uploads 50
-</IfModule>
-
-# Настройки для Nginx (если используется)
-<IfModule mod_headers.c>
-    Header set Access-Control-Allow-Origin "*"
-</IfModule>
-
-# Увеличение лимитов для Apache
-<IfModule mod_reqtimeout.c>
-    RequestReadTimeout header=20-40,MinRate=500
-    RequestReadTimeout body=20,MinRate=500
-</IfModule>
-
-# Увеличение лимитов для mod_security (если используется)
-<IfModule mod_security.c>
-    SecRequestBodyLimit 1000000000
-    SecRequestBodyNoFilesLimit 1000000000
-</IfModule>
