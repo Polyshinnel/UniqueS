@@ -2,6 +2,10 @@
 
 @section('title', 'События')
 
+@section('header-title')
+    <h1 class="header-title">События</h1>
+@endsection
+
 @section('content')
 <div class="events-main-container">
     <div class="events-header">
