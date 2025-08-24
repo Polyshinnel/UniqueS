@@ -27,7 +27,7 @@ class AuthController extends Controller
             // Устанавливаем время жизни сессии на полгода (180 дней)
             $request->session()->put('auth.lifetime', now()->addDays(180));
             
-            return redirect()->intended('/');
+            return redirect()->intended('/events');
         }
 
         return back()->withErrors([

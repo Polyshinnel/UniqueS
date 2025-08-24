@@ -18,6 +18,7 @@ class UserSeeder extends Seeder
             'name' => 'Администратор',
             'email' => 'admin@unique.s',
             'password' => Hash::make('password'),
+            'role_id' => 1, // Администратор
             'active' => true,
         ]);
     }

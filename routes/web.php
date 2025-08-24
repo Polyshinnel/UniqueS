@@ -101,6 +101,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/guide', [GuidesMain::class, 'index']);
     
+    // Маршруты для событий
+    Route::get('/events', [\App\Http\Controllers\Event\EventController::class, 'index'])->name('events.index');
+    Route::get('/events/active', [\App\Http\Controllers\Event\EventController::class, 'active'])->name('events.active');
+    Route::get('/events/expired', [\App\Http\Controllers\Event\EventController::class, 'expired'])->name('events.expired');
+    Route::get('/events/logs', [\App\Http\Controllers\Event\EventController::class, 'logs'])->name('events.logs');
+    
     // Тестовый маршрут для проверки транслитерации (удалить после тестирования)
     Route::get('/test-transliterate/{string}', function($string) {
         $controller = new \App\Http\Controllers\Product\ProductController();
