@@ -759,17 +759,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Закрытие модального окна при клике вне его
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('regionModal');
-    const editModal = document.getElementById('editRegionModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-    if (event.target === editModal) {
-        closeEditModal();
-    }
-});
+
 
 // Обработка успешного добавления/обновления региона
 document.addEventListener('DOMContentLoaded', function() {

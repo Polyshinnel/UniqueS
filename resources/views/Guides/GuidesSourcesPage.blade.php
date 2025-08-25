@@ -714,17 +714,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Закрытие модального окна при клике вне его
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('sourceModal');
-    const editModal = document.getElementById('editSourceModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-    if (event.target === editModal) {
-        closeEditModal();
-    }
-});
+
 
 // Обработка успешного добавления/обновления источника
 document.addEventListener('DOMContentLoaded', function() {

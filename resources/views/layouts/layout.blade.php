@@ -833,13 +833,7 @@
                 document.body.style.overflow = 'auto';
             });
 
-            // Закрытие модального окна при клике вне его
-            window.addEventListener('click', function(e) {
-                if (e.target === modal) {
-                    modal.style.display = 'none';
-                    document.body.style.overflow = 'auto';
-                }
-            });
+
 
             // Закрытие модального окна при нажатии Escape
             document.addEventListener('keydown', function(e) {

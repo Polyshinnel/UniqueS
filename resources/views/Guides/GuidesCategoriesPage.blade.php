@@ -1037,17 +1037,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Закрытие модального окна при клике вне его
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('categoryModal');
-    const editModal = document.getElementById('editCategoryModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-    if (event.target === editModal) {
-        closeEditModal();
-    }
-});
+
 
 // Обработка успешного добавления/обновления категории
 document.addEventListener('DOMContentLoaded', function() {

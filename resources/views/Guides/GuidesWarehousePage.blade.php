@@ -956,17 +956,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Закрытие модального окна при клике вне его
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('warehouseModal');
-    const editModal = document.getElementById('editWarehouseModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-    if (event.target === editModal) {
-        closeEditModal();
-    }
-});
+
 
 // Обработка успешного добавления/обновления склада
 document.addEventListener('DOMContentLoaded', function() {
@@ -978,7 +968,9 @@ document.addEventListener('DOMContentLoaded', function() {
     @endif
     
     // Инициализация select с поиском для регионов
-    initializeSelect('region_select', 'region_id', @json($regions->where('active', true)));
+    const regionsData = JSON.parse('{!! json_encode($regions->where("active", true)->values()) !!}');
+    console.log('Данные регионов для создания:', regionsData);
+    initializeSelect('region_select', 'region_id', regionsData);
 });
 
 // Функция для очистки формы
@@ -1024,7 +1016,9 @@ function openEditModal(warehouseId) {
             document.getElementById('editWarehouseForm').action = `/guide/warehouses/${warehouseId}`;
             
             // Инициализируем select с поиском для регионов с выбранным значением
-            initializeSelect('edit_region_select', 'edit_region_id', @json($regions->where('active', true)), warehouse.region_id);
+            const regionsData = JSON.parse('{!! json_encode($regions->where("active", true)->values()) !!}');
+            console.log('Данные регионов для редактирования:', regionsData);
+            initializeSelect('edit_region_select', 'edit_region_id', regionsData, warehouse.region_id);
             
             // Открываем модальное окно
             document.getElementById('editWarehouseModal').classList.add('active');
@@ -1084,6 +1078,12 @@ function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = 
     
     if (!selectInput || !selectDropdown || !selectOptions || !hiddenSelect) return;
     
+    // Проверяем, что options является массивом
+    if (!Array.isArray(options)) {
+        console.error('Ошибка: options должен быть массивом, получено:', typeof options, options);
+        return;
+    }
+    
     let isOpen = false;
     let selectedValue = preSelectedValue;
     
@@ -1100,6 +1100,12 @@ function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = 
         
         let html = '';
         optionsToUse.forEach(option => {
+            // Проверяем наличие необходимых полей
+            if (!option.id || !option.name || !option.city_name) {
+                console.warn('Пропущен элемент с неполными данными:', option);
+                return;
+            }
+            
             const isSelected = selectedValue && selectedValue.toString() === option.id.toString();
             html += `<div class="select-option ${isSelected ? 'selected' : ''}" data-value="${option.id}">
                 <span>${option.name} (${option.city_name})</span>
@@ -1117,7 +1123,12 @@ function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = 
             option.addEventListener('click', function(e) {
                 e.stopPropagation();
                 const value = this.dataset.value;
-                const optionData = options.find(opt => opt.id.toString() === value);
+                const optionData = options.find(opt => opt.id && opt.id.toString() === value);
+                
+                if (!optionData) {
+                    console.warn('Не найден элемент с id:', value);
+                    return;
+                }
                 
                 selectedValue = value;
                 updateSelectedDisplay(optionData);
@@ -1132,7 +1143,7 @@ function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = 
         const placeholder = selectInput.querySelector('.select-placeholder');
         const valueElement = selectInput.querySelector('.select-value');
         
-        if (!optionData) {
+        if (!optionData || !optionData.name || !optionData.city_name) {
             placeholder.style.display = 'block';
             if (valueElement) {
                 valueElement.style.display = 'none';
@@ -1201,8 +1212,9 @@ function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = 
         
         const searchTermLower = searchTerm.toLowerCase();
         const filteredOptions = options.filter(option => 
-            option.name.toLowerCase().includes(searchTermLower) ||
-            option.city_name.toLowerCase().includes(searchTermLower)
+            option.name && option.city_name &&
+            (option.name.toLowerCase().includes(searchTermLower) ||
+             option.city_name.toLowerCase().includes(searchTermLower))
         );
         
         updateOptions(filteredOptions);
@@ -1241,10 +1253,12 @@ function initializeSelect(selectId, hiddenSelectId, options, preSelectedValue = 
     
     // Инициализация с текущими значениями
     if (selectedValue) {
-        const optionData = options.find(opt => opt.id.toString() === selectedValue.toString());
+        const optionData = options.find(opt => opt.id && opt.id.toString() === selectedValue.toString());
         if (optionData) {
             updateSelectedDisplay(optionData);
             updateHiddenSelect();
+        } else {
+            console.warn('Не найден элемент с id для предварительного выбора:', selectedValue);
         }
     }
 }

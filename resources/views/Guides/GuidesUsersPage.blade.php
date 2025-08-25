@@ -1477,21 +1477,7 @@ document.addEventListener('keydown', function(event) {
     }
 });
 
-// Закрытие модального окна при клике вне его
-document.addEventListener('click', function(event) {
-    const modal = document.getElementById('userModal');
-    const editModal = document.getElementById('editUserModal');
-    const createdUserModal = document.getElementById('createdUserModal');
-    if (event.target === modal) {
-        closeModal();
-    }
-    if (event.target === editModal) {
-        closeEditModal();
-    }
-    if (event.target === createdUserModal) {
-        closeCreatedUserModal();
-    }
-});
+
 
 // Обработка успешного добавления/обновления пользователя
 document.addEventListener('DOMContentLoaded', function() {
