@@ -40,6 +40,8 @@ class CompanyController extends Controller
             'regional',
             'owner',
             'status',
+            'region',
+            'source',
             'actions' => function($query) {
                 $query->where('status', false)
                       ->orderBy('expired_at', 'asc');
@@ -68,7 +70,42 @@ class CompanyController extends Controller
             $query->whereRaw('1 = 0'); // Всегда false
         }
 
+        // Применяем фильтры
+        if (request('search')) {
+            $search = request('search');
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        if (request('status_id')) {
+            $query->where('company_status_id', request('status_id'));
+        }
+
+        if (request('region_id')) {
+            $query->where('region_id', request('region_id'));
+        }
+
+        if (request('source_id')) {
+            $query->where('source_id', request('source_id'));
+        }
+
+        if (request('regional_id')) {
+            $query->where('regional_user_id', request('regional_id'));
+        }
+
         $companies = $query->orderBy('created_at', 'desc')->paginate(20);
+
+        // Данные для фильтров
+        $filterData = [
+            'statuses' => \App\Models\CompanyStatus::all(),
+            'regions' => $this->getUserRegions(),
+            'sources' => Sources::all(),
+            'regionals' => User::where('role_id', 3)
+                ->where('active', true)
+                ->get()
+        ];
 
         $warehouses = Warehouses::all();
         $sources = Sources::all();
@@ -80,7 +117,10 @@ class CompanyController extends Controller
         // Определяем права пользователя на создание компаний
         $canCreate = $user && $user->role && $user->role->name !== 'Региональный представитель';
 
-        return view('Company.CompanyPage', compact('companies', 'warehouses', 'sources', 'regionals', 'regions', 'canCreate'));
+        // Определяем, показывать ли фильтры (всем кроме региональных представителей)
+        $showFilters = $user && $user->role && $user->role->name !== 'Региональный представитель';
+
+        return view('Company.CompanyPage', compact('companies', 'warehouses', 'sources', 'regionals', 'regions', 'canCreate', 'filterData', 'showFilters'));
     }
 
     public function create()

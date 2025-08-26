@@ -20,12 +20,14 @@
         <div class="advertisement-header-actions">
             <h1 class="advertisement-title">{{ $advertisement->title }}</h1>
             <div class="advertisement-actions">
+                @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                 <a href="{{ route('advertisements.edit', $advertisement) }}" class="btn btn-primary">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                     </svg>
                     Редактировать
                 </a>
+                @endif
             </div>
         </div>
         <div class="advertisement-status">
@@ -122,6 +124,7 @@
             @endif
 
             <!-- Блок действий и событий -->
+            @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
             <div class="advertisement-actions-section">
                 <div class="info-block">
                     <h3>Следующие действия</h3>
@@ -179,6 +182,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- Основная информация об объявлении -->
@@ -193,32 +197,40 @@
                     <div class="info-item">
                         <span class="label">Товар:</span>
                         <span class="value">
-                            @if($advertisement->product && $advertisement->product->name)
-                                <a href="{{ route('products.show', $advertisement->product) }}" class="company-link">
-                                    {{ $advertisement->product->name }}
-                                </a>
-                            @elseif($advertisement->product)
-                                <a href="{{ route('products.show', $advertisement->product) }}" class="company-link">
-                                    Товар #{{ $advertisement->product->id }}
-                                </a>
+                            @if(\App\Helpers\AdvertisementHelper::canViewSupplierInfo($advertisement))
+                                @if($advertisement->product && $advertisement->product->name)
+                                    <a href="{{ route('products.show', $advertisement->product) }}" class="company-link">
+                                        {{ $advertisement->product->name }}
+                                    </a>
+                                @elseif($advertisement->product)
+                                    <a href="{{ route('products.show', $advertisement->product) }}" class="company-link">
+                                        Товар #{{ $advertisement->product->id }}
+                                    </a>
+                                @else
+                                    Не указан
+                                @endif
                             @else
-                                Не указан
+                                <span style="color: #999; font-style: italic;">Скрыто</span>
                             @endif
                         </span>
                     </div>
                     <div class="info-item">
                         <span class="label">Организация:</span>
                         <span class="value">
-                            @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->name)
-                                <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
-                                    {{ $advertisement->product->company->name }}
-                                </a>
-                            @elseif($advertisement->product && $advertisement->product->company)
-                                <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
-                                    Организация #{{ $advertisement->product->company->id }}
-                                </a>
+                            @if(\App\Helpers\AdvertisementHelper::canViewSupplierInfo($advertisement))
+                                @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->name)
+                                    <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
+                                        {{ $advertisement->product->company->name }}
+                                    </a>
+                                @elseif($advertisement->product && $advertisement->product->company)
+                                    <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
+                                        Организация #{{ $advertisement->product->company->id }}
+                                    </a>
+                                @else
+                                    Не указана
+                                @endif
                             @else
-                                Не указана
+                                <span style="color: #999; font-style: italic;">Скрыто</span>
                             @endif
                         </span>
                     </div>
@@ -261,12 +273,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Характеристики</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editCharacteristicsBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     
                     <!-- Основные характеристики -->
@@ -315,12 +329,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Технические характеристики</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editComment('technical_characteristics')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     <div class="comment-content" id="technical_characteristics_content">
                         @if($advertisement->technical_characteristics)
@@ -346,12 +362,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Основная информация</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editComment('main_info')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     <div class="comment-content" id="main_info_content">
                         @if($advertisement->main_info)
@@ -388,12 +406,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Дополнительная информация</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editComment('additional_info')">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     <div class="comment-content" id="additional_info_content">
                         @if($advertisement->additional_info)
@@ -419,12 +439,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Информация о проверке</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editCheckBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     @php
                         $checkStatus = null;
@@ -481,12 +503,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Информация о погрузке</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editLoadingBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     @php
                         $loadingStatus = null;
@@ -542,12 +566,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Информация о демонтаже</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-comment-btn" onclick="editRemovalBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     @php
                         $removalStatus = null;
@@ -604,12 +630,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Информация о покупке</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-payment-btn" onclick="editPurchaseBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
                     
                     <!-- Варианты оплаты -->
@@ -686,12 +714,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Информация о продаже</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
                         <button class="edit-payment-btn" onclick="editSaleBlock()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
                             </svg>
                             Редактировать
                         </button>
+                        @endif
                     </div>
 
                     <!-- Цена продажи -->

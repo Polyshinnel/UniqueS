@@ -701,24 +701,6 @@
                 <h1 class="header-title">Заголовок страницы</h1>
             @show
 
-            @section('search-filter')
-            <div class="search-container">
-                <form action="/search" method="GET" class="search-form">
-                    <input type="text" name="query" placeholder="Поиск..." class="search-input">
-                    <button type="submit" class="search-button">
-                        <img src="{{ asset('assets/img/icons/search.svg') }}" alt="search">
-                    </button>
-                </form>
-            </div>
-
-            <div class="filter-container">
-                <button class="filter-button">
-                    <img src="{{ asset('assets/img/icons/filter.svg') }}" alt="filter">
-                    <span>Фильтр</span>
-                </button>
-            </div>
-            @show
-
             @section('header-action-btn')
             <div class="header-actions">
                 <div class="user-info">
@@ -755,6 +737,7 @@
             </div>
             <div class="modal-body">
                 <div class="create-options-grid">
+                    @if(Auth::user()->role->name !== 'Региональный представитель')
                     <a href="/company/create" class="create-option-card">
                         <div class="create-option-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -774,6 +757,7 @@
                             </svg>
                         </div>
                     </a>
+                    @endif
 
                     <a href="/product/create" class="create-option-card">
                         <div class="create-option-icon">

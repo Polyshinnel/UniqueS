@@ -30,7 +30,7 @@ use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         $currentUserId = auth()->id() ?? 1;
@@ -39,7 +39,7 @@ class ProductController extends Controller
             'category', 
             'company.addresses', 
             'status', 
-            'warehouse', 
+            'warehouse.regions', 
             'regional',
             'mediaOrdered',
             'check.checkStatus',
@@ -53,6 +53,7 @@ class ProductController extends Controller
             }
         ]);
         
+        // Применяем фильтры по правам доступа
         if ($user && $user->role) {
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем товары, где он назначен как региональный представитель
@@ -72,9 +73,113 @@ class ProductController extends Controller
             $productsQuery->where('owner_id', $currentUserId);
         }
         
-        $products = $productsQuery->paginate(20);
+        // Применяем фильтры из запроса
+        if ($request->filled('category_id')) {
+            $productsQuery->where('category_id', $request->category_id);
+        }
+        
+        if ($request->filled('company_id')) {
+            $productsQuery->where('company_id', $request->company_id);
+        }
+        
+        if ($request->filled('status_id')) {
+            $productsQuery->where('status_id', $request->status_id);
+        }
+        
+        if ($request->filled('region_id')) {
+            $productsQuery->whereHas('warehouse.regions', function($query) use ($request) {
+                $query->where('regions.id', $request->region_id);
+            });
+        }
+        
+        // Поиск по названию, артикулу и адресу товара
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $productsQuery->where(function($query) use ($searchTerm) {
+                $query->where('name', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('sku', 'like', '%' . $searchTerm . '%')
+                      ->orWhere('product_address', 'like', '%' . $searchTerm . '%');
+            });
+        }
+        
+        $products = $productsQuery->paginate(20)->withQueryString();
 
-        return view('Product.ProductPage', compact('products'));
+        // Получаем данные для фильтров с учетом прав доступа
+        $filterData = $this->getFilterData($user, $currentUserId);
+
+        return view('Product.ProductPage', compact('products', 'filterData'));
+    }
+
+    /**
+     * Получает данные для фильтров с учетом прав доступа пользователя
+     */
+    private function getFilterData($user, $currentUserId)
+    {
+        $filterData = [];
+        
+        // Категории - доступны всем
+        $filterData['categories'] = \App\Models\ProductCategories::where('active', true)->get();
+        
+        // Статусы - показываем все статусы товаров
+        $filterData['statuses'] = \App\Models\ProductStatus::all();
+        
+        // Поставщики (компании) - с учетом прав доступа
+        $companiesQuery = \App\Models\Company::with('status');
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем компании, где он назначен как региональный представитель
+                $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 1) {
+                // Для пользователей с ограниченным доступом показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 3) {
+                // Для администраторов показываем все компании
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем только его компании
+            $companiesQuery->where('owner_user_id', $currentUserId);
+        }
+        
+        $filterData['companies'] = $companiesQuery->get();
+        
+        // Регионы - упрощенная логика с учетом прав доступа
+        $regionsQuery = \App\Models\Regions::where('active', true);
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем только его регионы
+                $regionsQuery->whereHas('users', function($query) use ($currentUserId) {
+                    $query->where('users.id', $currentUserId);
+                });
+            } elseif ($user->role->can_view_companies === 1) {
+                // Для пользователей с ограниченным доступом показываем регионы их товаров
+                $regionsQuery->whereHas('warehouses.products', function($query) use ($currentUserId) {
+                    $query->where('products.owner_id', $currentUserId);
+                });
+            } elseif ($user->role->can_view_companies === 3) {
+                // Для администраторов показываем все регионы
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем регионы их товаров
+                $regionsQuery->whereHas('warehouses.products', function($query) use ($currentUserId) {
+                    $query->where('products.owner_id', $currentUserId);
+                });
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем регионы его товаров
+            $regionsQuery->whereHas('warehouses.products', function($query) use ($currentUserId) {
+                $query->where('products.owner_id', $currentUserId);
+            });
+        }
+        
+        $filterData['regions'] = $regionsQuery->get();
+        
+        return $filterData;
     }
 
     public function create()
@@ -110,9 +215,8 @@ class ProductController extends Controller
         }
         
         $companies = $companiesQuery->get();
-            
         $categories = ProductCategories::all();
-        $statuses = ProductStatus::where('active', true)->get();
+        $statuses = ProductStatus::all();
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();

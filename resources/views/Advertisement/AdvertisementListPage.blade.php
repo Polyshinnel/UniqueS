@@ -18,6 +18,205 @@
 
 @section('content')
 <div class="advertisements-container">
+    <!-- Панель фильтров -->
+    <div class="filters-panel">
+        <div class="filters-header">
+            <h3>Фильтры</h3>
+            <button class="btn btn-secondary" onclick="toggleFilters()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"></polygon>
+                </svg>
+                Фильтр
+            </button>
+        </div>
+        
+        <div class="filters-content" id="filtersContent">
+            <form method="GET" action="{{ route('advertisements.index') }}" class="filters-form">
+                <div class="filters-grid">
+                    <!-- Поиск -->
+                    <div class="filter-group search-group">
+                        <label for="search">Поиск:</label>
+                        <div class="search-input-wrapper">
+                            <input type="text" name="search" id="search" class="form-control" 
+                                   placeholder="Поиск по названию объявления или артикулу товара"
+                                   value="{{ request('search') }}">
+                            <button type="submit" class="search-btn">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <path d="M21 21L16.65 16.65"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Фильтр по типу объявлений -->
+                    <div class="filter-group">
+                        <label for="advertisement_type">Тип объявлений:</label>
+                        <select name="advertisement_type" id="advertisement_type" class="form-select">
+                            <option value="own" {{ request('advertisement_type', 'own') == 'own' ? 'selected' : '' }}>Мои объявления</option>
+                            <option value="all" {{ request('advertisement_type') == 'all' ? 'selected' : '' }}>Все объявления</option>
+                        </select>
+                    </div>
+
+                    <!-- Фильтр по категории -->
+                    <div class="filter-group">
+                        <label for="category_id">Категория:</label>
+                        <select name="category_id" id="category_id" class="form-select">
+                            <option value="">Все категории</option>
+                            @foreach($filterData['categories'] as $category)
+                                <option value="{{ $category->id }}" {{ request('category_id') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Фильтр по поставщику -->
+                    <div class="filter-group">
+                        <label for="company_id">Поставщик:</label>
+                        <select name="company_id" id="company_id" class="form-select">
+                            <option value="">Все поставщики</option>
+                            @foreach($filterData['companies'] as $company)
+                                <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
+                                    {{ $company->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Фильтр по статусу -->
+                    <div class="filter-group">
+                        <label for="status_id">Статус:</label>
+                        <select name="status_id" id="status_id" class="form-select">
+                            <option value="">Все статусы</option>
+                            @foreach($filterData['statuses'] as $status)
+                                <option value="{{ $status->id }}" {{ request('status_id') == $status->id ? 'selected' : '' }}>
+                                    {{ $status->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Фильтр по региону -->
+                    <div class="filter-group">
+                        <label for="region_id">Регион:</label>
+                        <select name="region_id" id="region_id" class="form-select">
+                            <option value="">Все регионы</option>
+                            @foreach($filterData['regions'] as $region)
+                                <option value="{{ $region->id }}" {{ request('region_id') == $region->id ? 'selected' : '' }}>
+                                    {{ $region->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filters-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="M21 21L16.65 16.65"></path>
+                        </svg>
+                        Применить фильтры
+                    </button>
+                    <a href="{{ route('advertisements.index') }}" class="btn btn-outline-secondary">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                        Сбросить
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Активные фильтры -->
+    @if(request('category_id') || request('company_id') || request('status_id') || request('region_id') || request('search') || request('advertisement_type') == 'all')
+    <div class="active-filters">
+        <div class="active-filters-header">
+            <h4>Активные фильтры:</h4>
+            <a href="{{ route('advertisements.index') }}" class="clear-all-filters">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+                Очистить все
+            </a>
+        </div>
+        <div class="active-filters-list">
+            @if(request('search'))
+                <span class="filter-tag">
+                    Поиск: "{{ request('search') }}"
+                    <a href="{{ request()->fullUrlWithQuery(['search' => null]) }}" class="remove-filter">×</a>
+                </span>
+            @endif
+            
+            @if(request('advertisement_type') == 'all')
+                <span class="filter-tag">
+                    Тип: Все объявления
+                    <a href="{{ request()->fullUrlWithQuery(['advertisement_type' => 'own']) }}" class="remove-filter">×</a>
+                </span>
+            @endif
+            
+            @if(request('category_id'))
+                @php $category = $filterData['categories']->firstWhere('id', request('category_id')); @endphp
+                @if($category)
+                <span class="filter-tag">
+                    Категория: {{ $category->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['category_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
+            
+            @if(request('company_id'))
+                @php $company = $filterData['companies']->firstWhere('id', request('company_id')); @endphp
+                @if($company)
+                <span class="filter-tag">
+                    Поставщик: {{ $company->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['company_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
+            
+            @if(request('status_id'))
+                @php $status = $filterData['statuses']->firstWhere('id', request('status_id')); @endphp
+                @if($status)
+                <span class="filter-tag">
+                    Статус: {{ $status->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['status_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
+            
+            @if(request('region_id'))
+                @php $region = $filterData['regions']->firstWhere('id', request('region_id')); @endphp
+                @if($region)
+                <span class="filter-tag">
+                    Регион: {{ $region->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['region_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
+        </div>
+    </div>
+    @endif
+
+    <!-- Информация о результатах -->
+    <div class="results-info">
+        <div class="results-count">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 7L10 17L5 12"></path>
+            </svg>
+            Найдено объявлений: <strong>{{ $advertisements->total() }}</strong>
+        </div>
+        @if(request('category_id') || request('company_id') || request('status_id') || request('region_id') || request('search') || request('advertisement_type') == 'all')
+        <div class="results-filters-info">
+            с примененными фильтрами
+        </div>
+        @endif
+    </div>
+
     <div class="advertisements-table-wrapper">
         <table class="advertisements-table">
             <thead>
@@ -74,23 +273,27 @@
                     <td class="supplier-cell">
                         <div class="supplier-info">
                             <div class="supplier-name">
-                                @if($advertisement->product && $advertisement->product->company)
-                                    <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
-                                        {{ $advertisement->product->company->name }}
-                                    </a>
-                                    <button class="action-btn company-card-btn" title="Просмотр компании" 
-                                        data-company-id="{{ $advertisement->product->company->id }}"
-                                        data-company-name="{{ $advertisement->product->company->name }}"
-                                        data-company-sku="{{ $advertisement->product->company->sku }}"
-                                        data-company-status="{{ $advertisement->product->company->status->name ?? 'Не указан' }}"
-                                        data-company-info="{{ $advertisement->product->company->common_info ?? 'Не указано' }}">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                                            <circle cx="12" cy="12" r="3"></circle>
-                                        </svg>
-                                    </button>
+                                @if(\App\Helpers\AdvertisementHelper::canViewSupplierInfo($advertisement))
+                                    @if($advertisement->product && $advertisement->product->company)
+                                        <a href="{{ route('companies.show', $advertisement->product->company) }}" class="company-link">
+                                            {{ $advertisement->product->company->name }}
+                                        </a>
+                                        <button class="action-btn company-card-btn" title="Просмотр компании" 
+                                            data-company-id="{{ $advertisement->product->company->id }}"
+                                            data-company-name="{{ $advertisement->product->company->name }}"
+                                            data-company-sku="{{ $advertisement->product->company->sku }}"
+                                            data-company-status="{{ $advertisement->product->company->status->name ?? 'Не указан' }}"
+                                            data-company-info="{{ $advertisement->product->company->common_info ?? 'Не указано' }}">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                <circle cx="12" cy="12" r="3"></circle>
+                                            </svg>
+                                        </button>
+                                    @else
+                                        Не указана
+                                    @endif
                                 @else
-                                    Не указана
+                                    <span style="color: #999; font-style: italic;">Скрыто</span>
                                 @endif
                             </div>
                             @if($advertisement->product && $advertisement->product->company && $advertisement->product->company->region)
@@ -214,7 +417,7 @@
                         <div class="status-list">
                             <div class="status-item">
                                 <div class="status-label">Статус объявления</div>
-                                <div class="status-badge" style="background-color: {{ $advertisement->status?->color ?? '#6c757d' }}; color: white;">
+                                <div class="status-badge status-{{ $advertisement->status?->id ?? 'unknown' }}">
                                     {{ $advertisement->status_name }}
                                 </div>
                             </div>
@@ -342,6 +545,52 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Функция для переключения видимости фильтров
+function toggleFilters() {
+    const filtersContent = document.getElementById('filtersContent');
+    const filtersPanel = document.querySelector('.filters-panel');
+    const isVisible = filtersPanel.style.maxHeight !== '100px';
+    
+    if (isVisible) {
+        filtersPanel.style.maxHeight = '100px';
+        filtersContent.style.display = 'none';
+    } else {
+        filtersPanel.style.maxHeight = 'none';
+        filtersContent.style.display = 'block';
+    }
+}
+
+// Функция для автоматического поиска при вводе
+function setupSearchInput() {
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                // Если поле поиска не пустое, отправляем форму
+                if (searchInput.value.trim() !== '') {
+                    searchInput.closest('form').submit();
+                }
+            }, 500); // Задержка 500мс после остановки ввода
+        });
+        
+        // При нажатии Enter сразу отправляем форму
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                searchInput.closest('form').submit();
+            }
+        });
+    }
+}
+
+// Инициализация поиска при загрузке страницы
+document.addEventListener('DOMContentLoaded', function() {
+    setupSearchInput();
+});
+
 function showContactCard(id, name, email, phone, role, hasTelegram, hasWhatsapp) {
     document.getElementById('contactName').textContent = name;
     document.getElementById('contactEmail').textContent = email || 'Не указан';
@@ -405,6 +654,306 @@ window.onclick = function(event) {
     max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
+}
+
+/* Стили для панели фильтров */
+.filters-panel {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.filters-header h3 {
+    margin: 0;
+    color: #133E71;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.filters-content {
+    padding: 25px;
+    display: block;
+}
+
+.filters-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.filter-group label {
+    font-weight: 600;
+    color: #495057;
+    font-size: 14px;
+}
+
+.form-select {
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    transition: all 0.3s ease;
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.filters-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #133E71;
+    color: white;
+    box-shadow: 0 2px 8px rgba(19, 62, 113, 0.3);
+}
+
+.btn-primary:hover {
+    background: #1C5BA4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(19, 62, 113, 0.4);
+}
+
+.btn-secondary {
+    background: #6c757d;
+    color: white;
+    box-shadow: 0 2px 8px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover {
+    background: #5a6268;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(108, 117, 125, 0.4);
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    color: #6c757d;
+    border: 1px solid #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Стили для активных фильтров */
+.active-filters {
+    background: #f8f9fa;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.active-filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.active-filters-header h4 {
+    margin: 0;
+    color: #133E71;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.clear-all-filters {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #6c757d;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.clear-all-filters:hover {
+    color: #133E71;
+    transform: translateY(-1px);
+}
+
+.clear-all-filters svg {
+    width: 14px;
+    height: 14px;
+}
+
+.active-filters-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #e8f0fe;
+    border: 1px solid #133E71;
+    border-radius: 12px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #133E71;
+    white-space: nowrap;
+}
+
+.filter-tag .remove-filter {
+    color: #dc3545;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.filter-tag .remove-filter:hover {
+    color: #c82333;
+    transform: scale(1.1);
+}
+
+/* Стили для информации о результатах */
+.results-info {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.results-count {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px;
+    color: #495057;
+}
+
+.results-count svg {
+    color: #28a745;
+}
+
+.results-count strong {
+    color: #133E71;
+    font-weight: 600;
+}
+
+.results-filters-info {
+    font-size: 14px;
+    color: #6c757d;
+    font-style: italic;
+}
+
+/* Стили для поля поиска */
+.search-group {
+    grid-column: 1 / -1;
+}
+
+.search-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.form-control {
+    padding: 10px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    transition: all 0.3s ease;
+    width: 100%;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.search-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 4px;
+    color: #6c757d;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.search-btn:hover {
+    background-color: #f8f9fa;
+    color: #133E71;
+}
+
+.search-btn svg {
+    width: 16px;
+    height: 16px;
 }
 
 .advertisements-table-wrapper {
@@ -1145,6 +1694,93 @@ window.onclick = function(event) {
     .pagination-links .page-link svg {
         width: 14px;
         height: 14px;
+    }
+    
+    /* Адаптивность для фильтров */
+    .filters-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .search-group {
+        grid-column: 1;
+    }
+    
+    .search-input-wrapper {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .search-btn {
+        position: static;
+        transform: none;
+        width: 100%;
+        justify-content: center;
+        padding: 10px;
+        background-color: #133E71;
+        color: white;
+        border-radius: 6px;
+    }
+    
+    .search-btn:hover {
+        background-color: #1C5BA4;
+        color: white;
+    }
+    
+    .filters-header {
+        padding: 15px 20px;
+    }
+    
+    .filters-content {
+        padding: 20px;
+    }
+    
+    .filters-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        justify-content: center;
+    }
+    
+    /* Адаптивность для активных фильтров */
+    .active-filters {
+        padding: 15px;
+    }
+    
+    .active-filters-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .clear-all-filters {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .filter-tag {
+        flex-wrap: wrap;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+    
+    .filter-tag .remove-filter {
+        font-size: 14px;
+    }
+    
+    /* Адаптивность для информации о результатах */
+    .results-info {
+        padding: 15px;
+    }
+    
+    .results-count {
+        font-size: 14px;
+    }
+    
+    .results-filters-info {
+        font-size: 12px;
     }
 }
 

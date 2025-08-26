@@ -17,6 +17,8 @@ use App\Models\ProductLoading;
 use App\Models\ProductRemoval;
 use App\Models\ProductPaymentVariants;
 use App\Models\AdvertisementStatus;
+use App\Models\Company;
+use App\Models\Regions;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -26,9 +28,12 @@ use App\Models\LogType;
 
 class AdvertisementController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $advertisements = Advertisement::with([
+        $user = auth()->user();
+        $currentUserId = auth()->id() ?? 1;
+        
+        $advertisementsQuery = Advertisement::with([
             'category',
             'product.company.addresses',
             'product.warehouse',
@@ -38,9 +43,126 @@ class AdvertisementController extends Controller
             'creator',
             'mainImage',
             'tags'
-        ])->paginate(20);
+        ]);
+        
+        // Применяем фильтры по правам доступа (базовая фильтрация)
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем объявления товаров, где он назначен как региональный представитель
+                $advertisementsQuery->whereHas('product', function($query) use ($currentUserId) {
+                    $query->where('regional_id', $currentUserId);
+                });
+            } elseif ($user->role->can_view_products === 1) {
 
-        return view('Advertisement.AdvertisementListPage', compact('advertisements'));
+            } elseif ($user->role->can_view_products === 3) {
+                // Для администраторов показываем все объявления
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем только их объявления
+                $advertisementsQuery->whereHas('product', function($query) use ($currentUserId) {
+                    $query->where('owner_id', $currentUserId);
+                });
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем только его объявления
+            $advertisementsQuery->whereHas('product', function($query) use ($currentUserId) {
+                $query->where('owner_id', $currentUserId);
+            });
+        }
+        
+        // Фильтр по типу объявлений (Свои/Все) - применяется поверх прав доступа
+        if ($request->filled('advertisement_type')) {
+            if ($request->advertisement_type === 'own') {
+                // Показываем только объявления, созданные текущим пользователем
+                $advertisementsQuery->where('created_by', $currentUserId);
+            }
+            // Если 'all' - показываем все объявления в рамках прав доступа (уже применено выше)
+        } else {
+            // По умолчанию показываем только свои объявления
+            $advertisementsQuery->where('created_by', $currentUserId);
+        }
+        
+        // Применяем фильтры из запроса
+        if ($request->filled('category_id')) {
+            $advertisementsQuery->where('category_id', $request->category_id);
+        }
+        
+        if ($request->filled('company_id')) {
+            $advertisementsQuery->whereHas('product.company', function($query) use ($request) {
+                $query->where('id', $request->company_id);
+            });
+        }
+        
+        if ($request->filled('status_id')) {
+            $advertisementsQuery->where('status_id', $request->status_id);
+        }
+        
+        if ($request->filled('region_id')) {
+            $advertisementsQuery->whereHas('product.warehouse.regions', function($query) use ($request) {
+                $query->where('regions.id', $request->region_id);
+            });
+        }
+        
+        // Поиск по названию объявления и артикулу товара
+        if ($request->filled('search')) {
+            $searchTerm = $request->search;
+            $advertisementsQuery->where(function($query) use ($searchTerm) {
+                $query->where('title', 'like', '%' . $searchTerm . '%')
+                      ->orWhereHas('product', function($subQuery) use ($searchTerm) {
+                          $subQuery->where('sku', 'like', '%' . $searchTerm . '%');
+                      });
+            });
+        }
+        
+        $advertisements = $advertisementsQuery->paginate(20)->withQueryString();
+
+        // Получаем данные для фильтров с учетом прав доступа
+        $filterData = $this->getFilterData($user, $currentUserId);
+
+        return view('Advertisement.AdvertisementListPage', compact('advertisements', 'filterData'));
+    }
+
+    /**
+     * Получает данные для фильтров с учетом прав доступа пользователя
+     */
+    private function getFilterData($user, $currentUserId)
+    {
+        $filterData = [];
+        
+        // Категории - доступны всем
+        $filterData['categories'] = \App\Models\ProductCategories::where('active', true)->get();
+        
+        // Статусы объявлений - показываем все статусы
+        $filterData['statuses'] = \App\Models\AdvertisementStatus::all();
+        
+        // Поставщики (компании) - с учетом прав доступа
+        $companiesQuery = \App\Models\Company::with('status');
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем компании, где он назначен как региональный представитель
+                $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 1) {
+                // Для пользователей с ограниченным доступом показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 3) {
+                // Для администраторов показываем все компании
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем только его компании
+            $companiesQuery->where('owner_user_id', $currentUserId);
+        }
+        
+        $filterData['companies'] = $companiesQuery->get();
+        
+        // Регионы - показываем все активные регионы
+        $filterData['regions'] = \App\Models\Regions::where('active', true)->get();
+        
+        return $filterData;
     }
 
     public function create(Request $request)
