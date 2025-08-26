@@ -14,14 +14,6 @@
         </div>
         <div class="company-header-actions">
             <h1 class="company-title">{{ $company->name ?? 'Название не указано' }}</h1>
-            <div class="company-actions">
-                <a href="#" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                    </svg>
-                    Редактировать
-                </a>
-            </div>
         </div>
         <div class="company-sku">SKU: {{ $company->sku ?? 'SKU не указан' }}</div>
     </div>
@@ -38,19 +30,25 @@
                                 <span class="label">Статус:</span>
                                 <span class="value">
                                     <div class="status-selector">
-                                        <div class="status-badge status-{{ $company->status->id ?? 'unknown' }} clickable" onclick="toggleStatusDropdown()">
-                                            {{ $company->status->name ?? 'Статус не указан' }}
-                                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                <polyline points="6,9 12,15 18,9"></polyline>
-                                            </svg>
-                                        </div>
-                                        <div class="status-dropdown" id="statusDropdown">
-                                            @foreach($statuses as $status)
-                                                <div class="status-option" data-status-id="{{ $status->id }}" data-status-name="{{ $status->name }}" onclick="changeStatus(this)">
-                                                    <div class="status-badge status-{{ $status->id }}">{{ $status->name }}</div>
-                                                </div>
-                                            @endforeach
-                                        </div>
+                                        @if($canEdit)
+                                            <div class="status-badge status-{{ $company->status->id ?? 'unknown' }} clickable" onclick="toggleStatusDropdown()">
+                                                {{ $company->status->name ?? 'Статус не указан' }}
+                                                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                                </svg>
+                                            </div>
+                                            <div class="status-dropdown" id="statusDropdown">
+                                                @foreach($statuses as $status)
+                                                    <div class="status-option" data-status-id="{{ $status->id }}" data-status-name="{{ $status->name }}" onclick="changeStatus(this)">
+                                                        <div class="status-badge status-{{ $status->id }}">{{ $status->name }}</div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <div class="status-badge status-{{ $company->status->id ?? 'unknown' }}">
+                                                {{ $company->status->name ?? 'Статус не указан' }}
+                                            </div>
+                                        @endif
                                     </div>
                                 </span>
                             </div>
@@ -75,12 +73,14 @@
                             <div class="company-description">
                                 <div class="description-header">
                                     <strong>Описание:</strong>
-                                    <button class="edit-comment-btn" onclick="editMainInfoBlock()">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                        </svg>
-                                        Редактировать
-                                    </button>
+                                    @if($canEdit)
+                                        <button class="edit-comment-btn" onclick="editMainInfoBlock()">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                            </svg>
+                                            Редактировать
+                                        </button>
+                                    @endif
                                 </div>
                                 <p>{{ $company->common_info }}</p>
                             </div>
@@ -88,12 +88,14 @@
                             <div class="company-description">
                                 <div class="description-header">
                                     <strong>Описание:</strong>
-                                    <button class="edit-comment-btn" onclick="editMainInfoBlock()">
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                                        </svg>
-                                        Редактировать
-                                    </button>
+                                    @if($canEdit)
+                                        <button class="edit-comment-btn" onclick="editMainInfoBlock()">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                            </svg>
+                                            Редактировать
+                                        </button>
+                                    @endif
                                 </div>
                                 <p style="color: #666; font-style: italic;">Описание не указано</p>
                             </div>
@@ -116,12 +118,14 @@
             <div class="info-block">
                 <div class="block-header">
                     <h3>Контактная информация</h3>
-                    <button class="edit-comment-btn" onclick="editContactInfoBlock()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                        </svg>
-                        Редактировать
-                    </button>
+                    @if($canEdit)
+                        <button class="edit-comment-btn" onclick="editContactInfoBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                    @endif
                 </div>
                 <div class="contact-info-container">
                     <div class="contact-info-content" id="contact_info_content">
@@ -200,12 +204,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Все контакты</h3>
-                        <button class="edit-comment-btn" onclick="editContactsBlock()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                            </svg>
-                            Редактировать
-                        </button>
+                        @if($canEdit)
+                            <button class="edit-comment-btn" onclick="editContactsBlock()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                                Редактировать
+                            </button>
+                        @endif
                     </div>
                     <div class="contacts-container">
                         <div class="contacts-content" id="contacts_content">
@@ -348,12 +354,14 @@
                 <div class="info-block">
                     <div class="block-header">
                         <h3>Все контакты</h3>
-                        <button class="edit-comment-btn" onclick="editContactsBlock()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                            </svg>
-                            Добавить контакты
-                        </button>
+                        @if($canEdit)
+                            <button class="edit-comment-btn" onclick="editContactsBlock()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                </svg>
+                                Добавить контакты
+                            </button>
+                        @endif
                     </div>
                     <div class="contacts-container">
                         <div class="contacts-content" id="contacts_content">
@@ -382,12 +390,14 @@
             <div class="info-block">
                 <div class="block-header">
                     <h3>Адреса</h3>
-                    <button class="edit-comment-btn" onclick="editAddressesBlock()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                        </svg>
-                        {{ $company->addresses->count() > 0 ? 'Редактировать' : 'Добавить адреса' }}
-                    </button>
+                    @if($canEdit)
+                        <button class="edit-comment-btn" onclick="editAddressesBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            {{ $company->addresses->count() > 0 ? 'Редактировать' : 'Добавить адреса' }}
+                        </button>
+                    @endif
                 </div>
                 <div class="addresses-content" id="addresses_content">
                     @if($company->addresses->count() > 0)
@@ -450,12 +460,14 @@
             <div class="info-block">
                 <div class="block-header">
                     <h3>Юридическая информация</h3>
-                    <button class="edit-comment-btn" onclick="editLegalInfoBlock()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                        </svg>
-                        {{ $company->inn ? 'Редактировать' : 'Добавить' }}
-                    </button>
+                    @if($canEdit)
+                        <button class="edit-comment-btn" onclick="editLegalInfoBlock()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            {{ $company->inn ? 'Редактировать' : 'Добавить' }}
+                        </button>
+                    @endif
                 </div>
                 <div class="legal-info-content" id="legal_info_content">
                     @if($company->inn)
@@ -509,15 +521,21 @@
                             <p>{{ $lastAction->action }}</p>
                         </div>
                         <div class="action-buttons">
-                            <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
-                            <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                            @if($canEdit)
+                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                                <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                            @else
+                                <button class="btn btn-secondary" onclick="showActionsModal()" disabled>Подробнее</button>
+                            @endif
                         </div>
                     @else
                         <div class="action-description">
                             <p style="color: #666; font-style: italic;">Нет активных действий</p>
                         </div>
                         <div class="action-buttons">
-                            <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                            @if($canEdit)
+                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                            @endif
                         </div>
                     @endif
                 </div>
@@ -548,7 +566,11 @@
                     @endif
                 </div>
                 <div class="events-actions">
-                    <button class="btn btn-secondary" onclick="showLogsHistory()">История</button>
+                    @if($canEdit)
+                        <button class="btn btn-secondary" onclick="showLogsHistory()">История</button>
+                    @else
+                        <button class="btn btn-secondary" onclick="showLogsHistory()" disabled>История</button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -2110,6 +2132,16 @@
 .legal-info-actions .btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+}
+
+.btn:disabled:hover {
+    background-color: #6c757d !important;
+    border-color: #6c757d !important;
+    color: white !important;
+    transform: none !important;
 }
 
 /* Стили для редактирования контактов */
@@ -2288,8 +2320,11 @@
 
 <script>
 let currentCompanyId = '{{ $company->id }}';
+let canEdit = {{ $canEdit ? 'true' : 'false' }};
 
 function toggleStatusDropdown() {
+    if (!canEdit) return;
+    
     const dropdown = document.getElementById('statusDropdown');
     const arrow = document.querySelector('.dropdown-arrow');
     
@@ -2306,6 +2341,8 @@ function toggleStatusDropdown() {
 let pendingStatusChange = null;
 
 function changeStatus(element) {
+    if (!canEdit) return;
+    
     // Получаем данные из data-атрибутов
     const statusId = element.getAttribute('data-status-id');
     const statusName = element.getAttribute('data-status-name');
@@ -3120,6 +3157,8 @@ document.addEventListener('keydown', function(event) {
 
 // Функция для редактирования блока основной информации
 function editMainInfoBlock() {
+    if (!canEdit) return;
+    
     const mainInfoContent = document.getElementById('main_info_content');
     const mainInfoEdit = document.getElementById('main_info_edit');
     const mainInfoActions = document.getElementById('main_info_actions');

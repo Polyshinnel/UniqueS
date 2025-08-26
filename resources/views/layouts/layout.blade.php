@@ -675,17 +675,21 @@
                     </div>
                 </li>
 
+                @if(Auth::user()->role->name !== 'Региональный представитель')
                 <li>
                     <div class="menu-block-item {{ request()->is('advertisements*') ? 'menu-block-item__active' : '' }}">
                         <a href="/advertisements"><img src="{{ asset('assets/img/icons/adv.svg') }}" alt="events"></a>
                     </div>
                 </li>
+                @endif
 
+                @if(Auth::user()->role->name !== 'Региональный представитель' && Auth::user()->role->name !== 'Менеджер')
                 <li>
                     <div class="menu-block-item {{ request()->is('guide*') ? 'menu-block-item__active' : '' }}">
                         <a href="/guide"><img src="{{ asset('assets/img/icons/book.svg') }}" alt="events"></a>
                     </div>
                 </li>
+                @endif
             </ul>
         </div>
     </div>
@@ -788,6 +792,7 @@
                         </div>
                     </a>
 
+                    @if(Auth::user()->role->name !== 'Региональный представитель')
                     <a href="/advertisements/create" class="create-option-card">
                         <div class="create-option-icon">
                             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -808,6 +813,7 @@
                             </svg>
                         </div>
                     </a>
+                    @endif
                 </div>
             </div>
         </div>

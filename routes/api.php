@@ -17,3 +17,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
+// API маршрут для получения категорий
+Route::get('/categories', function () {
+    $categories = \App\Models\ProductCategories::all();
+    return response()->json([
+        'success' => true,
+        'categories' => $categories
+    ]);
+});

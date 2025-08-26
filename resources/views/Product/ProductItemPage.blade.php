@@ -22,14 +22,6 @@
         </div>
         <div class="product-header-actions">
             <h1 class="product-title">{{ $product->name }}</h1>
-            <div class="product-actions">
-                <a href="{{ route('products.edit', $product) }}" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                    </svg>
-                    Редактировать
-                </a>
-            </div>
         </div>
         <div class="product-sku">Артикул: {{ $product->sku }}</div>
     </div>
@@ -91,63 +83,69 @@
             @endif
 
             <!-- Блок действий и событий -->
-            <div class="product-actions-section">
-                <div class="info-block">
-                    <h3>Следующие действия</h3>
-                    <div class="action-info">
-                        @if($lastAction)
-                            <div class="action-date">
-                                <span class="label">Дата:</span>
-                                <span class="value">{{ $lastAction->expired_at->format('d.m.Y') }}</span>
-                            </div>
-                            <div class="action-description">
-                                <span class="label">Что требуется сделать:</span>
-                                <p>{{ $lastAction->action }}</p>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
-                                <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
-                            </div>
-                        @else
-                            <div class="action-description">
-                                <p style="color: #666; font-style: italic;">Нет активных действий</p>
-                            </div>
-                            <div class="action-buttons">
-                                <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
-                            </div>
-                        @endif
+            @if($canEdit)
+                <div class="product-actions-section">
+                    <div class="info-block">
+                        <h3>Следующие действия</h3>
+                        <div class="action-info">
+                            @if($lastAction)
+                                <div class="action-date">
+                                    <span class="label">Дата:</span>
+                                    <span class="value">{{ $lastAction->expired_at->format('d.m.Y') }}</span>
+                                </div>
+                                <div class="action-description">
+                                    <span class="label">Что требуется сделать:</span>
+                                    <p>{{ $lastAction->action }}</p>
+                                </div>
+                                <div class="action-buttons">
+                                    @if($canChangeStatus)
+                                        <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                                    @endif
+                                    <button class="btn btn-secondary" onclick="showActionsModal()">Подробнее</button>
+                                </div>
+                            @else
+                                <div class="action-description">
+                                    <p style="color: #666; font-style: italic;">Нет активных действий</p>
+                                </div>
+                                <div class="action-buttons">
+                                    @if($canChangeStatus)
+                                        <button class="btn btn-primary" onclick="showNewActionModal()">Задать новое действие</button>
+                                    @endif
+                                </div>
+                            @endif
+                        </div>
                     </div>
-                </div>
 
-                <div class="info-block">
-                    <h3>Лог событий</h3>
-                    <div class="events-list">
-                        @if($lastLog)
-                            <div class="event-item">
-                                <div class="event-header">
-                                    <span class="event-type" data-color="{{ $lastLog->type ? $lastLog->type->color : '#133E71' }}">{{ $lastLog->type ? $lastLog->type->name : 'Неизвестный тип' }}</span>
-                                    <span class="event-date">{{ $lastLog->created_at->format('d.m.Y H:i:s') }}</span>
+                    <div class="info-block">
+                        <h3>Лог событий</h3>
+                        <div class="events-list">
+                            @if($lastLog)
+                                <div class="event-item">
+                                    <div class="event-header">
+                                        <span class="event-type" data-color="{{ $lastLog->type ? $lastLog->type->color : '#133E71' }}">{{ $lastLog->type ? $lastLog->type->name : 'Неизвестный тип' }}</span>
+                                        <span class="event-date">{{ $lastLog->created_at->format('d.m.Y H:i:s') }}</span>
+                                    </div>
+                                    <div class="event-content">
+                                        <p>{{ $lastLog->log }}</p>
+                                    </div>
+                                    <div class="event-footer">
+                                        <span>Создал: {{ $lastLog->user_id ? ($lastLog->user ? $lastLog->user->name : 'Пользователь не найден') : 'Система' }}</span>
+                                    </div>
                                 </div>
-                                <div class="event-content">
-                                    <p>{{ $lastLog->log }}</p>
+                            @else
+                                <div class="event-item">
+                                    <div class="event-content">
+                                        <p style="color: #666; font-style: italic;">Логи событий отсутствуют</p>
+                                    </div>
                                 </div>
-                                <div class="event-footer">
-                                    <span>Создал: {{ $lastLog->user_id ? ($lastLog->user ? $lastLog->user->name : 'Пользователь не найден') : 'Система' }}</span>
-                                </div>
-                            </div>
-                        @else
-                            <div class="event-item">
-                                <div class="event-content">
-                                    <p style="color: #666; font-style: italic;">Логи событий отсутствуют</p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-                    <div class="events-actions">
-                        <button class="btn btn-secondary" onclick="showLogsHistory()">История</button>
+                            @endif
+                        </div>
+                        <div class="events-actions">
+                            <button class="btn btn-secondary" onclick="showLogsHistory()">История</button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            @endif
         </div>
 
         <!-- Основная информация о товаре -->
@@ -155,21 +153,27 @@
             <div class="info-block">
                 <h3>Статус товара</h3>
                 <div class="status-container">
-                    <div class="status-selector">
-                        <div class="status-badge clickable" onclick="toggleProductStatusDropdown()" style="background-color: {{ $product->status->color ?? '#6c757d' }}; color: white;">
+                    @if($canChangeStatus)
+                        <div class="status-selector">
+                            <div class="status-badge clickable" onclick="toggleProductStatusDropdown()" style="background-color: {{ $product->status->color ?? '#6c757d' }}; color: white;">
+                                {{ $product->status->name ?? 'Не указан' }}
+                                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6,9 12,15 18,9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="status-dropdown" id="productStatusDropdown">
+                                @foreach($statuses as $status)
+                                    <div class="status-option" onclick="changeProductStatus({{ $status->id }}, '{{ $status->name }}', '{{ $status->color }}')">
+                                        <div class="status-badge" style="background-color: {{ $status->color }}; color: white;">{{ $status->name }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    @else
+                        <div class="status-badge" style="background-color: {{ $product->status->color ?? '#6c757d' }}; color: white;">
                             {{ $product->status->name ?? 'Не указан' }}
-                            <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <polyline points="6,9 12,15 18,9"></polyline>
-                            </svg>
                         </div>
-                        <div class="status-dropdown" id="productStatusDropdown">
-                            @foreach($statuses as $status)
-                                <div class="status-option" onclick="changeProductStatus({{ $status->id }}, '{{ $status->name }}', '{{ $status->color }}')">
-                                    <div class="status-badge" style="background-color: {{ $status->color }}; color: white;">{{ $status->name }}</div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -201,57 +205,105 @@
             @endif
 
             <div class="info-block">
-                <h3>Основная информация</h3>
-                <div class="info-grid">
-                    <div class="info-item">
-                        <span class="label">Категория:</span>
-                        <span class="value">{{ $product->category->name ?? 'Не указана' }}</span>
+                <div class="block-header">
+                    <h3>Основная информация</h3>
+                    <button class="edit-comment-btn" onclick="editMainInfoBlock()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Редактировать
+                    </button>
+                </div>
+                <div class="main-info-container">
+                    <div class="main-info-content" id="main_info_content">
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="label">Категория:</span>
+                                <span class="value">{{ $product->category->name ?? 'Не указана' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Склад:</span>
+                                <span class="value">{{ $product->warehouse->name ?? 'Не указан' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Адрес станка:</span>
+                                <span class="value">{{ $product->product_address ?? 'Не указан' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Организация:</span>
+                                <span class="value">
+                                    @if($product->company)
+                                        <a href="{{ route('companies.show', $product->company) }}" class="company-link">
+                                            {{ $product->company->name }}
+                                        </a>
+                                    @else
+                                        Не указана
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Владелец:</span>
+                                <span class="value">
+                                    @if($product->owner)
+                                        <button class="contact-link" onclick="showContactCard({{ $product->owner->id }}, '{{ $product->owner->name }}', '{{ $product->owner->email }}', '{{ $product->owner->phone }}', '{{ $product->owner->role->name ?? 'Роль не указана' }}', {{ $product->owner->has_telegram ? 'true' : 'false' }}, {{ $product->regional->has_whatsapp ? 'true' : 'false' }})">
+                                            {{ $product->owner->name }}
+                                        </button>
+                                    @else
+                                        Не указан
+                                    @endif
+                                </span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Региональный:</span>
+                                <span class="value">
+                                    @if($product->regional)
+                                        <button class="contact-link" onclick="showContactCard({{ $product->regional->id }}, '{{ $product->regional->name }}', '{{ $product->regional->email }}', '{{ $product->regional->phone }}', '{{ $product->regional->role->name ?? 'Роль не указана' }}', {{ $product->regional->has_telegram ? 'true' : 'false' }}, {{ $product->regional->has_whatsapp ? 'true' : 'false' }})">
+                                            {{ $product->regional->name }}
+                                        </button>
+                                    @else
+                                        Не указан
+                                    @endif
+                                </span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <span class="label">Склад:</span>
-                        <span class="value">{{ $product->warehouse->name ?? 'Не указан' }}</span>
+                    <div class="main-info-edit" id="main_info_edit" style="display: none;">
+                        <div class="form-group">
+                            <label for="category_treeselect">Категория:</label>
+                            <div class="treeselect-wrapper">
+                                <div class="treeselect-input" id="category_treeselect" tabindex="0">
+                                    <span class="treeselect-placeholder">Выберите категорию</span>
+                                    <svg class="treeselect-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="6,9 12,15 18,9"></polyline>
+                                    </svg>
+                                </div>
+                                <div class="treeselect-dropdown" id="category_treeselect_dropdown">
+                                    <div class="treeselect-search">
+                                        <input type="text" id="category_treeselect_search" placeholder="Поиск категорий..." class="treeselect-search-input">
+                                    </div>
+                                    <div class="treeselect-tree" id="category_treeselect_tree">
+                                        <!-- Дерево будет заполнено JavaScript -->
+                                    </div>
+                                </div>
+                                <select name="category_id" id="category_id" class="form-control" style="display: none;">
+                                    <option value="">Выберите категорию</option>
+                                    @foreach(\App\Models\ProductCategories::all() as $category)
+                                        <option value="{{ $category->id }}" {{ $product->category_id == $category->id ? 'selected' : '' }}>{{ $category->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <small class="form-text text-muted">Доступны только категории без подкатегорий</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="product_address_input">Адрес станка:</label>
+                            <input type="text" id="product_address_input" class="form-control" value="{{ $product->product_address ?? '' }}" placeholder="Введите адрес станка">
+                        </div>
                     </div>
-                    <div class="info-item">
-                        <span class="label">Адрес станка:</span>
-                        <span class="value">{{ $product->product_address ?? 'Не указан' }}</span>
+                    <!-- Кнопки действий для блока основной информации -->
+                    <div class="main-info-actions" id="main_info_actions" style="display: none;">
+                        <button class="btn btn-primary" onclick="saveMainInfoBlock()">Сохранить</button>
+                        <button class="btn btn-secondary" onclick="cancelMainInfoEdit()">Отмена</button>
                     </div>
-                    <div class="info-item">
-                        <span class="label">Организация:</span>
-                        <span class="value">
-                            @if($product->company)
-                                <a href="{{ route('companies.show', $product->company) }}" class="company-link">
-                                    {{ $product->company->name }}
-                                </a>
-                            @else
-                                Не указана
-                            @endif
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Владелец:</span>
-                        <span class="value">
-                            @if($product->owner)
-                                <button class="contact-link" onclick="showContactCard({{ $product->owner->id }}, '{{ $product->owner->name }}', '{{ $product->owner->email }}', '{{ $product->owner->phone }}', '{{ $product->owner->role->name ?? 'Роль не указана' }}', {{ $product->owner->has_telegram ? 'true' : 'false' }}, {{ $product->regional->has_whatsapp ? 'true' : 'false' }})">
-                                    {{ $product->owner->name }}
-                                </button>
-                            @else
-                                Не указан
-                            @endif
-                        </span>
-                    </div>
-                    <div class="info-item">
-                        <span class="label">Региональный:</span>
-                        <span class="value">
-                            @if($product->regional)
-                                <button class="contact-link" onclick="showContactCard({{ $product->regional->id }}, '{{ $product->regional->name }}', '{{ $product->regional->email }}', '{{ $product->regional->phone }}', '{{ $product->regional->role->name ?? 'Роль не указана' }}', {{ $product->regional->has_telegram ? 'true' : 'false' }}, {{ $product->regional->has_whatsapp ? 'true' : 'false' }})">
-                                    {{ $product->regional->name }}
-                                </button>
-                            @else
-                                Не указан
-                            @endif
-                        </span>
-                    </div>
-
                 </div>
             </div>
 
@@ -2396,9 +2448,298 @@
         color: #666;
         font-size: 12px;
     }
+
+    /* Стили для TreeSelect (аналогично PrimeVue TreeSelect) */
+    .treeselect-wrapper {
+        position: relative;
+        width: 100%;
+    }
+
+    .treeselect-input {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-height: 48px;
+    }
+
+    .treeselect-input:hover {
+        border-color: #133E71;
+    }
+
+    .treeselect-input:focus {
+        outline: none;
+        border-color: #133E71;
+        box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+    }
+
+    .treeselect-input.active {
+        border-color: #133E71;
+        box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+    }
+
+    .treeselect-placeholder {
+        color: #6c757d;
+        font-size: 14px;
+    }
+
+    .treeselect-value {
+        color: #495057;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .treeselect-arrow {
+        color: #6c757d;
+        transition: transform 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .treeselect-input.active .treeselect-arrow {
+        transform: rotate(180deg);
+    }
+
+    .treeselect-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+        margin-top: 2px;
+        display: none;
+        max-height: 300px;
+        overflow: hidden;
+    }
+
+    .treeselect-dropdown.active {
+        display: block;
+        animation: treeselectFadeIn 0.15s ease-out;
+    }
+
+    @keyframes treeselectFadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .treeselect-search {
+        padding: 12px;
+        border-bottom: 1px solid #f1f3f4;
+    }
+
+    .treeselect-search-input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        font-size: 14px;
+        outline: none;
+        transition: border-color 0.3s ease;
+    }
+
+    .treeselect-search-input:focus {
+        border-color: #133E71;
+    }
+
+    .treeselect-tree {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 8px 0;
+    }
+
+    .treeselect-node {
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        font-size: 14px;
+        color: #495057;
+        position: relative;
+    }
+
+    .treeselect-node:hover {
+        background: #f8f9fa;
+    }
+
+    .treeselect-node.selected {
+        background: #e3f2fd;
+        color: #133E71;
+        font-weight: 500;
+    }
+
+    .treeselect-node.focused {
+        background: #e3f2fd;
+        color: #133E71;
+    }
+
+    .treeselect-node.disabled {
+        opacity: 0.5;
+        background: #f8f9fa;
+        pointer-events: auto;
+    }
+
+    .treeselect-node.disabled:hover {
+        background: #f8f9fa;
+    }
+
+    .treeselect-node.disabled .treeselect-label {
+        color: #6c757d;
+        cursor: pointer;
+    }
+
+    .treeselect-node.disabled .treeselect-toggle {
+        cursor: pointer;
+    }
+
+    .treeselect-node.disabled .treeselect-toggle:hover {
+        color: #133E71;
+    }
+
+    .treeselect-toggle {
+        width: 16px;
+        height: 16px;
+        margin-right: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: transform 0.2s ease;
+        color: #6c757d;
+        flex-shrink: 0;
+    }
+
+    .treeselect-toggle.expanded {
+        transform: rotate(90deg);
+    }
+
+    .treeselect-toggle-icon {
+        width: 12px;
+        height: 12px;
+    }
+
+    .treeselect-indent {
+        width: 20px;
+        flex-shrink: 0;
+    }
+
+    .treeselect-label {
+        flex-grow: 1;
+        cursor: pointer;
+    }
+
+    .treeselect-children {
+        display: none;
+    }
+
+    .treeselect-children.expanded {
+        display: block;
+    }
+
+    /* Стили для блока основной информации */
+    .main-info-container {
+        margin-top: 15px;
+    }
+
+    .main-info-content {
+        margin-bottom: 15px;
+    }
+
+    .main-info-edit {
+        margin-bottom: 15px;
+    }
+
+    .main-info-edit .form-group {
+        margin-bottom: 15px;
+    }
+
+    .main-info-edit .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+        font-size: 14px;
+    }
+
+    .main-info-edit .form-group input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 14px;
+        font-family: inherit;
+        transition: border-color 0.3s ease;
+    }
+
+    .main-info-edit .form-group input:focus {
+        outline: none;
+        border-color: #133E71;
+        box-shadow: 0 0 0 2px rgba(19, 62, 113, 0.1);
+    }
+
+    .main-info-actions {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-start;
+    }
+
+    .main-info-actions .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        border: 1px solid;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .main-info-actions .btn-primary {
+        background-color: #133E71;
+        color: white;
+        border-color: #133E71;
+    }
+
+    .main-info-actions .btn-primary:hover {
+        background-color: #0f2d56;
+        border-color: #0f2d56;
+    }
+
+    .main-info-actions .btn-secondary {
+        background-color: #6c757d;
+        color: white;
+        border-color: #6c757d;
+    }
+
+    .main-info-actions .btn-secondary:hover {
+        background-color: #5a6268;
+        border-color: #5a6268;
+    }
+
+    .main-info-actions .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 </style>
 
 <script>
+// Переменные для определения прав пользователя
+let canEdit = {{ $canEdit ? 'true' : 'false' }};
+let canChangeStatus = {{ $canChangeStatus ? 'true' : 'false' }};
+
 let currentGalleryIndex = 0;
 let galleryItems = [];
 
@@ -3338,6 +3679,12 @@ window.onclick = function(event) {
 
 // Функции для работы с выпадающим списком статусов товара
 function toggleProductStatusDropdown() {
+    // Проверяем права пользователя на изменение статуса
+    if (!canChangeStatus) {
+        showNotification('У вас нет прав на изменение статуса товара', 'error');
+        return;
+    }
+    
     const dropdown = document.getElementById('productStatusDropdown');
     const arrow = document.querySelector('.status-badge.clickable .dropdown-arrow');
     
@@ -3354,6 +3701,12 @@ function toggleProductStatusDropdown() {
 let pendingProductStatusChange = null;
 
 function changeProductStatus(statusId, statusName, statusColor) {
+    // Проверяем права пользователя на изменение статуса
+    if (!canChangeStatus) {
+        showNotification('У вас нет прав на изменение статуса товара', 'error');
+        return;
+    }
+    
     // Получаем данные о смене статуса
     pendingProductStatusChange = {
         statusId: statusId,
@@ -3681,6 +4034,12 @@ let currentProductId = '{{ $product->id }}';
 
 // Функции для работы с историей логов
 function showLogsHistory() {
+    // Проверяем права пользователя на просмотр логов
+    if (!canEdit) {
+        showNotification('У вас нет прав на просмотр логов', 'error');
+        return;
+    }
+    
     const modal = document.getElementById('logsHistoryModal');
     modal.style.display = 'block';
     
@@ -3795,6 +4154,12 @@ let currentActionText = null;
 
 // Функции для работы с модальным окном действий
 function showActionsModal() {
+    // Проверяем права пользователя на просмотр действий
+    if (!canEdit) {
+        showNotification('У вас нет прав на просмотр действий', 'error');
+        return;
+    }
+    
     const modal = document.getElementById('actionsModal');
     modal.style.display = 'block';
     
@@ -4013,6 +4378,12 @@ function saveActionComment(actionId, actionText) {
 
 // Функции для работы с модальным окном создания нового действия
 function showNewActionModal() {
+    // Проверяем права пользователя на создание действий
+    if (!canChangeStatus) {
+        showNotification('У вас нет прав на создание действий', 'error');
+        return;
+    }
+    
     const modal = document.getElementById('newActionModal');
     const form = document.getElementById('newActionForm');
     
@@ -4259,6 +4630,431 @@ document.addEventListener('keydown', function(event) {
         if (productStatusModal && productStatusModal.style.display === 'block') {
             cancelProductStatusChange();
         }
+    }
+});
+
+// Функции для редактирования блока основной информации
+function editMainInfoBlock() {
+    // Скрываем контент и показываем формы редактирования
+    document.getElementById('main_info_content').style.display = 'none';
+    document.getElementById('main_info_edit').style.display = 'block';
+    
+    // Показываем кнопки действий
+    document.getElementById('main_info_actions').style.display = 'flex';
+    
+    // Скрываем кнопку редактирования
+    document.querySelector('#main_info_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'none';
+    
+    // Инициализируем TreeSelect для категорий
+    initializeTreeSelectForEdit();
+}
+
+function cancelMainInfoEdit() {
+    // Восстанавливаем оригинальные значения
+    const categorySelect = document.getElementById('category_id');
+    const productAddressInput = document.getElementById('product_address_input');
+    
+    if (categorySelect) {
+        const originalCategory = categorySelect.getAttribute('data-original') || '';
+        categorySelect.value = originalCategory;
+    }
+    
+    if (productAddressInput) {
+        const originalAddress = productAddressInput.getAttribute('data-original') || '';
+        productAddressInput.value = originalAddress;
+    }
+    
+    // Показываем контент и скрываем формы редактирования
+    document.getElementById('main_info_content').style.display = 'block';
+    document.getElementById('main_info_edit').style.display = 'none';
+    
+    // Скрываем кнопки действий
+    document.getElementById('main_info_actions').style.display = 'none';
+    
+    // Показываем кнопку редактирования
+    document.querySelector('#main_info_actions').closest('.info-block').querySelector('.edit-comment-btn').style.display = 'flex';
+}
+
+function saveMainInfoBlock() {
+    // Собираем данные
+    const mainInfoData = {
+        category_id: document.getElementById('category_id').value || null,
+        product_address: document.getElementById('product_address_input').value.trim()
+    };
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#main_info_actions .btn-primary');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем AJAX запрос
+    fetch(`/product/{{ $product->id }}/main-info`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify(mainInfoData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение
+            updateMainInfoDisplay(mainInfoData);
+            
+            // Сохраняем новые значения как оригинальные
+            saveMainInfoOriginals(mainInfoData);
+            
+            // Скрываем формы редактирования
+            cancelMainInfoEdit();
+            
+            // Показываем уведомление об успехе
+            showNotification('Основная информация успешно обновлена', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении основной информации', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции обновления отображения основной информации
+function updateMainInfoDisplay(mainInfoData) {
+    // Обновляем отображение категории
+    const categoryValue = document.querySelector('#main_info_content .info-item:first-child .value');
+    if (mainInfoData.category_id) {
+        const categorySelect = document.getElementById('category_id');
+        const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+        const categoryName = selectedOption ? selectedOption.textContent : 'Не указана';
+        categoryValue.textContent = categoryName;
+    } else {
+        categoryValue.textContent = 'Не указана';
+    }
+    
+    // Обновляем отображение адреса станка
+    const addressValue = document.querySelector('#main_info_content .info-item:nth-child(3) .value');
+    if (mainInfoData.product_address) {
+        addressValue.textContent = mainInfoData.product_address;
+    } else {
+        addressValue.textContent = 'Не указан';
+    }
+}
+
+// Функции сохранения оригинальных значений
+function saveMainInfoOriginals(mainInfoData) {
+    const categorySelect = document.getElementById('category_id');
+    const productAddressInput = document.getElementById('product_address_input');
+    
+    if (categorySelect) {
+        categorySelect.setAttribute('data-original', mainInfoData.category_id || '');
+    }
+    
+    if (productAddressInput) {
+        productAddressInput.setAttribute('data-original', mainInfoData.product_address || '');
+    }
+}
+
+// Функция инициализации TreeSelect для редактирования
+function initializeTreeSelectForEdit() {
+    // Используем данные категорий, которые уже переданы на страницу
+    const categoriesData = @json(\App\Models\ProductCategories::all());
+    initializeTreeSelect('category_treeselect', 'category_id', categoriesData);
+}
+
+// Функция инициализации TreeSelect (аналогично PrimeVue TreeSelect)
+function initializeTreeSelect(treeselectId, selectId, categories) {
+    const treeselectInput = document.getElementById(treeselectId);
+    const treeselectDropdown = document.getElementById(treeselectId + '_dropdown');
+    const treeselectTree = document.getElementById(treeselectId + '_tree');
+    const treeselectSearch = document.getElementById(treeselectId + '_search');
+    const hiddenSelect = document.getElementById(selectId);
+    
+    if (!treeselectInput || !treeselectDropdown || !treeselectTree || !hiddenSelect) return;
+    
+    let isOpen = false;
+    let focusedIndex = -1;
+    let treeNodes = [];
+    
+    // Строим дерево из категорий
+    function buildTree(categories, parentId = 0) {
+        const tree = [];
+        categories.forEach(category => {
+            if (category.parent_id == parentId) {
+                const node = {
+                    id: category.id,
+                    name: category.name,
+                    parent_id: category.parent_id,
+                    children: buildTree(categories, category.id),
+                    expanded: false
+                };
+                tree.push(node);
+            }
+        });
+        return tree;
+    }
+    
+    // Функция для проверки, является ли категория выбираемой (без подкатегорий)
+    function isSelectableCategory(categoryId) {
+        return !categories.some(cat => cat.parent_id == categoryId);
+    }
+    
+    // Создаем HTML для узла дерева
+    function createNodeHTML(node, level = 0) {
+        const hasChildren = node.children && node.children.length > 0;
+        const indent = level * 20;
+        
+        // Проверяем, является ли категория выбираемой (без подкатегорий)
+        const isSelectable = isSelectableCategory(node.id);
+        
+        let html = `<div class="treeselect-node ${!isSelectable ? 'disabled' : ''}" data-id="${node.id}" data-level="${level}" data-selectable="${isSelectable}" tabindex="0">`;
+        
+        // Отступ
+        html += `<div class="treeselect-indent" style="width: ${indent}px;"></div>`;
+        
+        // Кнопка разворачивания
+        if (hasChildren) {
+            html += `<div class="treeselect-toggle" data-id="${node.id}">
+                <svg class="treeselect-toggle-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="9,18 15,12 9,6"></polyline>
+                </svg>
+            </div>`;
+        } else {
+            html += `<div class="treeselect-indent" style="width: 16px;"></div>`;
+        }
+        
+        // Название узла
+        html += `<div class="treeselect-label">${node.name}${!isSelectable ? ' <span style="color: #6c757d; font-size: 12px;">(недоступно для выбора)</span>' : ''}</div>`;
+        html += `</div>`;
+        
+        // Дочерние узлы
+        if (hasChildren) {
+            html += `<div class="treeselect-children" data-parent="${node.id}">`;
+            node.children.forEach(child => {
+                html += createNodeHTML(child, level + 1);
+            });
+            html += `</div>`;
+        }
+        
+        return html;
+    }
+    
+    // Обновляем дерево
+    function updateTree(filteredCategories = null) {
+        const categoriesToUse = filteredCategories || categories;
+        treeNodes = buildTree(categoriesToUse);
+        
+        let html = '';
+        treeNodes.forEach(node => {
+            html += createNodeHTML(node);
+        });
+        
+        treeselectTree.innerHTML = html;
+        attachNodeEvents();
+    }
+    
+    // Привязываем события к узлам
+    function attachNodeEvents() {
+        // События для узлов
+        const nodes = treeselectTree.querySelectorAll('.treeselect-node');
+        nodes.forEach((node, index) => {
+            const nodeId = node.dataset.id;
+            
+            // Проверяем, является ли категория выбираемой (без подкатегорий)
+            const isSelectable = isSelectableCategory(nodeId);
+            
+            // Добавляем события только для выбираемых узлов
+            if (isSelectable) {
+                node.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    
+                    const nodeLabel = this.querySelector('.treeselect-label');
+                    // Получаем текст без HTML-разметки
+                    const nodeName = nodeLabel.textContent || nodeLabel.innerText;
+                    selectNode(nodeId, nodeName);
+                });
+                
+                node.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        
+                        const nodeLabel = this.querySelector('.treeselect-label');
+                        const nodeName = nodeLabel.textContent || nodeLabel.innerText;
+                        selectNode(nodeId, nodeName);
+                    }
+                });
+            }
+            
+            // События для кнопок разворачивания
+            const toggle = node.querySelector('.treeselect-toggle');
+            if (toggle) {
+                toggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    toggleNode(nodeId);
+                });
+            }
+        });
+    }
+    
+    // Функция выбора узла
+    function selectNode(nodeId, nodeName) {
+        // Обновляем скрытый select
+        hiddenSelect.value = nodeId;
+        
+        // Обновляем отображение
+        const placeholder = treeselectInput.querySelector('.treeselect-placeholder');
+        const value = treeselectInput.querySelector('.treeselect-value');
+        
+        if (placeholder) {
+            placeholder.style.display = 'none';
+        }
+        
+        if (value) {
+            value.textContent = nodeName;
+            value.style.display = 'block';
+        } else {
+            const newValue = document.createElement('span');
+            newValue.className = 'treeselect-value';
+            newValue.textContent = nodeName;
+            treeselectInput.insertBefore(newValue, treeselectInput.querySelector('.treeselect-arrow'));
+        }
+        
+        // Закрываем dropdown
+        closeDropdown();
+        
+        // Убираем выделение со всех узлов
+        treeselectTree.querySelectorAll('.treeselect-node').forEach(node => {
+            node.classList.remove('selected');
+        });
+        
+        // Выделяем выбранный узел
+        const selectedNode = treeselectTree.querySelector(`[data-id="${nodeId}"]`);
+        if (selectedNode) {
+            selectedNode.classList.add('selected');
+        }
+    }
+    
+    // Функция разворачивания/сворачивания узла
+    function toggleNode(nodeId) {
+        const node = treeselectTree.querySelector(`[data-id="${nodeId}"]`);
+        const children = treeselectTree.querySelector(`[data-parent="${nodeId}"]`);
+        const toggle = node.querySelector('.treeselect-toggle');
+        
+        if (children && toggle) {
+            const isExpanded = children.classList.contains('expanded');
+            
+            if (isExpanded) {
+                children.classList.remove('expanded');
+                toggle.classList.remove('expanded');
+            } else {
+                children.classList.add('expanded');
+                toggle.classList.add('expanded');
+            }
+        }
+    }
+    
+    // Функция открытия dropdown
+    function openDropdown() {
+        if (isOpen) return;
+        
+        treeselectDropdown.classList.add('active');
+        treeselectInput.classList.add('active');
+        isOpen = true;
+        
+        // Фокусируемся на поле поиска
+        if (treeselectSearch) {
+            treeselectSearch.focus();
+        }
+    }
+    
+    // Функция закрытия dropdown
+    function closeDropdown() {
+        if (!isOpen) return;
+        
+        treeselectDropdown.classList.remove('active');
+        treeselectInput.classList.remove('active');
+        isOpen = false;
+        focusedIndex = -1;
+    }
+    
+    // События для input
+    treeselectInput.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (isOpen) {
+            closeDropdown();
+        } else {
+            openDropdown();
+        }
+    });
+    
+    treeselectInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            if (isOpen) {
+                closeDropdown();
+            } else {
+                openDropdown();
+            }
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    // События для поиска
+    if (treeselectSearch) {
+        treeselectSearch.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            
+            if (searchTerm === '') {
+                updateTree();
+            } else {
+                const filteredCategories = categories.filter(category => 
+                    category.name.toLowerCase().includes(searchTerm)
+                );
+                updateTree(filteredCategories);
+            }
+        });
+    }
+    
+    // Закрытие dropdown при клике вне его
+    document.addEventListener('click', function(e) {
+        if (!treeselectInput.contains(e.target) && !treeselectDropdown.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+    
+    // Инициализация с текущим значением
+    const currentValue = hiddenSelect.value;
+    if (currentValue) {
+        const selectedCategory = categories.find(cat => cat.id == currentValue);
+        if (selectedCategory) {
+            selectNode(selectedCategory.id, selectedCategory.name);
+        }
+    }
+    
+    // Инициализируем дерево
+    updateTree();
+}
+
+// Инициализация оригинальных значений для основной информации
+document.addEventListener('DOMContentLoaded', function() {
+    // Инициализация оригинальных значений для основной информации
+    const categorySelect = document.getElementById('category_id');
+    const productAddressInput = document.getElementById('product_address_input');
+    
+    if (categorySelect) {
+        categorySelect.setAttribute('data-original', categorySelect.value);
+    }
+    
+    if (productAddressInput) {
+        productAddressInput.setAttribute('data-original', productAddressInput.value);
     }
 });
 </script>

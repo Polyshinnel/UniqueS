@@ -58,6 +58,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/product/{product}/payment-variants', [\App\Http\Controllers\Product\ProductController::class, 'updatePaymentVariants'])->name('products.update-payment-variants');
     Route::patch('/product/{product}/characteristics', [\App\Http\Controllers\Product\ProductController::class, 'updateCharacteristics'])->name('products.update-characteristics');
     Route::patch('/product/{product}/status', [\App\Http\Controllers\Product\ProductController::class, 'updateStatus'])->name('products.update-status');
+    Route::patch('/product/{product}/main-info', [\App\Http\Controllers\Product\ProductController::class, 'updateMainInfo'])->name('products.update-main-info');
     
     // Маршруты для логов и действий товаров
     Route::get('/product/{product}/logs', [\App\Http\Controllers\Product\ProductController::class, 'getLogs'])->name('products.logs');

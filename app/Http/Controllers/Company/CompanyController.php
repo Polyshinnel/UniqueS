@@ -53,6 +53,9 @@ class CompanyController extends Controller
             if ($canViewCompanies === 1) {
                 // Показываем только компании, где пользователь является владельцем
                 $query->where('owner_user_id', $user->id);
+            } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем компании, где он указан как региональный
+                $query->where('regional_user_id', $user->id);
             } elseif ($canViewCompanies === 3) {
                 // Показываем все компании (без дополнительных ограничений)
                 // Query остается без изменений
@@ -74,7 +77,10 @@ class CompanyController extends Controller
             ->get();
         $regions = $this->getUserRegions();
 
-        return view('Company.CompanyPage', compact('companies', 'warehouses', 'sources', 'regionals', 'regions'));
+        // Определяем права пользователя на создание компаний
+        $canCreate = $user && $user->role && $user->role->name !== 'Региональный представитель';
+
+        return view('Company.CompanyPage', compact('companies', 'warehouses', 'sources', 'regionals', 'regions', 'canCreate'));
     }
 
     public function create()
@@ -330,6 +336,11 @@ class CompanyController extends Controller
             if ($company->owner_user_id !== $user->id) {
                 abort(403, 'Доступ запрещен');
             }
+        } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
+            // Региональный представитель может видеть компании, где он указан как региональный
+            if ($company->regional_user_id !== $user->id) {
+                abort(403, 'Доступ запрещен');
+            }
         } elseif ($canViewCompanies !== 3) {
             // Пользователь не имеет прав на просмотр компаний
             abort(403, 'Доступ запрещен');
@@ -362,7 +373,11 @@ class CompanyController extends Controller
 
         $statuses = \App\Models\CompanyStatus::all();
 
-        return view('Company.CompanyShowPage', compact('company', 'statuses', 'lastLog', 'lastAction'));
+        // Определяем права пользователя на редактирование
+        $canEdit = $user->role->can_view_companies === 3 || 
+                   ($user->role->can_view_companies === 1 && $company->owner_user_id === $user->id);
+
+        return view('Company.CompanyShowPage', compact('company', 'statuses', 'lastLog', 'lastAction', 'canEdit'));
     }
 
     public function updateStatus(Request $request, Company $company)
@@ -386,6 +401,12 @@ class CompanyController extends Controller
                     'message' => 'Доступ запрещен'
                 ], 403);
             }
+        } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
+            // Региональный представитель не может обновлять статус компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
         } elseif ($canViewCompanies !== 3) {
             // Пользователь не имеет прав на обновление компаний
             return response()->json([
@@ -522,9 +543,15 @@ class CompanyController extends Controller
             ], 403);
         }
 
-        $canViewCompanies = $user->role->can_view_companies;
-        
-        if ($canViewCompanies === 1) {
+        if ($user->role->name === 'Региональный представитель') {
+            // Для регионального представителя проверяем, что он назначен как региональный представитель
+            if ($company->regional_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($user->role->can_view_companies === 1) {
             // Пользователь может видеть только свои компании
             if ($company->owner_user_id !== $user->id) {
                 return response()->json([
@@ -532,7 +559,7 @@ class CompanyController extends Controller
                     'message' => 'Доступ запрещен'
                 ], 403);
             }
-        } elseif ($canViewCompanies !== 3) {
+        } elseif ($user->role->can_view_companies !== 3) {
             // Пользователь не имеет прав на просмотр компаний
             return response()->json([
                 'success' => false,
@@ -585,9 +612,15 @@ class CompanyController extends Controller
             ], 403);
         }
 
-        $canViewCompanies = $user->role->can_view_companies;
-        
-        if ($canViewCompanies === 1) {
+        if ($user->role->name === 'Региональный представитель') {
+            // Для регионального представителя проверяем, что он назначен как региональный представитель
+            if ($company->regional_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($user->role->can_view_companies === 1) {
             // Пользователь может видеть только свои компании
             if ($company->owner_user_id !== $user->id) {
                 return response()->json([
@@ -595,7 +628,7 @@ class CompanyController extends Controller
                     'message' => 'Доступ запрещен'
                 ], 403);
             }
-        } elseif ($canViewCompanies !== 3) {
+        } elseif ($user->role->can_view_companies !== 3) {
             // Пользователь не имеет прав на просмотр компаний
             return response()->json([
                 'success' => false,

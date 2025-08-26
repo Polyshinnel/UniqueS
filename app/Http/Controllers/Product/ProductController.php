@@ -32,7 +32,10 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with([
+        $user = auth()->user();
+        $currentUserId = auth()->id() ?? 1;
+        
+        $productsQuery = Product::with([
             'category', 
             'company.addresses', 
             'status', 
@@ -48,24 +51,65 @@ class ProductController extends Controller
                 $query->where('status', false)
                       ->orderBy('expired_at', 'asc');
             }
-        ])->paginate(20);
+        ]);
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем товары, где он назначен как региональный представитель
+                $productsQuery->where('regional_id', $currentUserId);
+            } elseif ($user->role->can_view_products === 1) {
+                // Для пользователей с ограниченным доступом показываем только их товары
+                $productsQuery->where('owner_id', $currentUserId);
+            } elseif ($user->role->can_view_products === 3) {
+                // Для администраторов показываем все товары
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем только их товары
+                $productsQuery->where('owner_id', $currentUserId);
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем только его товары
+            $productsQuery->where('owner_id', $currentUserId);
+        }
+        
+        $products = $productsQuery->paginate(20);
 
         return view('Product.ProductPage', compact('products'));
     }
 
     public function create()
     {
-        // Получаем только компании, принадлежащие авторизованному пользователю
         $currentUserId = auth()->id() ?? 1; // Временно используем id=1, пока нет аутентификации
+        $user = auth()->user();
         
         // Получаем ID статусов "Холд" и "Отказ"
         $holdStatusId = \App\Models\CompanyStatus::where('name', 'Холд')->value('id');
         $refuseStatusId = \App\Models\CompanyStatus::where('name', 'Отказ')->value('id');
         
-        $companies = Company::with(['status', 'addresses', 'warehouses.regions'])
-            ->where('owner_user_id', $currentUserId)
-            ->whereNotIn('company_status_id', [$holdStatusId, $refuseStatusId])
-            ->get();
+        // Определяем запрос для получения компаний в зависимости от роли пользователя
+        $companiesQuery = Company::with(['status', 'addresses', 'warehouses.regions'])
+            ->whereNotIn('company_status_id', [$holdStatusId, $refuseStatusId]);
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем компании, где он назначен как региональный представитель
+                $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 1) {
+                // Для пользователей с ограниченным доступом показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 3) {
+                // Для администраторов показываем все компании
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем только его компании
+            $companiesQuery->where('owner_user_id', $currentUserId);
+        }
+        
+        $companies = $companiesQuery->get();
             
         $categories = ProductCategories::all();
         $statuses = ProductStatus::where('active', true)->get();
@@ -155,12 +199,33 @@ class ProductController extends Controller
 
         $validated = $validator->validated();
 
-        // Проверяем, что выбранная компания принадлежит авторизованному пользователю
+        // Проверяем, что выбранная компания доступна авторизованному пользователю
         $currentUserId = auth()->id() ?? 1;
-        $company = Company::with(['warehouses.regions', 'addresses', 'status'])
-            ->where('id', $validated['company_id'])
-            ->where('owner_user_id', $currentUserId)
-            ->first();
+        $user = auth()->user();
+        
+        $companyQuery = Company::with(['warehouses.regions', 'addresses', 'status'])
+            ->where('id', $validated['company_id']);
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя проверяем, что он назначен как региональный представитель
+                $companyQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 1) {
+                // Для пользователей с ограниченным доступом проверяем, что они владельцы
+                $companyQuery->where('owner_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 3) {
+                // Для администраторов доступны все компании
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей проверяем, что они владельцы
+                $companyQuery->where('owner_user_id', $currentUserId);
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, проверяем, что он владелец
+            $companyQuery->where('owner_user_id', $currentUserId);
+        }
+        
+        $company = $companyQuery->first();
 
         if (!$company) {
             if ($request->ajax()) {
@@ -489,13 +554,61 @@ class ProductController extends Controller
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
 
-        return view('Product.ProductItemPage', compact('product', 'statuses', 'checkStatuses', 'installStatuses', 'lastLog', 'lastAction'));
+        // Определяем права пользователя на редактирование
+        $user = auth()->user();
+        $canEdit = false;
+        $canChangeStatus = false;
+        
+        if ($user && $user->role) {
+            // Администратор может редактировать все товары и изменять статус
+            if ($user->role->can_view_companies === 3) {
+                $canEdit = true;
+                $canChangeStatus = true;
+            }
+            // Владелец товара может редактировать свои товары и изменять статус
+            elseif ($user->role->can_view_companies === 1 && $product->owner_id === $user->id) {
+                $canEdit = true;
+                $canChangeStatus = true;
+            }
+            // Региональный представитель может редактировать товары, где он назначен, но не изменять статус
+            elseif ($user->role->name === 'Региональный представитель' && $product->regional_id === $user->id) {
+                $canEdit = true;
+                $canChangeStatus = false;
+            }
+        }
+
+        return view('Product.ProductItemPage', compact('product', 'statuses', 'checkStatuses', 'installStatuses', 'lastLog', 'lastAction', 'canEdit', 'canChangeStatus'));
     }
 
     public function edit(Product $product)
     {
         $product->load(['mediaOrdered']);
-        $companies = Company::with('status')->get();
+        $user = auth()->user();
+        $currentUserId = auth()->id() ?? 1;
+        
+        // Определяем запрос для получения компаний в зависимости от роли пользователя
+        $companiesQuery = Company::with('status');
+        
+        if ($user && $user->role) {
+            if ($user->role->name === 'Региональный представитель') {
+                // Для регионального представителя показываем компании, где он назначен как региональный представитель
+                $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 1) {
+                // Для пользователей с ограниченным доступом показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            } elseif ($user->role->can_view_companies === 3) {
+                // Для администраторов показываем все компании
+                // Ничего не добавляем к запросу
+            } else {
+                // Для остальных ролей показываем только их компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
+            }
+        } else {
+            // Если пользователь не авторизован или нет роли, показываем только его компании
+            $companiesQuery->where('owner_user_id', $currentUserId);
+        }
+        
+        $companies = $companiesQuery->get();
         $categories = ProductCategories::all();
         $statuses = ProductStatus::where('active', true)->get();
 
@@ -870,6 +983,45 @@ class ProductController extends Controller
 
     public function updateStatus(Request $request, Product $product)
     {
+        // Проверяем права пользователя на обновление статуса товара
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои товары
+            if ($product->owner_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
+            // Региональный представитель не может обновлять статус товаров
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        } elseif ($user->role->name === 'Региональный представитель') {
+            // Региональный представитель не может обновлять статус товаров
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление товаров
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
         $validated = $request->validate([
             'status_id' => 'required|exists:product_statuses,id',
             'comment' => 'required|string|min:1'
@@ -979,6 +1131,23 @@ class ProductController extends Controller
      */
     public function getLogs(Product $product)
     {
+        // Проверяем права пользователя на просмотр логов
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Региональный представитель не может просматривать логи
+        if ($user->role->name === 'Региональный представитель') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
         $logs = ProductLog::where('product_id', $product->id)
             ->with(['type', 'user'])
             ->orderBy('created_at', 'desc')
@@ -995,6 +1164,23 @@ class ProductController extends Controller
      */
     public function getActions(Product $product)
     {
+        // Проверяем права пользователя на просмотр действий
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Региональный представитель не может просматривать действия
+        if ($user->role->name === 'Региональный представитель') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
         $actions = ProductAction::where('product_id', $product->id)
             ->orderBy('expired_at', 'asc')
             ->get();
@@ -1010,6 +1196,23 @@ class ProductController extends Controller
      */
     public function storeAction(Request $request, Product $product)
     {
+        // Проверяем права пользователя на создание действий
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Региональный представитель не может создавать действия
+        if ($user->role->name === 'Региональный представитель') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
         // Валидируем запрос
         $validated = $request->validate([
             'action' => 'required|string|max:1000',
@@ -1057,6 +1260,23 @@ class ProductController extends Controller
      */
     public function completeAction(Request $request, Product $product, $actionId)
     {
+        // Проверяем права пользователя на выполнение действий
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Региональный представитель не может выполнять действия
+        if ($user->role->name === 'Региональный представитель') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
         // Валидируем запрос
         $validated = $request->validate([
             'comment' => 'required|string|max:1000'
@@ -1475,5 +1695,54 @@ class ProductController extends Controller
                 ]);
             }
         }
+    }
+
+    /**
+     * Обновляет основную информацию товара (категория и адрес станка)
+     */
+    public function updateMainInfo(Request $request, Product $product)
+    {
+        $request->validate([
+            'category_id' => 'nullable|exists:product_categories,id',
+            'product_address' => 'nullable|string|max:255'
+        ]);
+
+        // Сохраняем старые значения для логирования
+        $oldCategoryId = $product->category_id;
+        $oldProductAddress = $product->product_address;
+
+        // Обновляем товар
+        $product->update([
+            'category_id' => $request->category_id,
+            'product_address' => $request->product_address
+        ]);
+
+        // Создаем лог изменений
+        $logMessages = [];
+        
+        if ($oldCategoryId != $request->category_id) {
+            $oldCategory = $oldCategoryId ? \App\Models\ProductCategories::find($oldCategoryId) : null;
+            $newCategory = $request->category_id ? \App\Models\ProductCategories::find($request->category_id) : null;
+            
+            $logMessages[] = "Категория изменена с '" . ($oldCategory ? $oldCategory->name : 'Не указана') . "' на '" . ($newCategory ? $newCategory->name : 'Не указана') . "'";
+        }
+        
+        if ($oldProductAddress != $request->product_address) {
+            $logMessages[] = "Адрес станка изменен с '" . ($oldProductAddress ?: 'Не указан') . "' на '" . ($request->product_address ?: 'Не указан') . "'";
+        }
+
+        if (!empty($logMessages)) {
+            ProductLog::create([
+                'product_id' => $product->id,
+                'type_id' => 2, // Системный тип лога
+                'log' => 'Обновлена основная информация: ' . implode(', ', $logMessages),
+                'user_id' => null // Системный лог
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Основная информация успешно обновлена'
+        ]);
     }
 }
