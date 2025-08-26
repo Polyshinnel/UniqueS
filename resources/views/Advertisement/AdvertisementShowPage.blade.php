@@ -54,12 +54,30 @@
                 <div class="media-gallery">
                     <div class="main-image-container">
                         @php
-                            $mainImage = $advertisement->mediaOrdered->where('file_type', 'image')->first();
+                            // Получаем главное изображение
+                            $mainImage = $advertisement->getMainImage();
+                            $mainImageIndex = 0;
+                            
+                            // Если главное изображение не найдено, берем первое изображение из медиафайлов объявления
+                            if (!$mainImage) {
+                                $mainImage = $advertisement->mediaOrdered->where('file_type', 'image')->first();
+                            } else {
+                                // Определяем индекс главного изображения для галереи
+                                // Если главное изображение из медиафайлов объявления
+                                $mainImageIndex = $advertisement->mediaOrdered->search(function($item) use ($mainImage) {
+                                    return $item->id == $mainImage->id;
+                                });
+                                
+                                // Если не найдено в медиафайлах объявления, значит это медиафайл товара
+                                if ($mainImageIndex === false) {
+                                    $mainImageIndex = 0; // Показываем первое изображение из объявления
+                                }
+                            }
                         @endphp
                         @if($mainImage)
                             <img id="mainImage" src="{{ asset('storage/' . $mainImage->file_path) }}" 
                                  alt="{{ $advertisement->title }}" class="main-image" 
-                                 onclick="openGallery(0)">
+                                 onclick="openGallery({{ $mainImageIndex }})">
                         @else
                             <div class="no-image">
                                 <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -75,7 +93,7 @@
                     @if($advertisement->mediaOrdered->count() > 1)
                         <div class="thumbnails-container">
                             @foreach($advertisement->mediaOrdered as $index => $media)
-                                <div class="thumbnail {{ $index === 0 ? 'active' : '' }}" 
+                                <div class="thumbnail {{ $index === $mainImageIndex ? 'active' : '' }}" 
                                      onclick="changeMainImage('{{ asset('storage/' . $media->file_path) }}', {{ $index }}, '{{ $media->file_type }}')">
                                     @if($media->file_type === 'image')
                                         <img src="{{ asset('storage/' . $media->file_path) }}" alt="Фото {{ $index + 1 }}">

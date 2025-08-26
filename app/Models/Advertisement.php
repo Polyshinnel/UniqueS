@@ -93,9 +93,16 @@ class Advertisement extends Model
     }
 
     // Получить главное изображение по полю main_img
-    public function getMainImage()
+    public function getMainImage(): ?object
     {
         if ($this->main_img) {
+            // Сначала ищем среди медиафайлов объявления
+            $advertisementMedia = $this->mediaOrdered->where('id', $this->main_img)->first();
+            if ($advertisementMedia) {
+                return $advertisementMedia;
+            }
+            
+            // Если не найдено, ищем среди медиафайлов товара
             return \App\Models\ProductMedia::find($this->main_img);
         }
         return null;

@@ -129,7 +129,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Главная страница
 Route::get('/', function () {
-    return redirect('/guide');
+    return redirect('/events');
 });
 
 // Защищенные роуты

@@ -122,7 +122,7 @@ class AdvertisementController extends Controller
             'removal_comment' => 'nullable|string',
             'adv_price' => 'nullable|numeric|min:0',
             'adv_price_comment' => 'nullable|string',
-            'main_img' => 'nullable|exists:products_media,id',
+            'main_img' => 'nullable|integer|exists:products_media,id',
             'tags' => 'nullable|string',
             'selected_product_media.*' => 'nullable|exists:products_media,id',
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
@@ -299,7 +299,7 @@ class AdvertisementController extends Controller
             'removal_comment' => 'nullable|string',
             'adv_price' => 'nullable|numeric|min:0',
             'adv_price_comment' => 'nullable|string',
-            'main_img' => 'nullable|exists:products_media,id',
+            'main_img' => 'nullable|integer|exists:products_media,id',
             'tags' => 'nullable|string',
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
         ]);

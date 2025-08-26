@@ -654,6 +654,281 @@
 .select-options::-webkit-scrollbar-thumb:hover {
     background: #adb5bd;
 }
+
+/* Стили для селектора главного изображения */
+.main-image-selector {
+    margin-top: 10px;
+}
+
+.main-image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 8px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.main-image-item {
+    position: relative;
+    border: 3px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+    aspect-ratio: 1;
+}
+
+.main-image-item:hover {
+    transform: scale(1.05);
+    border-color: #133E71;
+    box-shadow: 0 4px 12px rgba(19, 62, 113, 0.2);
+}
+
+.main-image-item.selected {
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.3);
+}
+
+.main-image-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.main-image-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(19, 62, 113, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.main-image-item.selected .main-image-overlay {
+    opacity: 1;
+}
+
+.main-image-check {
+    color: white;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.main-image-info {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+    color: white;
+    padding: 6px 8px;
+    font-size: 11px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.main-image-item:hover .main-image-info {
+    opacity: 1;
+}
+
+.main-image-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 2px;
+}
+
+.main-image-size {
+    opacity: 0.8;
+    font-size: 10px;
+}
+
+.main-image-preview-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.main-image-item:hover .main-image-preview-btn {
+    opacity: 1;
+}
+
+.main-image-preview-btn:hover {
+    background: rgba(19, 62, 113, 0.9);
+    transform: scale(1.1);
+}
+
+.main-image-preview-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.no-images-message {
+    text-align: center;
+    padding: 40px 20px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.no-images-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+.no-images-content svg {
+    opacity: 0.5;
+}
+
+.no-images-content p {
+    margin: 0;
+    color: #666;
+    font-weight: 500;
+}
+
+.no-images-content small {
+    color: #999;
+    font-size: 12px;
+}
+
+/* Стили для модального окна предварительного просмотра */
+.image-preview-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 20px;
+}
+
+.image-preview-modal.active {
+    display: flex;
+    animation: modalFadeIn 0.3s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.image-preview-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.image-preview-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+}
+
+.image-preview-header h3 {
+    margin: 0;
+    color: #495057;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.image-preview-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #6c757d;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+.image-preview-close:hover {
+    background: #e9ecef;
+    color: #495057;
+}
+
+.image-preview-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.image-preview-body img {
+    max-width: 100%;
+    max-height: 70vh;
+    object-fit: contain;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.main-image-help {
+    margin-top: 8px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border-left: 4px solid #133E71;
+}
+
+.main-image-help small {
+    line-height: 1.5;
+}
 </style>
 
 <div class="product-create-container">
@@ -956,10 +1231,31 @@
             <!-- Выбор главного изображения -->
             <div class="form-group">
                 <label for="main_img">Главное изображение</label>
-                <select name="main_img" id="main_img" class="form-control">
-                    <option value="">Выберите главное изображение</option>
-                </select>
-                <small class="form-text text-muted">Выберите изображение, которое будет отображаться как главное в объявлении</small>
+                <div class="main-image-selector" id="mainImageSelector">
+                    <div class="main-image-grid" id="mainImageGrid">
+                        <!-- Миниатюры изображений будут добавлены сюда -->
+                    </div>
+                    <div class="no-images-message" id="noImagesMessage" style="display: none;">
+                        <div class="no-images-content">
+                            <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="8" y="8" width="32" height="32" rx="4" stroke="#ccc" stroke-width="2" stroke-dasharray="4 4"/>
+                                <path d="M16 20L22 26L32 16" stroke="#ccc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <p>Нет доступных изображений</p>
+                            <small>Сначала выберите товар с изображениями</small>
+                        </div>
+                    </div>
+                </div>
+                <input type="hidden" name="main_img" id="main_img" value="">
+                <div class="main-image-help">
+                    <small class="form-text text-muted">
+                        <strong>Как выбрать главное изображение:</strong><br>
+                        • Кликните на миниатюру изображения для выбора<br>
+                        • Наведите курсор и нажмите кнопку 👁 для предварительного просмотра<br>
+                        • Или используйте двойной клик или правый клик для просмотра<br>
+                        • Выбранное изображение будет выделено синей рамкой
+                    </small>
+                </div>
             </div>
 
             <!-- Загрузка новых медиафайлов -->
@@ -991,6 +1287,19 @@
 
 <!-- Tooltip -->
 <div class="tooltip" id="tooltip"></div>
+
+<!-- Модальное окно для предварительного просмотра изображения -->
+<div class="image-preview-modal" id="imagePreviewModal">
+    <div class="image-preview-content">
+        <div class="image-preview-header">
+            <h3 id="imagePreviewTitle">Предварительный просмотр</h3>
+            <button class="image-preview-close" id="imagePreviewClose">&times;</button>
+        </div>
+        <div class="image-preview-body">
+            <img id="imagePreviewImg" src="" alt="Предварительный просмотр">
+        </div>
+    </div>
+</div>
 
 <script>
 // Данные для TreeSelect
@@ -1201,6 +1510,15 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!productId) {
             mediaGrid.innerHTML = '<div class="no-media-message">Сначала выберите товар</div>';
+            
+            // Очищаем селектор главного изображения
+            const mainImageGrid = document.getElementById('mainImageGrid');
+            const noImagesMessage = document.getElementById('noImagesMessage');
+            const mainImgHidden = document.getElementById('main_img');
+            
+            mainImageGrid.style.display = 'none';
+            noImagesMessage.style.display = 'block';
+            mainImgHidden.value = '';
             return;
         }
 
@@ -1215,8 +1533,105 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
 
                 let html = '';
-                const mainImgSelect = document.getElementById('main_img');
-                mainImgSelect.innerHTML = '<option value="">Выберите главное изображение</option>';
+                const mainImageGrid = document.getElementById('mainImageGrid');
+                const noImagesMessage = document.getElementById('noImagesMessage');
+                const mainImgHidden = document.getElementById('main_img');
+                
+                // Собираем только изображения для главного изображения
+                const images = data.filter(media => media.file_type === 'image');
+                
+                if (images.length === 0) {
+                    mainImageGrid.style.display = 'none';
+                    noImagesMessage.style.display = 'block';
+                    mainImgHidden.value = '';
+                } else {
+                    mainImageGrid.style.display = 'grid';
+                    noImagesMessage.style.display = 'none';
+                    
+                    let mainImageHtml = '';
+                    images.forEach(media => {
+                        mainImageHtml += `
+                            <div class="main-image-item" data-media-id="${media.id}">
+                                <img src="${media.full_url}" alt="${media.file_name}">
+                                <div class="main-image-overlay">
+                                    <span class="main-image-check">✓</span>
+                                </div>
+                                <div class="main-image-info">
+                                    <div class="main-image-name">${media.file_name}</div>
+                                    <div class="main-image-size">${media.formatted_size}</div>
+                                </div>
+                                <button class="main-image-preview-btn" title="Предварительный просмотр">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            </div>
+                        `;
+                    });
+                    mainImageGrid.innerHTML = mainImageHtml;
+                    
+                    // Добавляем обработчики для выбора главного изображения
+                    const mainImageItems = document.querySelectorAll('.main-image-item');
+                    mainImageItems.forEach(item => {
+                        item.addEventListener('click', function(e) {
+                            // Убираем выделение со всех изображений
+                            document.querySelectorAll('.main-image-item').forEach(img => {
+                                img.classList.remove('selected');
+                            });
+                            
+                            // Выделяем выбранное изображение
+                            this.classList.add('selected');
+                            
+                            // Устанавливаем значение в скрытое поле
+                            const mediaId = this.dataset.mediaId;
+                            mainImgHidden.value = mediaId;
+                        });
+                        
+                        // Отдельный обработчик для предварительного просмотра по двойному клику
+                        item.addEventListener('dblclick', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const img = this.querySelector('img');
+                            const imageName = this.querySelector('.main-image-name').textContent;
+                            showImagePreview(img.src, imageName);
+                        });
+                        
+                        // Обработчик для правого клика (контекстное меню)
+                        item.addEventListener('contextmenu', function(e) {
+                            e.preventDefault();
+                            const img = this.querySelector('img');
+                            const imageName = this.querySelector('.main-image-name').textContent;
+                            showImagePreview(img.src, imageName);
+                        });
+                        
+                        // Обработчик для кнопки предварительного просмотра
+                        const previewBtn = item.querySelector('.main-image-preview-btn');
+                        if (previewBtn) {
+                            previewBtn.addEventListener('click', function(e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const img = item.querySelector('img');
+                                const imageName = item.querySelector('.main-image-name').textContent;
+                                showImagePreview(img.src, imageName);
+                            });
+                            
+                            // Предотвращаем всплытие событий от кнопки
+                            previewBtn.addEventListener('mousedown', function(e) {
+                                e.stopPropagation();
+                            });
+                        }
+                    });
+                    
+                    // Автоматически выбираем первое изображение как главное, если ничего не выбрано
+                    if (!mainImgHidden.value && images.length > 0) {
+                        const firstImage = document.querySelector('.main-image-item');
+                        if (firstImage) {
+                            firstImage.classList.add('selected');
+                            mainImgHidden.value = firstImage.dataset.mediaId;
+                        }
+                    }
+                }
                 
                 data.forEach(media => {
                     html += `
@@ -1233,14 +1648,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             </div>
                         </div>
                     `;
-                    
-                    // Добавляем только изображения в селект главного изображения
-                    if (media.file_type === 'image') {
-                        const option = document.createElement('option');
-                        option.value = media.id;
-                        option.textContent = media.file_name;
-                        mainImgSelect.appendChild(option);
-                    }
                 });
 
                 mediaGrid.innerHTML = html;
@@ -1259,6 +1666,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(error => {
                 console.error('Error:', error);
                 mediaGrid.innerHTML = '<div class="no-media-message">Ошибка загрузки медиафайлов</div>';
+                
+                // Очищаем селектор главного изображения при ошибке
+                const mainImageGrid = document.getElementById('mainImageGrid');
+                const noImagesMessage = document.getElementById('noImagesMessage');
+                const mainImgHidden = document.getElementById('main_img');
+                
+                mainImageGrid.style.display = 'none';
+                noImagesMessage.style.display = 'block';
+                mainImgHidden.value = '';
             });
     }
 
@@ -2063,6 +2479,58 @@ function showNotification(message, type = 'info') {
         }, 300);
     }, 3000);
 }
+
+// Функция для показа предварительного просмотра изображения
+function showImagePreview(imageSrc, imageName) {
+    const modal = document.getElementById('imagePreviewModal');
+    const modalImg = document.getElementById('imagePreviewImg');
+    const modalTitle = document.getElementById('imagePreviewTitle');
+    
+    modalImg.src = imageSrc;
+    modalTitle.textContent = `Предварительный просмотр: ${imageName}`;
+    modal.classList.add('active');
+    
+    // Блокируем прокрутку страницы
+    document.body.style.overflow = 'hidden';
+}
+
+// Функция для закрытия предварительного просмотра
+function closeImagePreview() {
+    const modal = document.getElementById('imagePreviewModal');
+    modal.classList.remove('active');
+    
+    // Восстанавливаем прокрутку страницы
+    document.body.style.overflow = '';
+}
+
+// Обработчики для модального окна предварительного просмотра
+document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('imagePreviewModal');
+    const closeBtn = document.getElementById('imagePreviewClose');
+    
+    if (modal && closeBtn) {
+        // Закрытие по кнопке
+        closeBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            closeImagePreview();
+        });
+        
+        // Закрытие по клику вне модального окна
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeImagePreview();
+            }
+        });
+        
+        // Закрытие по клавише Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeImagePreview();
+            }
+        });
+    }
+});
 
 // Добавляем CSS анимации для уведомлений
 const notificationStyle = document.createElement('style');
