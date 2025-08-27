@@ -189,6 +189,9 @@ php artisan check:hold-statuses
 - `post_max_size = 2048M`
 - `max_execution_time = 600`
 - `memory_limit = 1024M`
+- `max_file_uploads = 50`
+- `upload_max_filesize = 800M`
+- `max_input_vars = 20000`
 
 ### Миграции и сидеры
 ```bash
