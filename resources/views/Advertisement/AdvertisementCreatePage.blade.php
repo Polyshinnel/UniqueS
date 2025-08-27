@@ -405,6 +405,39 @@
     font-size: 11px;
 }
 
+.product-media-preview-btn {
+    position: absolute;
+    top: 8px;
+    right: 35px;
+    width: 28px;
+    height: 28px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.3s ease;
+    z-index: 10;
+}
+
+.product-media-item:hover .product-media-preview-btn {
+    opacity: 1;
+}
+
+.product-media-preview-btn:hover {
+    background: rgba(19, 62, 113, 0.9);
+    transform: scale(1.1);
+}
+
+.product-media-preview-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
 .payment-types-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -1642,6 +1675,14 @@ document.addEventListener('DOMContentLoaded', function() {
                                 : `<video src="${media.full_url}" muted></video>`
                             }
                             <span class="media-type-badge">${media.file_type === 'image' ? 'Фото' : 'Видео'}</span>
+                            ${media.file_type === 'image' ? `
+                                <button class="product-media-preview-btn" title="Предварительный просмотр">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                        <circle cx="12" cy="12" r="3"></circle>
+                                    </svg>
+                                </button>
+                            ` : ''}
                             <div class="media-info">
                                 <div class="media-name">${media.file_name}</div>
                                 <div class="media-size">${media.formatted_size}</div>
@@ -1661,6 +1702,41 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                         this.classList.toggle('selected', this.querySelector('.media-checkbox').checked);
                     });
+                    
+                    // Добавляем обработчики для предварительного просмотра изображений
+                    const previewBtn = item.querySelector('.product-media-preview-btn');
+                    if (previewBtn) {
+                        previewBtn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const img = item.querySelector('img');
+                            const imageName = item.querySelector('.media-name').textContent;
+                            showImagePreview(img.src, imageName);
+                        });
+                        
+                        // Предотвращаем всплытие событий от кнопки
+                        previewBtn.addEventListener('mousedown', function(e) {
+                            e.stopPropagation();
+                        });
+                    }
+                    
+                    // Отдельный обработчик для предварительного просмотра по двойному клику (только для изображений)
+                    const img = item.querySelector('img');
+                    if (img) {
+                        item.addEventListener('dblclick', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const imageName = this.querySelector('.media-name').textContent;
+                            showImagePreview(img.src, imageName);
+                        });
+                        
+                        // Обработчик для правого клика (контекстное меню)
+                        item.addEventListener('contextmenu', function(e) {
+                            e.preventDefault();
+                            const imageName = this.querySelector('.media-name').textContent;
+                            showImagePreview(img.src, imageName);
+                        });
+                    }
                 });
             })
             .catch(error => {

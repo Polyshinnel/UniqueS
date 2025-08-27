@@ -2567,19 +2567,19 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Закрытие модального окна при клике вне его
-document.addEventListener('click', function(event) {
-    const statusModal = document.getElementById('statusCommentModal');
-    const logsModal = document.getElementById('logsHistoryModal');
-    
-    if (event.target === statusModal) {
-        cancelStatusChange();
-    }
-    
-    if (event.target === logsModal) {
-        closeLogsHistory();
-    }
-});
+// Закрытие модального окна при клике вне его - ОТКЛЮЧЕНО
+// document.addEventListener('click', function(event) {
+//     const statusModal = document.getElementById('statusCommentModal');
+//     const logsModal = document.getElementById('logsHistoryModal');
+//     
+//     if (event.target === statusModal) {
+//         cancelStatusChange();
+//     }
+//     
+//     if (event.target === logsModal) {
+//         closeLogsHistory();
+//     }
+// });
 
 // Закрытие модального окна при нажатии Escape
 document.addEventListener('keydown', function(event) {
@@ -3105,29 +3105,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Обновляем обработчики закрытия модальных окон
-document.addEventListener('click', function(event) {
-    const statusModal = document.getElementById('statusCommentModal');
-    const logsModal = document.getElementById('logsHistoryModal');
-    const actionsModal = document.getElementById('actionsModal');
-    const newActionModal = document.getElementById('newActionModal');
-    
-    if (event.target === statusModal) {
-        cancelStatusChange();
-    }
-    
-    if (event.target === logsModal) {
-        closeLogsHistory();
-    }
-    
-    if (event.target === actionsModal) {
-        closeActionsModal();
-    }
-    
-    if (event.target === newActionModal) {
-        closeNewActionModal();
-    }
-});
+// Обновляем обработчики закрытия модальных окон - ОТКЛЮЧЕНО
+// document.addEventListener('click', function(event) {
+//     const statusModal = document.getElementById('statusCommentModal');
+//     const logsModal = document.getElementById('logsHistoryModal');
+//     const actionsModal = document.getElementById('actionsModal');
+//     const newActionModal = document.getElementById('newActionModal');
+//     
+//     if (event.target === statusModal) {
+//         cancelStatusChange();
+//     }
+//     
+//     if (event.target === logsModal) {
+//         closeLogsHistory();
+//     }
+//     
+//     if (event.target === actionsModal) {
+//         closeActionsModal();
+//     }
+//     
+//     if (event.target === newActionModal) {
+//         closeNewActionModal();
+//     }
+// });
 
 // Обновляем обработчики закрытия по Escape
 document.addEventListener('keydown', function(event) {

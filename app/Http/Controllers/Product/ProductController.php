@@ -1849,4 +1849,105 @@ class ProductController extends Controller
             'message' => 'Основная информация успешно обновлена'
         ]);
     }
+
+    /**
+     * Скачивает все медиафайлы товара в ZIP архиве
+     */
+    public function downloadMedia(Product $product)
+    {
+        // Проверяем права доступа
+        $user = auth()->user();
+        $canAccess = false;
+        
+        if ($user && $user->role) {
+            if ($user->role->can_view_companies === 3) {
+                $canAccess = true;
+            } elseif ($user->role->can_view_companies === 1 && $product->owner_id === $user->id) {
+                $canAccess = true;
+            } elseif ($user->role->name === 'Региональный представитель' && $product->regional_id === $user->id) {
+                $canAccess = true;
+            }
+        }
+        
+        if (!$canAccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У вас нет прав для скачивания медиафайлов этого товара'
+            ], 403);
+        }
+
+        // Получаем все медиафайлы товара
+        $mediaFiles = $product->mediaOrdered;
+        
+        if ($mediaFiles->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У товара нет медиафайлов для скачивания'
+            ], 404);
+        }
+
+        // Создаем временную директорию для архива
+        $tempDir = storage_path('app/temp');
+        if (!file_exists($tempDir)) {
+            mkdir($tempDir, 0755, true);
+        }
+
+        // Создаем имя архива
+        $zipFileName = 'product_' . $product->id . '_media_' . time() . '.zip';
+        $zipPath = $tempDir . '/' . $zipFileName;
+
+        // Создаем ZIP архив
+        $zip = new \ZipArchive();
+        if ($zip->open($zipPath, \ZipArchive::CREATE) !== TRUE) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании архива'
+            ], 500);
+        }
+
+        // Добавляем файлы в архив
+        foreach ($mediaFiles as $media) {
+            $filePath = storage_path('app/public/' . $media->file_path);
+            
+            if (file_exists($filePath)) {
+                // Создаем безопасное имя файла для архива
+                $safeFileName = $this->sanitizeFileName($media->file_name);
+                $zip->addFile($filePath, $safeFileName);
+            }
+        }
+
+        $zip->close();
+
+        // Проверяем, что архив создался и не пустой
+        if (!file_exists($zipPath) || filesize($zipPath) === 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании архива'
+            ], 500);
+        }
+
+        // Возвращаем файл для скачивания
+        return response()->download($zipPath, $zipFileName, [
+            'Content-Type' => 'application/zip',
+            'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"'
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Очищает имя файла от недопустимых символов
+     */
+    private function sanitizeFileName($fileName)
+    {
+        // Удаляем недопустимые символы для файловой системы
+        $fileName = preg_replace('/[<>:"\/\\\\|?*]/', '_', $fileName);
+        
+        // Ограничиваем длину имени файла
+        if (strlen($fileName) > 200) {
+            $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+            $name = pathinfo($fileName, PATHINFO_FILENAME);
+            $fileName = substr($name, 0, 200 - strlen($extension) - 1) . '.' . $extension;
+        }
+        
+        return $fileName;
+    }
 }

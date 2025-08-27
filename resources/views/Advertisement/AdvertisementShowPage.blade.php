@@ -19,16 +19,6 @@
         </div>
         <div class="advertisement-header-actions">
             <h1 class="advertisement-title">{{ $advertisement->title }}</h1>
-            <div class="advertisement-actions">
-                @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
-                <a href="{{ route('advertisements.edit', $advertisement) }}" class="btn btn-primary">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                    </svg>
-                    Редактировать
-                </a>
-                @endif
-            </div>
         </div>
         <div class="advertisement-status">
             <div class="status-selector">
@@ -2833,11 +2823,14 @@ document.addEventListener('keydown', function(e) {
 });
 
 // Закрытие галереи при клике вне изображения
+// Отключено закрытие при клике вне галереи
+/*
 document.getElementById('galleryModal').addEventListener('click', function(e) {
     if (e.target === this) {
         closeGallery();
     }
 });
+*/
 
 // Функции для модального окна контакта
 function showContactCard(id, name, email, phone, role, hasTelegram, hasWhatsapp) {
@@ -2869,12 +2862,15 @@ function closeContactCard() {
 }
 
 // Закрытие модального окна при клике вне его
+// Отключено закрытие при клике вне модального окна контакта
+/*
 window.onclick = function(event) {
     const contactModal = document.getElementById('contactModal');
     if (event.target === contactModal) {
         closeContactCard();
     }
 }
+*/
 
 // Глобальные переменные для редакторов
 let editEditors = {};
@@ -4713,6 +4709,8 @@ function updateAdvertisementEventsLog(log) {
 }
 
 // Закрытие выпадающего списка статусов при клике вне его
+// Отключено закрытие при клике вне выпадающего списка
+/*
 document.addEventListener('click', function(event) {
     const statusSelector = document.querySelector('.advertisement-status .status-selector');
     const dropdown = document.getElementById('advertisementStatusDropdown');
@@ -4721,6 +4719,7 @@ document.addEventListener('click', function(event) {
         toggleAdvertisementStatusDropdown();
     }
 });
+*/
 
 // Глобальные переменные для хранения данных о предупреждении статуса товара
 let productStatusWarningData = null;
@@ -4757,6 +4756,8 @@ function goToProduct() {
 }
 
 // Обновляем обработчики закрытия модальных окон
+// Отключено закрытие при клике вне модальных окон
+/*
 document.addEventListener('click', function(event) {
     const logsModal = document.getElementById('logsHistoryModal');
     const actionsModal = document.getElementById('actionsModal');
@@ -4784,6 +4785,7 @@ document.addEventListener('click', function(event) {
         closeProductStatusWarning();
     }
 });
+*/
 
 // Обновляем обработчики закрытия по Escape
 document.addEventListener('keydown', function(event) {

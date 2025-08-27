@@ -82,6 +82,23 @@
                 </div>
             @endif
 
+            <!-- Кнопка скачивания медиафайлов -->
+            @if($product->mediaOrdered->count() > 0)
+                <div class="download-media-section">
+                    <button id="downloadMediaBtn" class="btn btn-primary download-media-btn" onclick="downloadAllMedia()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <span class="btn-text">Скачать все медиа</span>
+                        <div class="loading-spinner" style="display: none;">
+                            <div class="spinner"></div>
+                        </div>
+                    </button>
+                </div>
+            @endif
+
             <!-- Блок действий и событий -->
             @if($canEdit)
                 <div class="product-actions-section">
@@ -2733,6 +2750,70 @@
         opacity: 0.6;
         cursor: not-allowed;
     }
+
+    /* Стили для кнопки скачивания медиафайлов */
+    .download-media-section {
+        margin-top: 20px;
+        padding: 15px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border: 1px solid #e9ecef;
+    }
+
+    .download-media-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 12px 20px;
+        background: #133E71;
+        color: white;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .download-media-btn:hover {
+        background: #0f2d56;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(19, 62, 113, 0.3);
+    }
+
+    .download-media-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    .download-media-btn .btn-text {
+        margin-right: 8px;
+    }
+
+    .download-media-btn .loading-spinner {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
+    .download-media-btn .spinner {
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top: 2px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
 </style>
 
 <script>
@@ -2838,12 +2919,12 @@ document.addEventListener('keydown', function(e) {
     }
 });
 
-// Закрытие галереи при клике вне изображения
-document.getElementById('galleryModal').addEventListener('click', function(e) {
-    if (e.target === this) {
-        closeGallery();
-    }
-});
+// Закрытие галереи при клике вне изображения - ОТКЛЮЧЕНО
+// document.getElementById('galleryModal').addEventListener('click', function(e) {
+//     if (e.target === this) {
+//         closeGallery();
+//     }
+// });
 
 // Функции для редактирования комментариев
 function editComment(field) {
@@ -3669,13 +3750,13 @@ function closeContactCard() {
     document.getElementById('contactModal').style.display = 'none';
 }
 
-// Закрытие модального окна при клике вне его
-window.onclick = function(event) {
-    const modal = document.getElementById('contactModal');
-    if (event.target === modal) {
-        closeContactCard();
-    }
-}
+// Закрытие модального окна при клике вне его - ОТКЛЮЧЕНО
+// window.onclick = function(event) {
+//     const modal = document.getElementById('contactModal');
+//     if (event.target === modal) {
+//         closeContactCard();
+//     }
+// }
 
 // Функции для работы с выпадающим списком статусов товара
 function toggleProductStatusDropdown() {
@@ -4583,29 +4664,29 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Обновляем обработчики закрытия модальных окон
-document.addEventListener('click', function(event) {
-    const logsModal = document.getElementById('logsHistoryModal');
-    const actionsModal = document.getElementById('actionsModal');
-    const newActionModal = document.getElementById('newActionModal');
-    const productStatusModal = document.getElementById('productStatusCommentModal');
-    
-    if (event.target === logsModal) {
-        closeLogsHistory();
-    }
-    
-    if (event.target === actionsModal) {
-        closeActionsModal();
-    }
-    
-    if (event.target === newActionModal) {
-        closeNewActionModal();
-    }
-    
-    if (event.target === productStatusModal) {
-        cancelProductStatusChange();
-    }
-});
+// Обновляем обработчики закрытия модальных окон - ОТКЛЮЧЕНО
+// document.addEventListener('click', function(event) {
+//     const logsModal = document.getElementById('logsHistoryModal');
+//     const actionsModal = document.getElementById('actionsModal');
+//     const newActionModal = document.getElementById('newActionModal');
+//     const productStatusModal = document.getElementById('productStatusCommentModal');
+//     
+//     if (event.target === logsModal) {
+//         closeLogsHistory();
+//     }
+//     
+//     if (event.target === actionsModal) {
+//         closeActionsModal();
+//     }
+//     
+//     if (event.target === newActionModal) {
+//         closeNewActionModal();
+//     }
+//     
+//     if (event.target === productStatusModal) {
+//         cancelProductStatusChange();
+//     }
+// });
 
 // Обновляем обработчики закрытия по Escape
 document.addEventListener('keydown', function(event) {
@@ -5202,5 +5283,114 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+<script>
+// Функция для скачивания всех медиафайлов товара
+function downloadAllMedia() {
+    const downloadBtn = document.getElementById('downloadMediaBtn');
+    const btnText = downloadBtn.querySelector('.btn-text');
+    const loadingSpinner = downloadBtn.querySelector('.loading-spinner');
+    const originalText = btnText.textContent;
+    
+    // Показываем анимацию загрузки
+    downloadBtn.disabled = true;
+    btnText.textContent = 'Создание архива...';
+    loadingSpinner.style.display = 'block';
+    
+    // Функция для восстановления состояния кнопки
+    function resetButton() {
+        downloadBtn.disabled = false;
+        btnText.textContent = originalText;
+        loadingSpinner.style.display = 'none';
+    }
+    
+    // Функция для обработки ошибок
+    function handleError(message) {
+        resetButton();
+        showNotification(message, 'error');
+    }
+    
+    // Проверяем доступность сервера и создаем архив
+    fetch('{{ route("products.download-media", $product) }}', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            if (response.status === 403) {
+                throw new Error('У вас нет прав для скачивания медиафайлов этого товара');
+            } else if (response.status === 404) {
+                throw new Error('У товара нет медиафайлов для скачивания');
+            } else {
+                throw new Error('Ошибка при создании архива');
+            }
+        }
+        
+        // Если ответ успешный, начинаем скачивание
+        btnText.textContent = 'Скачивание...';
+        
+        // Создаем скрытую ссылку для скачивания
+        const link = document.createElement('a');
+        link.href = '{{ route("products.download-media", $product) }}';
+        link.download = '';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        
+        // Отслеживаем загрузку файла
+        let downloadStarted = false;
+        let downloadCompleted = false;
+        
+        // Функция для проверки завершения загрузки
+        function checkDownloadComplete() {
+            if (downloadCompleted) {
+                // Восстанавливаем кнопку
+                resetButton();
+                
+                // Удаляем ссылку
+                document.body.removeChild(link);
+                
+                // Показываем уведомление об успехе
+                showNotification('Архив с медиафайлами успешно скачан', 'success');
+            } else if (!downloadStarted) {
+                // Если загрузка еще не началась, проверяем еще раз через 100мс
+                setTimeout(checkDownloadComplete, 100);
+            }
+        }
+        
+        // Обработчик начала загрузки
+        link.addEventListener('click', function() {
+            downloadStarted = true;
+        });
+        
+        // Обработчик завершения загрузки
+        window.addEventListener('focus', function() {
+            if (downloadStarted && !downloadCompleted) {
+                downloadCompleted = true;
+                checkDownloadComplete();
+            }
+        });
+        
+        // Запускаем скачивание
+        link.click();
+        
+        // Запускаем проверку завершения загрузки
+        checkDownloadComplete();
+        
+        // Резервный таймер на случай, если событие focus не сработает
+        setTimeout(function() {
+            if (!downloadCompleted) {
+                downloadCompleted = true;
+                checkDownloadComplete();
+            }
+        }, 10000); // 10 секунд таймаут
+    })
+    .catch(error => {
+        console.error('Ошибка при скачивании:', error);
+        handleError(error.message || 'Произошла ошибка при скачивании медиафайлов');
+    });
+}
+</script>
 
 @endsection

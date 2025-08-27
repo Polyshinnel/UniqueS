@@ -1723,12 +1723,12 @@ function closeContactCard() {
     document.getElementById('contactModal').style.display = 'none';
 }
 
-// Закрытие модального окна при клике вне его
-window.onclick = function(event) {
-    const modal = document.getElementById('contactModal');
-    if (event.target === modal) {
-        closeContactCard();
-    }
-}
+// Закрытие модального окна при клике вне его - ОТКЛЮЧЕНО
+// window.onclick = function(event) {
+//     const modal = document.getElementById('contactModal');
+//     if (event.target === modal) {
+//         closeContactCard();
+//     }
+// }
 </script>
 @endpush

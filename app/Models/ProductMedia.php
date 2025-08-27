@@ -20,11 +20,13 @@ class ProductMedia extends Model
         'mime_type',
         'file_size',
         'sort_order',
+        'achieved',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
         'sort_order' => 'integer',
+        'achieved' => 'boolean',
     ];
 
     // Связь с товаром

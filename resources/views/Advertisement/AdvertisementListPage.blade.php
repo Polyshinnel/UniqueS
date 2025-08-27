@@ -632,19 +632,19 @@ function closeCompanyCard() {
     document.getElementById('companyModal').style.display = 'none';
 }
 
-// Закрытие модальных окон при клике вне их
-window.onclick = function(event) {
-    const contactModal = document.getElementById('contactModal');
-    const companyModal = document.getElementById('companyModal');
-    
-    if (event.target === contactModal) {
-        closeContactCard();
-    }
-    
-    if (event.target === companyModal) {
-        closeCompanyCard();
-    }
-}
+// Закрытие модальных окон при клике вне их - ОТКЛЮЧЕНО
+// window.onclick = function(event) {
+//     const contactModal = document.getElementById('contactModal');
+//     const companyModal = document.getElementById('companyModal');
+//     
+//     if (event.target === contactModal) {
+//         closeContactCard();
+//     }
+//     
+//     if (event.target === companyModal) {
+//         closeCompanyCard();
+//     }
+// }
 </script>
 @endpush
 
