@@ -1449,6 +1449,42 @@ window.onclick = function(event) {
     color: #212529 !important;
 }
 
+/* Стили для статусов объявлений по ID */
+.status-1 {
+    background-color: #FFA500 !important;
+    color: white !important;
+}
+
+.status-2 {
+    background-color: #28A745 !important;
+    color: white !important;
+}
+
+.status-3 {
+    background-color: #17A2B8 !important;
+    color: white !important;
+}
+
+.status-4 {
+    background-color: #FFC107 !important;
+    color: #212529 !important;
+}
+
+.status-5 {
+    background-color: #6F42C1 !important;
+    color: white !important;
+}
+
+.status-6 {
+    background-color: #6C757D !important;
+    color: white !important;
+}
+
+.status-unknown {
+    background-color: #f5f5f5 !important;
+    color: #666 !important;
+}
+
 .price-info {
     display: flex;
     flex-direction: column;
