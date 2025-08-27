@@ -62,6 +62,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/product/{product}/download-media', [\App\Http\Controllers\Product\ProductController::class, 'downloadMedia'])
         ->middleware('large.file.upload')
         ->name('products.download-media');
+    Route::get('/product/{product}/media-list', [\App\Http\Controllers\Product\ProductController::class, 'getMediaList'])->name('products.media-list');
+    Route::get('/product/{product}/download-media/{mediaId}', [\App\Http\Controllers\Product\ProductController::class, 'downloadSingleMedia'])->name('products.download-single-media');
     
     // Маршруты для логов и действий товаров
     Route::get('/product/{product}/logs', [\App\Http\Controllers\Product\ProductController::class, 'getLogs'])->name('products.logs');

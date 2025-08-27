@@ -1966,6 +1966,147 @@ class ProductController extends Controller
     }
 
     /**
+     * Скачивает отдельный медиафайл товара
+     */
+    public function downloadSingleMedia(Product $product, $mediaId)
+    {
+        // Устанавливаем увеличенные лимиты
+        ini_set('max_execution_time', 300);
+        ini_set('memory_limit', '512M');
+        
+        // Проверяем права доступа
+        $user = auth()->user();
+        $canAccess = false;
+        
+        if ($user && $user->role) {
+            if ($user->role->can_view_companies === 3) {
+                $canAccess = true;
+            } elseif ($user->role->can_view_companies === 1 && $product->owner_id === $user->id) {
+                $canAccess = true;
+            } elseif ($user->role->name === 'Региональный представитель' && $product->regional_id === $user->id) {
+                $canAccess = true;
+            }
+        }
+        
+        if (!$canAccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У вас нет прав для скачивания медиафайлов этого товара'
+            ], 403);
+        }
+
+        // Находим медиафайл
+        $media = $product->mediaOrdered()->find($mediaId);
+        
+        if (!$media) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Медиафайл не найден'
+            ], 404);
+        }
+
+        $filePath = storage_path('app/public/' . $media->file_path);
+        
+        if (!file_exists($filePath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Файл не найден на сервере'
+            ], 404);
+        }
+
+        // Проверяем размер файла
+        $fileSize = filesize($filePath);
+        if ($fileSize > 500 * 1024 * 1024) { // 500MB
+            return response()->json([
+                'success' => false,
+                'message' => 'Файл слишком большой для скачивания. Максимальный размер: 500MB'
+            ], 413);
+        }
+
+        // Возвращаем файл для скачивания
+        return response()->download($filePath, $media->file_name, [
+            'Content-Type' => $media->mime_type,
+            'Content-Length' => $fileSize,
+            'Cache-Control' => 'no-cache, must-revalidate',
+            'Pragma' => 'no-cache'
+        ]);
+    }
+
+    /**
+     * Получает список медиафайлов для скачивания по одному
+     */
+    public function getMediaList(Product $product)
+    {
+        // Проверяем права доступа
+        $user = auth()->user();
+        $canAccess = false;
+        
+        if ($user && $user->role) {
+            if ($user->role->can_view_companies === 3) {
+                $canAccess = true;
+            } elseif ($user->role->can_view_companies === 1 && $product->owner_id === $user->id) {
+                $canAccess = true;
+            } elseif ($user->role->name === 'Региональный представитель' && $product->regional_id === $user->id) {
+                $canAccess = true;
+            }
+        }
+        
+        if (!$canAccess) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У вас нет прав для просмотра медиафайлов этого товара'
+            ], 403);
+        }
+
+        $mediaFiles = $product->mediaOrdered()->select([
+            'id', 'file_name', 'file_path', 'file_type', 'mime_type'
+        ])->get();
+
+        $mediaList = [];
+        $totalSize = 0;
+        
+        foreach ($mediaFiles as $media) {
+            $filePath = storage_path('app/public/' . $media->file_path);
+            $fileSize = file_exists($filePath) ? filesize($filePath) : 0;
+            $totalSize += $fileSize;
+            
+            $mediaList[] = [
+                'id' => $media->id,
+                'name' => $media->file_name,
+                'type' => $media->file_type,
+                'mime_type' => $media->mime_type,
+                'size' => $fileSize,
+                'size_formatted' => $this->formatFileSize($fileSize),
+                'download_url' => route('products.download-single-media', ['product' => $product->id, 'mediaId' => $media->id])
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'media_files' => $mediaList,
+            'total_count' => count($mediaList),
+            'total_size' => $totalSize,
+            'total_size_formatted' => $this->formatFileSize($totalSize)
+        ]);
+    }
+
+    /**
+     * Форматирует размер файла в читаемый вид
+     */
+    private function formatFileSize($bytes)
+    {
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return number_format($bytes / 1024, 2) . ' KB';
+        } else {
+            return $bytes . ' bytes';
+        }
+    }
+
+    /**
      * Очищает имя файла от недопустимых символов
      */
     private function sanitizeFileName($fileName)

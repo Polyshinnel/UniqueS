@@ -85,17 +85,30 @@
             <!-- Кнопка скачивания медиафайлов -->
             @if($product->mediaOrdered->count() > 0)
                 <div class="download-media-section">
-                    <button id="downloadMediaBtn" class="btn btn-primary download-media-btn" onclick="downloadAllMedia()">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="7,10 12,15 17,10"></polyline>
-                            <line x1="12" y1="15" x2="12" y2="3"></line>
-                        </svg>
-                        <span class="btn-text">Скачать все медиа</span>
-                        <div class="loading-spinner" style="display: none;">
-                            <div class="spinner"></div>
-                        </div>
-                    </button>
+                    <div class="download-options">
+                        <button id="downloadMediaBtn" class="btn btn-primary download-media-btn" onclick="downloadAllMedia()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,15 17,10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span class="btn-text">Скачать архив</span>
+                            <div class="loading-spinner" style="display: none;">
+                                <div class="spinner"></div>
+                            </div>
+                        </button>
+                        <button id="downloadIndividualBtn" class="btn btn-secondary download-individual-btn" onclick="showIndividualDownloadModal()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7,10 12,15 17,10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span>Скачать по одному</span>
+                        </button>
+                    </div>
+                    <div class="download-info">
+                        <small>Для больших файлов рекомендуется использовать "Скачать по одному"</small>
+                    </div>
                 </div>
             @endif
 
@@ -692,6 +705,24 @@
             </div>
         </div>
     </div>
+
+<!-- Модальное окно для скачивания файлов по одному -->
+<div id="individualDownloadModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Скачать медиафайлы по одному</h3>
+            <span class="close" onclick="closeIndividualDownloadModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="mediaListContainer">
+                <div class="loading-spinner">
+                    <div class="spinner"></div>
+                    <p>Загрузка списка файлов...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </div>
 
 <style>
@@ -2760,14 +2791,18 @@
         border: 1px solid #e9ecef;
     }
 
-    .download-media-btn {
+    .download-options {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .download-media-btn, .download-individual-btn {
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 100%;
+        flex: 1;
         padding: 12px 20px;
-        background: #133E71;
-        color: white;
         border: none;
         border-radius: 6px;
         font-size: 14px;
@@ -2775,6 +2810,12 @@
         cursor: pointer;
         transition: all 0.3s ease;
         position: relative;
+        text-decoration: none;
+    }
+
+    .download-media-btn {
+        background: #133E71;
+        color: white;
     }
 
     .download-media-btn:hover {
@@ -2783,7 +2824,18 @@
         box-shadow: 0 4px 12px rgba(19, 62, 113, 0.3);
     }
 
-    .download-media-btn:disabled {
+    .download-individual-btn {
+        background: #6c757d;
+        color: white;
+    }
+
+    .download-individual-btn:hover {
+        background: #5a6268;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+
+    .download-media-btn:disabled, .download-individual-btn:disabled {
         opacity: 0.6;
         cursor: not-allowed;
         transform: none;
@@ -2808,6 +2860,81 @@
         border-top: 2px solid white;
         border-radius: 50%;
         animation: spin 1s linear infinite;
+    }
+
+    .download-info {
+        text-align: center;
+        color: #666;
+        font-size: 12px;
+    }
+
+    /* Стили для модального окна скачивания по одному */
+    .media-list-header {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+        border: 1px solid #e9ecef;
+    }
+
+    .media-list-header p {
+        margin: 5px 0;
+        color: #495057;
+    }
+
+    .media-list {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .media-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        border: 1px solid #e9ecef;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        background: white;
+        transition: all 0.3s ease;
+    }
+
+    .media-item:hover {
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transform: translateY(-1px);
+    }
+
+    .media-info {
+        display: flex;
+        align-items: center;
+        flex: 1;
+    }
+
+    .media-icon {
+        font-size: 20px;
+        margin-right: 12px;
+    }
+
+    .media-details {
+        flex: 1;
+    }
+
+    .media-name {
+        font-weight: 500;
+        color: #333;
+        margin-bottom: 4px;
+        word-break: break-word;
+    }
+
+    .media-size {
+        font-size: 12px;
+        color: #666;
+    }
+
+    .error {
+        color: #dc3545;
+        text-align: center;
+        padding: 20px;
     }
 
     @keyframes spin {
@@ -5415,6 +5542,112 @@ function downloadAllMedia() {
         handleError(error.message || 'Произошла ошибка при скачивании медиафайлов');
     });
 }
+
+// Функции для скачивания файлов по одному
+function showIndividualDownloadModal() {
+    const modal = document.getElementById('individualDownloadModal');
+    modal.style.display = 'block';
+    loadMediaList();
+}
+
+function closeIndividualDownloadModal() {
+    const modal = document.getElementById('individualDownloadModal');
+    modal.style.display = 'none';
+}
+
+function loadMediaList() {
+    const container = document.getElementById('mediaListContainer');
+    
+    fetch('{{ route("products.media-list", $product) }}', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            displayMediaList(data.media_files, data.total_size_formatted);
+        } else {
+            container.innerHTML = '<p class="error">Ошибка при загрузке списка файлов: ' + data.message + '</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        container.innerHTML = '<p class="error">Ошибка при загрузке списка файлов</p>';
+    });
+}
+
+function displayMediaList(mediaFiles, totalSize) {
+    const container = document.getElementById('mediaListContainer');
+    
+    if (mediaFiles.length === 0) {
+        container.innerHTML = '<p>Нет медиафайлов для скачивания</p>';
+        return;
+    }
+    
+    let html = `
+        <div class="media-list-header">
+            <p><strong>Всего файлов:</strong> ${mediaFiles.length}</p>
+            <p><strong>Общий размер:</strong> ${totalSize}</p>
+        </div>
+        <div class="media-list">
+    `;
+    
+    mediaFiles.forEach((file, index) => {
+        const fileIcon = file.type === 'video' ? '🎥' : '🖼️';
+        html += `
+            <div class="media-item">
+                <div class="media-info">
+                    <span class="media-icon">${fileIcon}</span>
+                    <div class="media-details">
+                        <div class="media-name">${file.name}</div>
+                        <div class="media-size">${file.size_formatted}</div>
+                    </div>
+                </div>
+                <button class="btn btn-primary btn-sm" onclick="downloadSingleFile('${file.download_url}', '${file.name}')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Скачать
+                </button>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+function downloadSingleFile(url, fileName) {
+    // Создаем скрытую ссылку для скачивания
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    
+    // Запускаем скачивание
+    link.click();
+    
+    // Удаляем ссылку
+    setTimeout(() => {
+        document.body.removeChild(link);
+    }, 100);
+    
+    // Показываем уведомление
+    showNotification(`Начинается скачивание файла: ${fileName}`, 'success');
+}
+
+// Закрытие модального окна при клике вне его
+window.addEventListener('click', function(event) {
+    const modal = document.getElementById('individualDownloadModal');
+    if (event.target === modal) {
+        closeIndividualDownloadModal();
+    }
+});
 </script>
 
 @endsection
