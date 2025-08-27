@@ -1855,6 +1855,10 @@ class ProductController extends Controller
      */
     public function downloadMedia(Product $product)
     {
+        // Устанавливаем увеличенные лимиты для обработки больших файлов
+        ini_set('max_execution_time', 600);
+        ini_set('memory_limit', '1024M');
+        
         // Проверяем права доступа
         $user = auth()->user();
         $canAccess = false;
@@ -1906,13 +1910,30 @@ class ProductController extends Controller
         }
 
         // Добавляем файлы в архив
+        $totalSize = 0;
+        $addedFiles = 0;
+        
         foreach ($mediaFiles as $media) {
             $filePath = storage_path('app/public/' . $media->file_path);
             
             if (file_exists($filePath)) {
+                $fileSize = filesize($filePath);
+                $totalSize += $fileSize;
+                
+                // Проверяем общий размер файлов (максимум 2GB)
+                if ($totalSize > 2 * 1024 * 1024 * 1024) {
+                    $zip->close();
+                    unlink($zipPath);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Общий размер медиафайлов превышает 2GB. Пожалуйста, скачайте файлы по частям.'
+                    ], 413);
+                }
+                
                 // Создаем безопасное имя файла для архива
                 $safeFileName = $this->sanitizeFileName($media->file_name);
                 $zip->addFile($filePath, $safeFileName);
+                $addedFiles++;
             }
         }
 
@@ -1926,11 +1947,22 @@ class ProductController extends Controller
             ], 500);
         }
 
-        // Возвращаем файл для скачивания
-        return response()->download($zipPath, $zipFileName, [
+        // Получаем размер архива
+        $archiveSize = filesize($zipPath);
+        
+        // Устанавливаем заголовки для потоковой передачи
+        $headers = [
             'Content-Type' => 'application/zip',
-            'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"'
-        ])->deleteFileAfterSend(true);
+            'Content-Disposition' => 'attachment; filename="' . $zipFileName . '"',
+            'Content-Length' => $archiveSize,
+            'Cache-Control' => 'no-cache, must-revalidate',
+            'Pragma' => 'no-cache',
+            'Expires' => '0'
+        ];
+
+        // Возвращаем файл для скачивания с потоковой передачей
+        return response()->download($zipPath, $zipFileName, $headers)
+            ->deleteFileAfterSend(true);
     }
 
     /**

@@ -5310,6 +5310,11 @@ function downloadAllMedia() {
         showNotification(message, 'error');
     }
     
+    // Устанавливаем таймаут для больших файлов (5 минут)
+    const timeout = setTimeout(() => {
+        handleError('Время ожидания превышено. Попробуйте скачать файлы позже или обратитесь к администратору.');
+    }, 300000); // 5 минут
+    
     // Проверяем доступность сервера и создаем архив
     fetch('{{ route("products.download-media", $product) }}', {
         method: 'GET',
@@ -5318,13 +5323,19 @@ function downloadAllMedia() {
         }
     })
     .then(response => {
+        clearTimeout(timeout);
+        
         if (!response.ok) {
             if (response.status === 403) {
                 throw new Error('У вас нет прав для скачивания медиафайлов этого товара');
             } else if (response.status === 404) {
                 throw new Error('У товара нет медиафайлов для скачивания');
+            } else if (response.status === 413) {
+                throw new Error('Общий размер медиафайлов слишком большой. Пожалуйста, скачайте файлы по частям.');
+            } else if (response.status === 504) {
+                throw new Error('Сервер не отвечает. Попробуйте скачать файлы позже.');
             } else {
-                throw new Error('Ошибка при создании архива');
+                throw new Error('Ошибка при создании архива (код: ' + response.status + ')');
             }
         }
         
@@ -5341,6 +5352,7 @@ function downloadAllMedia() {
         // Отслеживаем загрузку файла
         let downloadStarted = false;
         let downloadCompleted = false;
+        let downloadTimeout;
         
         // Функция для проверки завершения загрузки
         function checkDownloadComplete() {
@@ -5350,6 +5362,11 @@ function downloadAllMedia() {
                 
                 // Удаляем ссылку
                 document.body.removeChild(link);
+                
+                // Очищаем таймаут
+                if (downloadTimeout) {
+                    clearTimeout(downloadTimeout);
+                }
                 
                 // Показываем уведомление об успехе
                 showNotification('Архив с медиафайлами успешно скачан', 'success');
@@ -5362,6 +5379,13 @@ function downloadAllMedia() {
         // Обработчик начала загрузки
         link.addEventListener('click', function() {
             downloadStarted = true;
+            
+            // Устанавливаем таймаут для скачивания (10 минут)
+            downloadTimeout = setTimeout(() => {
+                if (!downloadCompleted) {
+                    handleError('Время скачивания превышено. Проверьте интернет-соединение и попробуйте снова.');
+                }
+            }, 600000); // 10 минут
         });
         
         // Обработчик завершения загрузки
