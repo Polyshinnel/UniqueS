@@ -848,10 +848,13 @@
     border-radius: 12px;
     box-shadow: 0 4px 20px rgba(0,0,0,0.1);
     overflow: hidden;
+    overflow-x: auto;
+    max-width: 100%;
 }
 
 .companies-table {
     width: 100%;
+    min-width: 1200px;
     border-collapse: collapse;
     font-size: 14px;
 }
@@ -1205,7 +1208,7 @@
 }
 
 /* Адаптивность */
-@media (max-width: 1200px) {
+@media (max-width: 1600px) {
     .companies-table {
         font-size: 13px;
     }
@@ -1224,6 +1227,135 @@
     .companies-table td:last-child {
         padding-right: 15px;
     }
+    
+    .company-name {
+        font-size: 15px;
+    }
+    
+    .contact-name,
+    .responsible-name {
+        font-size: 13px;
+    }
+    
+    .company-sku,
+    .contact-position,
+    .responsible-label,
+    .status-label {
+        font-size: 11px;
+    }
+    
+    .contact-phone,
+    .responsible-actions .action-btn {
+        font-size: 12px;
+    }
+    
+    .action-btn {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .action-btn svg {
+        width: 13px;
+        height: 13px;
+    }
+    
+    .responsible-actions .action-btn {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .responsible-actions .action-btn svg {
+        width: 11px;
+        height: 11px;
+    }
+    
+    .company-description p {
+        font-size: 12px;
+    }
+    
+    .action-text {
+        font-size: 11px;
+    }
+    
+    .status-badge {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .companies-table {
+        font-size: 12px;
+    }
+    
+    .companies-table th,
+    .companies-table td {
+        padding: 10px 6px;
+    }
+    
+    .companies-table th:first-child,
+    .companies-table td:first-child {
+        padding-left: 12px;
+    }
+    
+    .companies-table th:last-child,
+    .companies-table td:last-child {
+        padding-right: 12px;
+    }
+    
+    .company-name {
+        font-size: 14px;
+    }
+    
+    .contact-name,
+    .responsible-name {
+        font-size: 12px;
+    }
+    
+    .company-sku,
+    .contact-position,
+    .responsible-label,
+    .status-label {
+        font-size: 10px;
+    }
+    
+    .contact-phone,
+    .responsible-actions .action-btn {
+        font-size: 11px;
+    }
+    
+    .action-btn {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .action-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .responsible-actions .action-btn {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .responsible-actions .action-btn svg {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .company-description p {
+        font-size: 11px;
+    }
+    
+    .action-text {
+        font-size: 10px;
+    }
+    
+    .status-badge {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1236,31 +1368,31 @@
     }
     
     .companies-table {
-        font-size: 12px;
+        font-size: 11px;
     }
     
     .companies-table th,
     .companies-table td {
-        padding: 10px 6px;
+        padding: 8px 4px;
     }
     
     .company-name {
-        font-size: 14px;
+        font-size: 13px;
     }
     
     .contact-name,
     .responsible-name {
-        font-size: 12px;
+        font-size: 11px;
     }
     
     .action-btn {
-        width: 24px;
-        height: 24px;
+        width: 22px;
+        height: 22px;
     }
     
     .action-btn svg {
-        width: 12px;
-        height: 12px;
+        width: 11px;
+        height: 11px;
     }
 }
 
@@ -1608,6 +1740,48 @@
     
     .contact-info-item span {
         text-align: left;
+    }
+}
+
+/* Стили для горизонтальной прокрутки */
+.companies-table-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.companies-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.companies-table-wrapper::-webkit-scrollbar-thumb {
+    background: #133E71;
+    border-radius: 4px;
+}
+
+.companies-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #1C5BA4;
+}
+
+/* Адаптивность для горизонтальной прокрутки */
+@media (max-width: 1600px) {
+    .companies-table {
+        min-width: 1100px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .companies-table {
+        min-width: 1000px;
+    }
+}
+
+@media (max-width: 768px) {
+    .companies-table {
+        min-width: 900px;
+    }
+    
+    .companies-table-wrapper::-webkit-scrollbar {
+        height: 6px;
     }
 }
 </style>

@@ -1682,7 +1682,7 @@ function closeCompanyCard() {
 }
 
 /* Адаптивность */
-@media (max-width: 1200px) {
+@media (max-width: 1600px) {
     .products-table {
         font-size: 13px;
     }
@@ -1700,6 +1700,123 @@ function closeCompanyCard() {
     .products-table th:last-child,
     .products-table td:last-child {
         padding-right: 15px;
+    }
+    
+    .product-name {
+        font-size: 15px;
+    }
+    
+    .supplier-name,
+    .responsible-name {
+        font-size: 13px;
+    }
+    
+    .product-sku,
+    .responsible-label,
+    .status-label {
+        font-size: 11px;
+    }
+    
+    .action-btn {
+        width: 26px;
+        height: 26px;
+    }
+    
+    .action-btn svg {
+        width: 13px;
+        height: 13px;
+    }
+    
+    .responsible-actions .action-btn {
+        width: 22px;
+        height: 22px;
+    }
+    
+    .responsible-actions .action-btn svg {
+        width: 11px;
+        height: 11px;
+    }
+    
+    .char-value {
+        font-size: 11px;
+    }
+    
+    .action-text {
+        font-size: 11px;
+    }
+    
+    .status-badge {
+        font-size: 11px;
+        padding: 5px 10px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .products-table {
+        font-size: 12px;
+    }
+    
+    .products-table th,
+    .products-table td {
+        padding: 10px 6px;
+    }
+    
+    .products-table th:first-child,
+    .products-table td:first-child {
+        padding-left: 12px;
+    }
+    
+    .products-table th:last-child,
+    .products-table td:last-child {
+        padding-right: 12px;
+    }
+    
+    .product-name {
+        font-size: 14px;
+    }
+    
+    .supplier-name,
+    .responsible-name {
+        font-size: 12px;
+    }
+    
+    .product-sku,
+    .responsible-label,
+    .status-label {
+        font-size: 10px;
+    }
+    
+    .action-btn {
+        width: 24px;
+        height: 24px;
+    }
+    
+    .action-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+    
+    .responsible-actions .action-btn {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .responsible-actions .action-btn svg {
+        width: 10px;
+        height: 10px;
+    }
+    
+    .char-value {
+        font-size: 10px;
+    }
+    
+    .action-text {
+        font-size: 10px;
+    }
+    
+    .status-badge {
+        font-size: 10px;
+        padding: 4px 8px;
     }
 }
 
@@ -2297,6 +2414,53 @@ function closeCompanyCard() {
 .search-btn svg {
     width: 16px;
     height: 16px;
+}
+
+/* Стили для горизонтальной прокрутки */
+.products-table-wrapper {
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.products-table-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.products-table-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.products-table-wrapper::-webkit-scrollbar-thumb {
+    background: #133E71;
+    border-radius: 4px;
+}
+
+.products-table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #1C5BA4;
+}
+
+/* Адаптивность для горизонтальной прокрутки */
+@media (max-width: 1600px) {
+    .products-table {
+        min-width: 1100px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .products-table {
+        min-width: 1000px;
+    }
+}
+
+@media (max-width: 768px) {
+    .products-table {
+        min-width: 900px;
+    }
+    
+    .products-table-wrapper::-webkit-scrollbar {
+        height: 6px;
+    }
 }
 </style>
 @endpush
