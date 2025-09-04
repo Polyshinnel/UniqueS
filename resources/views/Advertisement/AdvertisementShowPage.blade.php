@@ -42,6 +42,18 @@
     <div class="advertisement-content">
         <!-- Блок с медиафайлами -->
         <div class="advertisement-media-section">
+            @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+            <div class="media-controls">
+                <button class="btn btn-primary" onclick="showMediaUploadModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                        <circle cx="12" cy="13" r="3"/>
+                    </svg>
+                    Добавить медиафайлы
+                </button>
+            </div>
+            @endif
+            
             @if($advertisement->mediaOrdered->count() > 0)
                 <div class="media-gallery">
                     <div class="main-image-container">
@@ -70,6 +82,30 @@
                             <img id="mainImage" src="{{ asset('storage/' . $mainImage->file_path) }}" 
                                  alt="{{ $advertisement->title }}" class="main-image" 
                                  onclick="openGallery({{ $mainImageIndex }})">
+                            @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                            <div style="position: absolute; top: 10px; right: 10px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s ease; z-index: 10;">
+                                @if($mainImage->file_type === 'image')
+                                <button style="width: 28px; height: 28px; border: none; border-radius: 50%; background: rgba(40, 167, 69, 1); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.5);" 
+                                        onclick="setAsMainImage({{ $mainImage->id }}, {{ $mainImageIndex }})" 
+                                        title="Главное изображение">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M9 12l2 2 4-4"/>
+                                        <circle cx="12" cy="12" r="10"/>
+                                    </svg>
+                                </button>
+                                @endif
+                                <button style="width: 28px; height: 28px; border: none; border-radius: 50%; background: rgba(220, 53, 69, 0.9); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;" 
+                                        onclick="deleteMedia({{ $mainImage->id }}, '{{ $mainImage->file_type }}')" 
+                                        title="Удалить медиафайл">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"></polyline>
+                                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                </button>
+                            </div>
+                            @endif
                         @else
                             <div class="no-image">
                                 <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -96,6 +132,30 @@
                                             </svg>
                                             <span>Видео</span>
                                         </div>
+                                    @endif
+                                    @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                                    <div style="position: absolute; top: 3px; right: 3px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s ease; z-index: 10;">
+                                        @if($media->file_type === 'image')
+                                        <button style="width: 20px; height: 20px; border: none; border-radius: 50%; background: {{ $index === $mainImageIndex ? 'rgba(40, 167, 69, 1)' : 'rgba(40, 167, 69, 0.9)' }}; color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease; {{ $index === $mainImageIndex ? 'box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.5);' : '' }}" 
+                                                onclick="event.stopPropagation(); setAsMainImage({{ $media->id }}, {{ $index }})" 
+                                                title="{{ $index === $mainImageIndex ? 'Главное изображение' : 'Сделать главным' }}">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M9 12l2 2 4-4"/>
+                                                <circle cx="12" cy="12" r="10"/>
+                                            </svg>
+                                        </button>
+                                        @endif
+                                        <button style="width: 20px; height: 20px; border: none; border-radius: 50%; background: rgba(220, 53, 69, 0.9); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;" 
+                                                onclick="event.stopPropagation(); deleteMedia({{ $media->id }}, '{{ $media->file_type }}')" 
+                                                title="Удалить медиафайл">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3,6 5,6 21,6"></polyline>
+                                                <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </button>
+                                    </div>
                                     @endif
                                 </div>
                             @endforeach
@@ -315,39 +375,6 @@
                 </div>
             @endif
 
-            @if($advertisement->technical_characteristics || true)
-                <div class="info-block">
-                    <div class="block-header">
-                        <h3>Технические характеристики</h3>
-                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
-                        <button class="edit-comment-btn" onclick="editComment('technical_characteristics')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                            </svg>
-                            Редактировать
-                        </button>
-                        @endif
-                    </div>
-                    <div class="comment-content" id="technical_characteristics_content">
-                        @if($advertisement->technical_characteristics)
-                            <div class="html-content">{!! $advertisement->technical_characteristics !!}</div>
-                        @else
-                            <p class="no-comment">Технические характеристики не указаны</p>
-                        @endif
-                    </div>
-                    <div class="comment-edit" id="technical_characteristics_edit" style="display: none;">
-                        <div class="editor-container">
-                            <textarea class="comment-textarea" id="technical_characteristics_textarea" rows="5" data-original="{{ $advertisement->technical_characteristics }}" style="display: none;">{{ $advertisement->technical_characteristics }}</textarea>
-                            <div id="technical_characteristics_edit_editor"></div>
-                        </div>
-                        <div class="comment-actions">
-                            <button class="btn btn-primary btn-sm" onclick="saveComment('technical_characteristics')">Сохранить</button>
-                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit('technical_characteristics')">Отмена</button>
-                        </div>
-                    </div>
-                </div>
-            @endif
-
             @if($advertisement->main_info || true)
                 <div class="info-block">
                     <div class="block-header">
@@ -381,6 +408,41 @@
                 </div>
             @endif
 
+            @if($advertisement->technical_characteristics || true)
+                <div class="info-block">
+                    <div class="block-header">
+                        <h3>Технические характеристики</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                        <button class="edit-comment-btn" onclick="editComment('technical_characteristics')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                        @endif
+                    </div>
+                    <div class="comment-content" id="technical_characteristics_content">
+                        @if($advertisement->technical_characteristics)
+                            <div class="html-content">{!! $advertisement->technical_characteristics !!}</div>
+                        @else
+                            <p class="no-comment">Технические характеристики не указаны</p>
+                        @endif
+                    </div>
+                    <div class="comment-edit" id="technical_characteristics_edit" style="display: none;">
+                        <div class="editor-container">
+                            <textarea class="comment-textarea" id="technical_characteristics_textarea" rows="5" data-original="{{ $advertisement->technical_characteristics }}" style="display: none;">{{ $advertisement->technical_characteristics }}</textarea>
+                            <div id="technical_characteristics_edit_editor"></div>
+                        </div>
+                        <div class="comment-actions">
+                            <button class="btn btn-primary btn-sm" onclick="saveComment('technical_characteristics')">Сохранить</button>
+                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit('technical_characteristics')">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            @endif
+
+            
+
             @if($advertisement->tags && $advertisement->tags->count() > 0)
                 <div class="info-block">
                     <h3>Теги</h3>
@@ -392,38 +454,6 @@
                 </div>
             @endif
 
-            @if($advertisement->additional_info || true)
-                <div class="info-block">
-                    <div class="block-header">
-                        <h3>Дополнительная информация</h3>
-                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
-                        <button class="edit-comment-btn" onclick="editComment('additional_info')">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
-                            </svg>
-                            Редактировать
-                        </button>
-                        @endif
-                    </div>
-                    <div class="comment-content" id="additional_info_content">
-                        @if($advertisement->additional_info)
-                            <div class="html-content">{!! $advertisement->additional_info !!}</div>
-                        @else
-                            <p class="no-comment">Дополнительная информация не указана</p>
-                        @endif
-                    </div>
-                    <div class="comment-edit" id="additional_info_edit" style="display: none;">
-                        <div class="editor-container">
-                            <textarea class="comment-textarea" id="additional_info_textarea" rows="5" data-original="{{ $advertisement->additional_info }}" style="display: none;">{{ $advertisement->additional_info }}</textarea>
-                            <div id="additional_info_edit_editor"></div>
-                        </div>
-                        <div class="comment-actions">
-                            <button class="btn btn-primary btn-sm" onclick="saveComment('additional_info')">Сохранить</button>
-                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit('additional_info')">Отмена</button>
-                        </div>
-                    </div>
-                </div>
-            @endif
 
             @if($advertisement->check_data || true)
                 <div class="info-block">
@@ -756,6 +786,39 @@
                     </div>
                 </div>
             @endif
+
+            @if($advertisement->additional_info || true)
+                <div class="info-block">
+                    <div class="block-header">
+                        <h3>Дополнительная информация</h3>
+                        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                        <button class="edit-comment-btn" onclick="editComment('additional_info')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                            </svg>
+                            Редактировать
+                        </button>
+                        @endif
+                    </div>
+                    <div class="comment-content" id="additional_info_content">
+                        @if($advertisement->additional_info)
+                            <div class="html-content">{!! $advertisement->additional_info !!}</div>
+                        @else
+                            <p class="no-comment">Дополнительная информация не указана</p>
+                        @endif
+                    </div>
+                    <div class="comment-edit" id="additional_info_edit" style="display: none;">
+                        <div class="editor-container">
+                            <textarea class="comment-textarea" id="additional_info_textarea" rows="5" data-original="{{ $advertisement->additional_info }}" style="display: none;">{{ $advertisement->additional_info }}</textarea>
+                            <div id="additional_info_edit_editor"></div>
+                        </div>
+                        <div class="comment-actions">
+                            <button class="btn btn-primary btn-sm" onclick="saveComment('additional_info')">Сохранить</button>
+                            <button class="btn btn-secondary btn-sm" onclick="cancelEdit('additional_info')">Отмена</button>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </div>
     </div>
 </div>
@@ -772,6 +835,28 @@
                     <source src="" type="">
                     Ваш браузер не поддерживает воспроизведение видео.
                 </video>
+                @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                <div id="galleryMediaActions" style="position: absolute; top: 20px; right: 20px; display: flex; gap: 8px; opacity: 0; transition: opacity 0.2s ease; z-index: 10;">
+                    <button id="gallerySetMainBtn" style="width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(40, 167, 69, 0.9); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;" 
+                            onclick="setGalleryImageAsMain()" 
+                            title="Сделать главным изображением">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4"/>
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </button>
+                    <button id="galleryDeleteBtn" style="width: 40px; height: 40px; border: none; border-radius: 50%; background: rgba(220, 53, 69, 0.9); color: white; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;" 
+                            onclick="deleteGalleryMedia()" 
+                            title="Удалить медиафайл">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3,6 5,6 21,6"></polyline>
+                            <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </button>
+                </div>
+                @endif
             </div>
             <button class="gallery-nav gallery-next" onclick="nextImage()">&#10095;</button>
         </div>
@@ -1430,6 +1515,18 @@
 .thumbnail:hover {
     border-color: #1C5BA4;
     transform: scale(1.05);
+}
+
+.thumbnail:hover div[style*="position: absolute"] {
+    opacity: 1 !important;
+}
+
+.main-image-container:hover div[style*="position: absolute"] {
+    opacity: 1 !important;
+}
+
+.gallery-item-container:hover #galleryMediaActions {
+    opacity: 1 !important;
 }
 
 .thumbnail img {
@@ -2736,7 +2833,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     url: '{{ asset('storage/' . $media->file_path) }}',
                     type: '{{ $media->file_type }}',
                     name: '{{ $media->file_name }}',
-                    mime: '{{ $media->mime_type }}'
+                    mime: '{{ $media->mime_type }}',
+                    isMainImage: {{ $advertisement->main_img == $media->id ? 'true' : 'false' }},
+                    mediaId: {{ $media->id }}
                 },
             @endforeach
         ];
@@ -2747,6 +2846,12 @@ function changeMainImage(url, index, type) {
     const mainImage = document.getElementById('mainImage');
     if (mainImage && type === 'image') {
         mainImage.src = url;
+        
+        // Обновляем главное изображение на сервере
+        const mediaId = getMediaIdByIndex(index);
+        if (mediaId) {
+            updateMainImageOnServer(mediaId);
+        }
     }
     
     // Обновляем активный thumbnail
@@ -2754,6 +2859,189 @@ function changeMainImage(url, index, type) {
     document.querySelectorAll('.thumbnail')[index].classList.add('active');
     
     currentGalleryIndex = index;
+}
+
+function getMediaIdByIndex(index) {
+    const thumbnails = document.querySelectorAll('.thumbnail');
+    if (thumbnails[index]) {
+        const deleteBtn = thumbnails[index].querySelector('.delete-media-btn');
+        if (deleteBtn) {
+            const onclick = deleteBtn.getAttribute('onclick');
+            const match = onclick.match(/deleteMedia\((\d+),/);
+            return match ? match[1] : null;
+        }
+    }
+    return null;
+}
+
+function updateMainImageOnServer(mediaId) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/advertisements/{{ $advertisement->id }}/main-image`, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            media_id: mediaId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            console.error('Ошибка при обновлении главного изображения:', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+
+function setAsMainImage(mediaId, index) {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/advertisements/{{ $advertisement->id }}/main-image`, {
+        method: 'PATCH',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            media_id: mediaId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем главное изображение
+            const mainImage = document.getElementById('mainImage');
+            if (mainImage && data.main_image_url) {
+                mainImage.src = data.main_image_url;
+            }
+            
+            // Обновляем активные кнопки
+            document.querySelectorAll('.thumbnail').forEach(thumb => thumb.classList.remove('active'));
+            document.querySelectorAll('.thumbnail')[index].classList.add('active');
+            
+            // Обновляем стили кнопок "Сделать главным"
+            document.querySelectorAll('button[onclick*="setAsMainImage"]').forEach(btn => {
+                btn.style.background = 'rgba(40, 167, 69, 0.9)';
+                btn.style.boxShadow = 'none';
+            });
+            
+            // Активируем текущую кнопку
+            const currentBtn = document.querySelector(`button[onclick*="setAsMainImage(${mediaId}"]`);
+            if (currentBtn) {
+                currentBtn.style.background = 'rgba(40, 167, 69, 1)';
+                currentBtn.style.boxShadow = '0 0 0 2px rgba(40, 167, 69, 0.5)';
+            }
+            
+            // Показываем уведомление
+            showNotification('Главное изображение обновлено', 'success');
+        } else {
+            showNotification(data.message || 'Ошибка при обновлении главного изображения', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при обновлении главного изображения', 'error');
+    });
+}
+
+function showNotification(message, type = 'info') {
+    // Создаем уведомление
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.textContent = message;
+    
+    // Добавляем стили
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 20px;
+        border-radius: 6px;
+        color: white;
+        font-weight: 500;
+        z-index: 10000;
+        opacity: 0;
+        transform: translateX(100%);
+        transition: all 0.3s ease;
+    `;
+    
+    // Цвета для разных типов
+    const colors = {
+        success: '#28a745',
+        error: '#dc3545',
+        info: '#17a2b8',
+        warning: '#ffc107'
+    };
+    
+    notification.style.backgroundColor = colors[type] || colors.info;
+    
+    // Добавляем в DOM
+    document.body.appendChild(notification);
+    
+    // Анимация появления
+    setTimeout(() => {
+        notification.style.opacity = '1';
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Удаляем через 3 секунды
+    setTimeout(() => {
+        notification.style.opacity = '0';
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+function setGalleryImageAsMain() {
+    if (currentGalleryIndex < 0 || currentGalleryIndex >= galleryItems.length) return;
+    
+    const currentItem = galleryItems[currentGalleryIndex];
+    if (currentItem.type !== 'image') return;
+    
+    // Находим ID медиафайла по URL
+    const mediaId = getMediaIdByUrl(currentItem.url);
+    if (!mediaId) return;
+    
+    setAsMainImage(mediaId, currentGalleryIndex);
+}
+
+function deleteGalleryMedia() {
+    if (currentGalleryIndex < 0 || currentGalleryIndex >= galleryItems.length) return;
+    
+    const currentItem = galleryItems[currentGalleryIndex];
+    
+    if (!confirm('Вы уверены, что хотите удалить этот медиафайл?')) {
+        return;
+    }
+    
+    // Находим ID медиафайла по URL
+    const mediaId = getMediaIdByUrl(currentItem.url);
+    if (!mediaId) return;
+    
+    // Определяем тип файла
+    const fileType = currentItem.type;
+    
+    deleteMedia(mediaId, fileType);
+}
+
+function getMediaIdByUrl(url) {
+    // Ищем медиафайл по URL в galleryItems
+    for (let i = 0; i < galleryItems.length; i++) {
+        if (galleryItems[i].url === url) {
+            return galleryItems[i].mediaId;
+        }
+    }
+    
+    return null;
 }
 
 function openGallery(index = 0) {
@@ -2780,15 +3068,39 @@ function showGalleryItem(index) {
     const image = document.getElementById('galleryImage');
     const video = document.getElementById('galleryVideo');
     const counter = document.getElementById('galleryCounter');
+    const setMainBtn = document.getElementById('gallerySetMainBtn');
+    const deleteBtn = document.getElementById('galleryDeleteBtn');
     
     if (item.type === 'image') {
         image.src = item.url;
         image.style.display = 'block';
         video.style.display = 'none';
+        
+        // Показываем кнопки для изображений
+        if (setMainBtn) setMainBtn.style.display = 'flex';
+        if (deleteBtn) deleteBtn.style.display = 'flex';
+        
+        // Обновляем стиль кнопки "Сделать главным" в зависимости от того, является ли это изображение главным
+        if (setMainBtn) {
+            const isMainImage = item.isMainImage;
+            if (isMainImage) {
+                setMainBtn.style.background = 'rgba(40, 167, 69, 1)';
+                setMainBtn.style.boxShadow = '0 0 0 2px rgba(40, 167, 69, 0.5)';
+                setMainBtn.title = 'Главное изображение';
+            } else {
+                setMainBtn.style.background = 'rgba(40, 167, 69, 0.9)';
+                setMainBtn.style.boxShadow = 'none';
+                setMainBtn.title = 'Сделать главным изображением';
+            }
+        }
     } else if (item.type === 'video') {
         video.src = item.url;
         video.style.display = 'block';
         image.style.display = 'none';
+        
+        // Скрываем кнопку "Сделать главным" для видео
+        if (setMainBtn) setMainBtn.style.display = 'none';
+        if (deleteBtn) deleteBtn.style.display = 'flex';
     }
     
     counter.textContent = `${index + 1} / ${galleryItems.length}`;
@@ -4817,6 +5129,307 @@ document.addEventListener('keydown', function(event) {
         }
     }
 });
+
+// Функции для работы с медиафайлами
+function showMediaUploadModal() {
+    const modal = document.getElementById('mediaUploadModal');
+    modal.style.display = 'block';
+    document.body.style.overflow = 'hidden';
+}
+
+function closeMediaUploadModal() {
+    const modal = document.getElementById('mediaUploadModal');
+    modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+    
+    // Очищаем форму
+    const fileInput = document.getElementById('media_files');
+    if (fileInput) {
+        fileInput.value = '';
+    }
+}
+
+function deleteMedia(mediaId, fileType) {
+    if (!confirm('Вы уверены, что хотите удалить этот медиафайл?')) {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/advertisements/{{ $advertisement->id }}/media/${mediaId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Перезагружаем страницу для обновления медиафайлов
+            location.reload();
+        } else {
+            alert('Ошибка при удалении медиафайла');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при удалении медиафайла');
+    });
+}
+
+// Функции для работы с прогрессбаром загрузки
+function showUploadProgress() {
+    const overlay = document.getElementById('uploadOverlay');
+    overlay.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    
+    updateUploadProgress(0, 'Подготовка к загрузке...');
+}
+
+function hideUploadProgress() {
+    const overlay = document.getElementById('uploadOverlay');
+    overlay.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+function updateUploadProgress(percent, text) {
+    const progressBar = document.getElementById('uploadProgressBar');
+    const progressText = document.getElementById('uploadProgressText');
+    
+    if (progressBar) {
+        progressBar.style.width = percent + '%';
+    }
+    
+    if (progressText) {
+        progressText.textContent = text;
+    }
+}
+
+function updateFileProgress(files) {
+    const progressDetails = document.getElementById('uploadProgressDetails');
+    const progressActions = document.getElementById('uploadProgressActions');
+    
+    progressDetails.style.display = 'block';
+    progressActions.style.display = 'flex';
+    
+    let html = '';
+    let completedFiles = 0;
+    let totalFiles = files.length;
+    
+    files.forEach((file, index) => {
+        if (file.status === 'success') {
+            completedFiles++;
+        }
+        
+        let statusClass = file.status;
+        let statusText = file.statusText;
+        
+        // Улучшенные статусы
+        switch(file.status) {
+            case 'success':
+                statusClass = 'success';
+                statusText = '✓ Загружен';
+                break;
+            case 'loading':
+                statusClass = 'loading';
+                statusText = '⏳ Загружается...';
+                break;
+            case 'error':
+                statusClass = 'error';
+                statusText = '✗ Ошибка';
+                break;
+            default:
+                statusClass = 'pending';
+                statusText = '⏸ Ожидает';
+        }
+        
+        html += `
+            <div class="upload-progress-file">
+                <span class="upload-progress-file-name" title="${file.fullName}">${file.name}</span>
+                <span class="upload-progress-file-status ${statusClass}">${statusText}</span>
+            </div>
+        `;
+    });
+    
+    // Добавляем заголовок с информацией о прогрессе
+    const progressHeader = `
+        <div class="upload-progress-file" style="background: #e3f2fd; margin: -15px -15px 10px -15px; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 600; color: #133E71;">
+            Загружено: ${completedFiles} из ${totalFiles} файлов
+        </div>
+    `;
+    
+    progressDetails.innerHTML = progressHeader + html;
+}
+
+function showUploadSuccess() {
+    updateUploadProgress(100, 'Медиафайлы успешно загружены!');
+    
+    const continueBtn = document.getElementById('continueBtn');
+    if (continueBtn) {
+        continueBtn.style.display = 'block';
+        continueBtn.onclick = function() {
+            hideUploadProgress();
+            location.reload(); // Перезагружаем страницу для отображения новых медиафайлов
+        };
+    }
+}
+
+function uploadMediaFiles() {
+    const fileInput = document.getElementById('media_files');
+    const files = Array.from(fileInput.files);
+    
+    if (files.length === 0) {
+        alert('Выберите файлы для загрузки');
+        return;
+    }
+    
+    // Показываем прогрессбар
+    showUploadProgress();
+    
+    const formData = new FormData();
+    files.forEach(file => {
+        formData.append('media_files[]', file);
+    });
+    
+    // Подготавливаем данные о файлах для отображения прогресса
+    const fileProgressData = files.map(file => ({
+        name: file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name,
+        fullName: file.name,
+        status: 'pending',
+        statusText: 'Ожидает загрузки',
+        size: file.size
+    }));
+    
+    updateFileProgress(fileProgressData);
+    
+    // Создаем XMLHttpRequest для отслеживания прогресса
+    const xhr = new XMLHttpRequest();
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            updateUploadProgress(percentComplete, `Загрузка файлов: ${percentComplete}%`);
+            
+            // Более точное обновление статуса файлов
+            const totalSize = e.total;
+            const loadedSize = e.loaded;
+            const filesPerPercent = files.length / 100;
+            const currentFileIndex = Math.floor(percentComplete * filesPerPercent);
+            
+            fileProgressData.forEach((file, index) => {
+                if (index < currentFileIndex) {
+                    file.status = 'success';
+                    file.statusText = '✓ Загружен';
+                } else if (index === currentFileIndex) {
+                    file.status = 'loading';
+                    file.statusText = '⏳ Загружается...';
+                } else {
+                    file.status = 'pending';
+                    file.statusText = '⏸ Ожидает';
+                }
+            });
+            
+            updateFileProgress(fileProgressData);
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    showUploadSuccess();
+                } else {
+                    updateUploadProgress(100, 'Ошибка при загрузке файлов');
+                    alert(response.message || 'Ошибка при загрузке файлов');
+                }
+            } catch (e) {
+                updateUploadProgress(100, 'Ошибка при обработке ответа');
+                alert('Ошибка при обработке ответа сервера');
+            }
+        } else {
+            updateUploadProgress(100, 'Ошибка при загрузке файлов');
+            alert('Ошибка при загрузке файлов');
+        }
+    });
+    
+    xhr.addEventListener('error', function() {
+        updateUploadProgress(100, 'Ошибка при загрузке файлов');
+        alert('Ошибка при загрузке файлов');
+    });
+    
+    xhr.open('POST', `/advertisements/{{ $advertisement->id }}/media`);
+    xhr.setRequestHeader('X-CSRF-TOKEN', csrfToken);
+    xhr.send(formData);
+}
+
+// Обработчик для кнопки отмены загрузки
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelUploadBtn = document.getElementById('cancelUploadBtn');
+    if (cancelUploadBtn) {
+        cancelUploadBtn.addEventListener('click', function() {
+            hideUploadProgress();
+        });
+    }
+});
 </script>
+
+<!-- Модальное окно для загрузки медиафайлов -->
+<div class="modal" id="mediaUploadModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Добавить медиафайлы</h3>
+            <button class="modal-close" onclick="closeMediaUploadModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="media_files">Выберите файлы:</label>
+                <input type="file" id="media_files" name="media_files[]" multiple accept="image/*,video/*" class="form-control">
+                <small class="form-text text-muted">
+                    Поддерживаемые форматы: JPG, PNG, GIF, MP4, MOV, AVI. Максимальный размер файла: 50 МБ.
+                </small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeMediaUploadModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="uploadMediaFiles()">Загрузить</button>
+        </div>
+    </div>
+</div>
+
+<!-- Оверлей загрузки файлов -->
+<div class="upload-overlay" id="uploadOverlay">
+    <div class="upload-progress-container">
+        <div class="upload-progress-header">
+            <h3 class="upload-progress-title">
+                <span class="upload-spinner" id="uploadSpinner"></span>
+                Загрузка медиафайлов
+            </h3>
+            <p class="upload-progress-subtitle">Пожалуйста, дождитесь завершения загрузки файлов</p>
+        </div>
+        
+        <div class="upload-progress-bar-container">
+            <div class="upload-progress-bar" id="uploadProgressBar"></div>
+        </div>
+        
+        <div class="upload-progress-text" id="uploadProgressText">
+            Подготовка к загрузке...
+        </div>
+        
+        <div class="upload-progress-details" id="uploadProgressDetails" style="display: none;">
+            <div class="upload-progress-file">
+                <span class="upload-progress-file-name">Файл 1</span>
+                <span class="upload-progress-file-status">Загружается...</span>
+            </div>
+        </div>
+        
+        <div class="upload-progress-actions" id="uploadProgressActions" style="display: none;">
+            <button class="upload-progress-btn secondary" id="cancelUploadBtn">Отмена</button>
+            <button class="upload-progress-btn primary" id="continueBtn" style="display: none;">Продолжить</button>
+        </div>
+    </div>
+</div>
 
 @endsection 

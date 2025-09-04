@@ -95,7 +95,7 @@ class CompanyController extends Controller
             $query->where('regional_user_id', request('regional_id'));
         }
 
-        $companies = $query->orderBy('created_at', 'desc')->paginate(20);
+        $companies = $query->orderBy('id', 'desc')->paginate(20);
 
         // Данные для фильтров
         $filterData = [
@@ -158,6 +158,7 @@ class CompanyController extends Controller
             'warehouse_id' => 'required|exists:warehouses,id',
             'source_id' => 'required|exists:sources,id',
             'region_id' => 'required|exists:users,id',
+            'region' => 'required|exists:regions,id',
             'inn' => 'nullable|string',
             'name' => 'required|string',
             'addresses' => 'required|array',
@@ -182,7 +183,7 @@ class CompanyController extends Controller
             'common_info' => 'required|string',
         ]);
 
-        // Получаем регион из выбранного склада
+        // Проверяем, что выбранный регион принадлежит выбранному складу
         $warehouse = Warehouses::where('active', true)->with('regions')->find($validated['warehouse_id']);
         if (!$warehouse || !$warehouse->regions->count()) {
             return redirect()->back()
@@ -190,18 +191,23 @@ class CompanyController extends Controller
                 ->withErrors(['warehouse_id' => 'Выбранный склад не активен или не прикреплен к региону']);
         }
         
-        $region = $warehouse->regions->first();
-        $validated['region'] = $region->id;
+        // Проверяем, что выбранный регион принадлежит складу
+        $selectedRegion = $warehouse->regions->where('id', $validated['region'])->first();
+        if (!$selectedRegion) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['region' => 'Выбранный регион не принадлежит выбранному складу']);
+        }
 
-        // Проверяем, что регион склада доступен пользователю
+        // Проверяем, что регион доступен пользователю
         $userRegions = $this->getUserRegions()->pluck('id')->toArray();
         if (!empty($userRegions) && !in_array($validated['region'], $userRegions)) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['warehouse_id' => 'Регион выбранного склада недоступен для вашего пользователя']);
+                ->withErrors(['region' => 'Выбранный регион недоступен для вашего пользователя']);
         }
 
-        // Проверяем, что выбранный региональный представитель прикреплен к региону склада
+        // Проверяем, что выбранный региональный представитель прикреплен к выбранному региону
         $regional = User::where('id', $validated['region_id'])
             ->where('role_id', 3)
             ->where('active', true)
@@ -213,7 +219,7 @@ class CompanyController extends Controller
         if (!$regional) {
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['region_id' => 'Выбранный региональный представитель не прикреплен к региону выбранного склада']);
+                ->withErrors(['region_id' => 'Выбранный региональный представитель не прикреплен к выбранному региону']);
         }
 
         try {
@@ -536,9 +542,9 @@ class CompanyController extends Controller
     }
 
     /**
-     * Получает региональных представителей для выбранного склада
+     * Получает региональных представителей для выбранного склада и региона
      */
-    public function getRegionalsByWarehouse($warehouseId)
+    public function getRegionalsByWarehouse($warehouseId, $regionId = null)
     {
         // Проверяем, что склад активен и доступен текущему пользователю
         $userRegions = $this->getUserRegions();
@@ -554,7 +560,16 @@ class CompanyController extends Controller
             return response()->json([]);
         }
         
-        $region = $warehouse->regions->first();
+        // Если регион не указан, берем первый доступный
+        if (!$regionId) {
+            $region = $warehouse->regions->first();
+        } else {
+            // Проверяем, что указанный регион принадлежит складу
+            $region = $warehouse->regions->where('id', $regionId)->first();
+            if (!$region) {
+                return response()->json([]);
+            }
+        }
         
         $regionals = User::where('role_id', 3)
             ->where('active', true)
@@ -567,9 +582,9 @@ class CompanyController extends Controller
     }
 
     /**
-     * Получает информацию о регионе склада
+     * Получает регионы склада
      */
-    public function getWarehouseRegion($warehouseId)
+    public function getWarehouseRegions($warehouseId)
     {
         // Проверяем, что склад активен и доступен текущему пользователю
         $userRegions = $this->getUserRegions();
@@ -582,16 +597,18 @@ class CompanyController extends Controller
             ->find($warehouseId);
         
         if (!$warehouse || !$warehouse->regions->count()) {
-            return response()->json(['region' => null]);
+            return response()->json(['regions' => []]);
         }
         
-        $region = $warehouse->regions->first();
-        
-        return response()->json([
-            'region' => [
+        $regions = $warehouse->regions->map(function($region) {
+            return [
                 'id' => $region->id,
                 'name' => $region->name
-            ]
+            ];
+        });
+        
+        return response()->json([
+            'regions' => $regions
         ]);
     }
 

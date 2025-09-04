@@ -114,7 +114,7 @@ class AdvertisementController extends Controller
             });
         }
         
-        $advertisements = $advertisementsQuery->paginate(20)->withQueryString();
+        $advertisements = $advertisementsQuery->orderBy('id', 'desc')->paginate(20)->withQueryString();
 
         // Получаем данные для фильтров с учетом прав доступа
         $filterData = $this->getFilterData($user, $currentUserId);
@@ -629,6 +629,124 @@ class AdvertisementController extends Controller
         }
 
         return response()->json(['success' => false], 404);
+    }
+
+    public function uploadMedia(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'media_files.*' => 'required|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
+        ]);
+
+        try {
+            $uploadedFiles = [];
+
+            if ($request->hasFile('media_files')) {
+                $existingMediaCount = $advertisement->media()->count();
+                $sortOrder = $existingMediaCount;
+
+                foreach ($request->file('media_files') as $file) {
+                    if ($file->isValid()) {
+                        // Определяем тип файла
+                        $mimeType = $file->getMimeType();
+                        $fileType = $this->getFileType($mimeType);
+
+                        // Генерируем уникальное имя файла
+                        $fileName = $this->generateUniqueFileName($file);
+
+                        // Сохраняем файл в папку advertisements
+                        $filePath = $file->storeAs('advertisements', $fileName, 'public');
+
+                        // Создаем запись в базе данных
+                        $media = AdvertisementMedia::create([
+                            'advertisement_id' => $advertisement->id,
+                            'file_name' => $file->getClientOriginalName(),
+                            'file_path' => $filePath,
+                            'file_type' => $fileType,
+                            'mime_type' => $mimeType,
+                            'file_size' => $file->getSize(),
+                            'sort_order' => $sortOrder++,
+                            'is_selected_from_product' => false,
+                        ]);
+
+                        $uploadedFiles[] = $media;
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Медиафайлы успешно загружены',
+                'files' => $uploadedFiles
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при загрузке медиафайлов: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteMediaById(Advertisement $advertisement, $mediaId)
+    {
+        $media = AdvertisementMedia::where('id', $mediaId)
+                                  ->where('advertisement_id', $advertisement->id)
+                                  ->first();
+
+        if (!$media) {
+            return response()->json(['success' => false, 'message' => 'Медиафайл не найден'], 404);
+        }
+
+        try {
+            // Удаляем файл с диска только если это не медиафайл из товара
+            if (!$media->is_selected_from_product && Storage::disk('public')->exists($media->file_path)) {
+                Storage::disk('public')->delete($media->file_path);
+            }
+
+            $media->delete();
+
+            return response()->json(['success' => true, 'message' => 'Медиафайл успешно удален']);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении медиафайла: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function updateMainImage(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'media_id' => 'required|exists:advertisement_media,id'
+        ]);
+
+        try {
+            $media = AdvertisementMedia::where('id', $request->media_id)
+                                      ->where('advertisement_id', $advertisement->id)
+                                      ->first();
+
+            if (!$media) {
+                return response()->json(['success' => false, 'message' => 'Медиафайл не найден'], 404);
+            }
+
+            // Проверяем, что это изображение
+            if ($media->file_type !== 'image') {
+                return response()->json(['success' => false, 'message' => 'Главным изображением может быть только изображение'], 400);
+            }
+
+            // Обновляем главное изображение
+            $advertisement->update(['main_img' => $media->id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Главное изображение успешно обновлено',
+                'main_image_url' => asset('storage/' . $media->file_path)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении главного изображения: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function updateComment(Request $request, Advertisement $advertisement)

@@ -309,6 +309,43 @@
                             @endif
                             <div class="supplier-region">Регион: {{ $product->warehouse->name ?? 'Не указан' }}</div>
                             
+                            @if($product->owner)
+                            <div class="responsible-item">
+                                <div class="responsible-label">Менеджер:</div>
+                                <div class="responsible-name">{{ $product->owner->name }}</div>
+                                <div class="responsible-actions">
+                                    <button class="action-btn contact-card-btn" title="Просмотр" 
+                                        data-id="{{ $product->owner->id }}"
+                                        data-name="{{ $product->owner->name }}"
+                                        data-email="{{ $product->owner->email }}"
+                                        data-phone="{{ $product->owner->phone }}"
+                                        data-role="{{ $product->owner->role->name ?? 'Роль не указана' }}"
+                                        data-telegram="{{ $product->owner->has_telegram ? 'true' : 'false' }}"
+                                        data-whatsapp="{{ $product->owner->has_whatsapp ? 'true' : 'false' }}">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                            <circle cx="12" cy="12" r="3"></circle>
+                                        </svg>
+                                    </button>
+                                    @if($product->owner->has_telegram)
+                                    <a href="https://t.me/{{ $product->owner->phone }}" target="_blank" class="action-btn" title="Telegram">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M22 2L11 13"></path>
+                                            <path d="M22 2L15 22L11 13L2 9L22 2Z"></path>
+                                        </svg>
+                                    </a>
+                                    @endif
+                                    @if($product->owner->has_whatsapp)
+                                    <a href="https://wa.me/{{ $product->owner->phone }}" target="_blank" class="action-btn" title="WhatsApp">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                        </svg>
+                                    </a>
+                                    @endif
+                                </div>
+                            </div>
+                            @endif
+                            
                             @if($product->regional)
                             <div class="responsible-item">
                                 <div class="responsible-label">Регионал:</div>
@@ -405,12 +442,25 @@
                     <td class="action-cell">
                         <div class="action-info">
                             @if($product->actions->isNotEmpty())
-                                @php $lastAction = $product->actions->first(); @endphp
+                                @php 
+                                    $lastAction = $product->actions->first();
+                                    $isOverdue = $lastAction->expired_at->isPast();
+                                @endphp
                                 <div class="action-date">{{ $lastAction->expired_at->format('d.m.Y') }}</div>
                                 <div class="action-text">{{ $lastAction->action }}</div>
+                                <div class="action-status">
+                                    @if($isOverdue)
+                                        <span class="status-indicator overdue">Просрочено</span>
+                                    @else
+                                        <span class="status-indicator pending">Ожидает выполнения</span>
+                                    @endif
+                                </div>
                             @else
                                 <div class="action-date">{{ now()->format('d.m.Y') }}</div>
                                 <div class="action-text">Нет активных действий</div>
+                                <div class="action-status">
+                                    <span class="status-indicator no-action">Действия не заданы</span>
+                                </div>
                             @endif
                         </div>
                     </td>
@@ -458,6 +508,16 @@
                             @if($product->advertisements->isNotEmpty())
                                 @php $adWithPrice = $product->advertisements->where('adv_price', '!=', null)->where('adv_price', '>', 0)->first(); @endphp
                                 @if($adWithPrice)
+                                    <!-- Ссылка на объявление -->
+                                    <div class="advertisement-link">
+                                        <a href="{{ route('advertisements.show', $adWithPrice->id) }}" class="ad-link" title="Перейти к объявлению">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                            </svg>
+                                            Объявление
+                                        </a>
+                                    </div>
                                     <div class="price-value">{{ number_format($adWithPrice->adv_price, 0, ',', ' ') }} ₽</div>
                                 @else
                                     <div class="price-value">Не указана</div>
@@ -606,18 +666,20 @@ function setupSearchInput() {
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function() {
-                // Если поле поиска не пустое, отправляем форму
-                if (searchInput.value.trim() !== '') {
+                // Поиск начинается только после введения 3х символов
+                if (searchInput.value.trim().length >= 3) {
                     searchInput.closest('form').submit();
                 }
-            }, 500); // Задержка 500мс после остановки ввода
+            }, 600); // Задержка 600мс после остановки ввода
         });
         
-        // При нажатии Enter сразу отправляем форму
+        // При нажатии Enter сразу отправляем форму (если есть минимум 3 символа)
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 clearTimeout(searchTimeout);
-                searchInput.closest('form').submit();
+                if (searchInput.value.trim().length >= 3) {
+                    searchInput.closest('form').submit();
+                }
             }
         });
     }
@@ -1125,6 +1187,7 @@ function closeCompanyCard() {
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1365,6 +1428,35 @@ function closeCompanyCard() {
     text-align: center;
 }
 
+/* Стили для ссылки на объявление */
+.advertisement-link {
+    margin-bottom: 4px;
+}
+
+.ad-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #007bff;
+    text-decoration: none;
+    padding: 4px 8px;
+    background: #e3f2fd;
+    border-radius: 4px;
+    border: 1px solid #bbdefb;
+    transition: all 0.2s ease;
+}
+
+.ad-link:hover {
+    background: #bbdefb;
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.ad-link svg {
+    flex-shrink: 0;
+}
+
 .no-price {
     font-size: 12px;
     color: #6c757d;
@@ -1437,7 +1529,39 @@ function closeCompanyCard() {
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ffeaa7;
+    margin-bottom: 6px;
 }
+
+.action-status {
+    margin-top: 4px;
+}
+
+.status-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-indicator.overdue {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-indicator.no-action {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Стили для статусов с динамическими цветами применяются через inline стили в HTML */
 
 /* Стили для ячейки статуса */
 .status-cell {

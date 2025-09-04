@@ -104,6 +104,9 @@ class EventController extends Controller
         // Определяем роли: 1 - Администратор, 2 - Менеджер, 3 - Региональный представитель
         $isAdmin = $user->role_id == 1;
         
+        // Получаем список пользователей для фильтра (только для администраторов)
+        $users = $isAdmin ? User::orderBy('name')->get() : collect();
+        
         // Получаем активные задачи (expired_at > now и status = 0)
         $productActionsQuery = ProductAction::with(['product', 'user'])
             ->where('status', 0)
@@ -122,6 +125,14 @@ class EventController extends Controller
             $productActionsQuery->where('user_id', $user->id);
             $companyActionsQuery->where('user_id', $user->id);
             $advActionsQuery->where('user_id', $user->id);
+        } else {
+            // Фильтрация по пользователю для администраторов
+            $userId = $request->get('user_id');
+            if ($userId) {
+                $productActionsQuery->where('user_id', $userId);
+                $companyActionsQuery->where('user_id', $userId);
+                $advActionsQuery->where('user_id', $userId);
+            }
         }
         
         // Получаем данные
@@ -204,7 +215,7 @@ class EventController extends Controller
             ]
         );
         
-        return view('Events.ActiveEventsBlock', compact('paginator', 'isAdmin'));
+        return view('Events.ActiveEventsBlock', compact('paginator', 'isAdmin', 'users'));
     }
 
     public function expired(Request $request)
@@ -217,6 +228,9 @@ class EventController extends Controller
         
         // Определяем роли: 1 - Администратор, 2 - Менеджер, 3 - Региональный представитель
         $isAdmin = $user->role_id == 1;
+        
+        // Получаем список пользователей для фильтра (только для администраторов)
+        $users = $isAdmin ? User::orderBy('name')->get() : collect();
         
         // Получаем просроченные задачи (expired_at < now и status = 0)
         $productActionsQuery = ProductAction::with(['product', 'user'])
@@ -236,6 +250,14 @@ class EventController extends Controller
             $productActionsQuery->where('user_id', $user->id);
             $companyActionsQuery->where('user_id', $user->id);
             $advActionsQuery->where('user_id', $user->id);
+        } else {
+            // Фильтрация по пользователю для администраторов
+            $userId = $request->get('user_id');
+            if ($userId) {
+                $productActionsQuery->where('user_id', $userId);
+                $companyActionsQuery->where('user_id', $userId);
+                $advActionsQuery->where('user_id', $userId);
+            }
         }
         
         // Получаем данные
@@ -318,7 +340,7 @@ class EventController extends Controller
             ]
         );
         
-        return view('Events.ExpiredEventsBlock', compact('paginator', 'isAdmin'));
+        return view('Events.ExpiredEventsBlock', compact('paginator', 'isAdmin', 'users'));
     }
 
     public function logs(Request $request)
@@ -331,6 +353,9 @@ class EventController extends Controller
         
         // Определяем роли: 1 - Администратор, 2 - Менеджер, 3 - Региональный представитель
         $isAdmin = $user->role_id == 1;
+        
+        // Получаем список пользователей для фильтра (только для администраторов)
+        $users = $isAdmin ? User::orderBy('name')->get() : collect();
         
         // Используем UNION для объединения всех логов в один запрос
         $productLogsQuery = ProductLog::select([
@@ -371,6 +396,14 @@ class EventController extends Controller
             $productLogsQuery->where('user_id', $user->id);
             $companyLogsQuery->where('user_id', $user->id);
             $advLogsQuery->where('user_id', $user->id);
+        } else {
+            // Фильтрация по пользователю для администраторов
+            $userId = $request->get('user_id');
+            if ($userId) {
+                $productLogsQuery->where('user_id', $userId);
+                $companyLogsQuery->where('user_id', $userId);
+                $advLogsQuery->where('user_id', $userId);
+            }
         }
         
         // Объединяем запросы
@@ -455,6 +488,6 @@ class EventController extends Controller
             ]
         );
         
-        return view('Events.LogListPage', compact('paginator', 'isAdmin'));
+        return view('Events.LogListPage', compact('paginator', 'isAdmin', 'users'));
     }
 }

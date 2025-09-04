@@ -397,11 +397,18 @@
                     <td class="action-cell">
                         <div class="action-info">
                             @if($advertisement->getLastAvailableAction())
-                                @php $lastAction = $advertisement->getLastAvailableAction(); @endphp
+                                @php 
+                                    $lastAction = $advertisement->getLastAvailableAction();
+                                    $isOverdue = $lastAction->expired_at->isPast();
+                                @endphp
                                 <div class="action-date">{{ $lastAction->expired_at->format('d.m.Y') }}</div>
                                 <div class="action-text">{{ Str::limit($lastAction->action, 80) }}</div>
                                 <div class="action-status">
-                                    <span class="status-indicator pending">Ожидает выполнения</span>
+                                    @if($isOverdue)
+                                        <span class="status-indicator overdue">Просрочено</span>
+                                    @else
+                                        <span class="status-indicator pending">Ожидает выполнения</span>
+                                    @endif
                                 </div>
                             @else
                                 <div class="action-date">{{ $advertisement->created_at->format('d.m.Y H:i') }}</div>
@@ -566,23 +573,62 @@ function setupSearchInput() {
     let searchTimeout;
     
     if (searchInput) {
+        // Обработчик ввода с задержкой
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
+            
+            // Если введено меньше 3 символов, очищаем поиск
+            if (searchInput.value.trim().length < 3 && searchInput.value.trim().length > 0) {
+                return; // Не выполняем поиск, но и не очищаем поле
+            }
+            
             searchTimeout = setTimeout(function() {
-                // Если поле поиска не пустое, отправляем форму
-                if (searchInput.value.trim() !== '') {
+                // Начинаем поиск только если введено минимум 3 символа
+                if (searchInput.value.trim().length >= 3) {
+                    searchInput.closest('form').submit();
+                } else if (searchInput.value.trim().length === 0) {
+                    // Если поле пустое, очищаем поиск
                     searchInput.closest('form').submit();
                 }
-            }, 500); // Задержка 500мс после остановки ввода
+            }, 600); // Задержка 600мс после остановки ввода
         });
         
-        // При нажатии Enter сразу отправляем форму
+        // При нажатии Enter сразу отправляем форму (если есть минимум 3 символа или поле пустое)
         searchInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 clearTimeout(searchTimeout);
-                searchInput.closest('form').submit();
+                if (searchInput.value.trim().length >= 3 || searchInput.value.trim().length === 0) {
+                    searchInput.closest('form').submit();
+                }
             }
         });
+        
+        // Добавляем визуальную подсказку о минимальном количестве символов
+        const searchGroup = searchInput.closest('.search-group');
+        if (searchGroup) {
+            let hintElement = searchGroup.querySelector('.search-hint');
+            if (!hintElement) {
+                hintElement = document.createElement('div');
+                hintElement.className = 'search-hint';
+                hintElement.textContent = 'Введите минимум 3 символа для поиска';
+                searchGroup.appendChild(hintElement);
+            }
+            
+            // Обновляем подсказку в зависимости от количества введенных символов
+            searchInput.addEventListener('input', function() {
+                const length = searchInput.value.trim().length;
+                if (length === 0) {
+                    hintElement.textContent = 'Введите минимум 3 символа для поиска';
+                    hintElement.className = 'search-hint';
+                } else if (length < 3) {
+                    hintElement.textContent = `Введите еще ${3 - length} символа для поиска`;
+                    hintElement.className = 'search-hint show-warning';
+                } else {
+                    hintElement.textContent = 'Готово к поиску';
+                    hintElement.className = 'search-hint show-success';
+                }
+            });
+        }
     }
 }
 
@@ -956,6 +1002,23 @@ function closeCompanyCard() {
     height: 16px;
 }
 
+/* Стили для подсказки поиска */
+.search-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin-top: 4px;
+    font-style: italic;
+    transition: color 0.3s ease;
+}
+
+.search-hint.show-warning {
+    color: #ffc107;
+}
+
+.search-hint.show-success {
+    color: #28a745;
+}
+
 .advertisements-table-wrapper {
     background: white;
     border-radius: 12px;
@@ -1186,6 +1249,7 @@ function closeCompanyCard() {
     line-height: 1.3;
     display: -webkit-box;
     -webkit-line-clamp: 2;
+    line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
@@ -1350,6 +1414,11 @@ function closeCompanyCard() {
 .status-indicator.pending {
     background-color: #ffc107;
     color: #212529;
+}
+
+.status-indicator.overdue {
+    background-color: #dc3545;
+    color: white;
 }
 
 .status-indicator.no-action {

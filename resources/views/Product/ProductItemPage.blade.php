@@ -39,6 +39,16 @@
                             <img id="mainImage" src="{{ asset('storage/' . $mainImage->file_path) }}" 
                                  alt="{{ $product->name }}" class="main-image" 
                                  onclick="openGallery(0)">
+                            @if($canEdit)
+                                <button class="delete-media-btn main-image-delete" onclick="deleteMedia({{ $mainImage->id }}, event)" title="Удалить медиафайл">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3,6 5,6 21,6"></polyline>
+                                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                                    </svg>
+                                </button>
+                            @endif
                         @else
                             <div class="no-image">
                                 <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -66,6 +76,16 @@
                                             <span>Видео</span>
                                         </div>
                                     @endif
+                                    @if($canEdit)
+                                        <button class="delete-media-btn" onclick="deleteMedia({{ $media->id }}, event)" title="Удалить медиафайл">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <polyline points="3,6 5,6 21,6"></polyline>
+                                                <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                                                <line x1="10" y1="11" x2="10" y2="17"></line>
+                                                <line x1="14" y1="11" x2="14" y2="17"></line>
+                                            </svg>
+                                        </button>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
@@ -82,35 +102,56 @@
                 </div>
             @endif
 
-            <!-- Кнопка скачивания медиафайлов -->
-            @if($product->mediaOrdered->count() > 0)
-                <div class="download-media-section">
-                    <div class="download-options">
-                        <button id="downloadMediaBtn" class="btn btn-primary download-media-btn" onclick="downloadAllMedia()">
+            <!-- Управление медиафайлами -->
+            <div class="media-management-section">
+                @if($canEdit)
+                    <div class="media-upload-section">
+                        <form id="mediaUploadForm" enctype="multipart/form-data" style="display: none;">
+                            @csrf
+                            <input type="file" id="media_files" name="media_files[]" multiple accept="image/*,video/*" style="display: none;">
+                        </form>
+                        <button id="uploadMediaBtn" class="btn btn-success" onclick="triggerFileUpload()">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7,10 12,15 17,10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14,2 14,8 20,8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10,9 9,9 8,9"></polyline>
                             </svg>
-                            <span class="btn-text">Скачать архив</span>
-                            <div class="loading-spinner" style="display: none;">
-                                <div class="spinner"></div>
-                            </div>
-                        </button>
-                        <button id="downloadIndividualBtn" class="btn btn-secondary download-individual-btn" onclick="showIndividualDownloadModal()">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                <polyline points="7,10 12,15 17,10"></polyline>
-                                <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
-                            <span>Скачать по одному</span>
+                            <span>Добавить фото/видео</span>
                         </button>
                     </div>
-                    <div class="download-info">
-                        <small>Для больших файлов рекомендуется использовать "Скачать по одному"</small>
+                @endif
+
+                @if($product->mediaOrdered->count() > 0)
+                    <div class="download-media-section">
+                        <div class="download-options">
+                            <button id="downloadMediaBtn" class="btn btn-primary download-media-btn" onclick="downloadAllMedia()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7,10 12,15 17,10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span class="btn-text">Скачать архив</span>
+                                <div class="loading-spinner" style="display: none;">
+                                    <div class="spinner"></div>
+                                </div>
+                            </button>
+                            <button id="downloadIndividualBtn" class="btn btn-secondary download-individual-btn" onclick="showIndividualDownloadModal()">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="7,10 12,15 17,10"></polyline>
+                                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                                </svg>
+                                <span>Скачать по одному</span>
+                            </button>
+                        </div>
+                        <div class="download-info">
+                            <small>Для больших файлов рекомендуется использовать "Скачать по одному"</small>
+                        </div>
                     </div>
-                </div>
-            @endif
+                @endif
+            </div>
 
             <!-- Блок действий и событий -->
             @if($canEdit)
@@ -283,6 +324,7 @@
                                     @endif
                                 </span>
                             </div>
+                            
                             <div class="info-item">
                                 <span class="label">Региональный:</span>
                                 <span class="value">
@@ -295,6 +337,21 @@
                                     @endif
                                 </span>
                             </div>
+
+                            @if($product->activeAdvertisement)
+                                <div class="info-item">
+                                    <span class="label">Объявление:</span>
+                                    <span class="value">
+                                        <a href="{{ route('advertisements.show', $product->activeAdvertisement) }}" class="advertisement-link">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                            </svg>
+                                            Перейти к объявлению
+                                        </a>
+                                    </span>
+                                </div>
+                            @endif
                         </div>
                     </div>
                     <div class="main-info-edit" id="main_info_edit" style="display: none;">
@@ -689,6 +746,16 @@
     <div id="galleryModal" class="gallery-modal">
         <div class="gallery-modal-content">
             <span class="gallery-close" onclick="closeGallery()">&times;</span>
+            @if($canEdit)
+                <button id="galleryDeleteBtn" class="gallery-delete-btn" onclick="deleteCurrentGalleryItem()" title="Удалить медиафайл" style="display: none;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3,6 5,6 21,6"></polyline>
+                        <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"></path>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="14" y1="11" x2="14" y2="17"></line>
+                    </svg>
+                </button>
+            @endif
             <div class="gallery-main">
                 <button class="gallery-nav gallery-prev" onclick="prevImage()">&#10094;</button>
                 <div class="gallery-item-container">
@@ -1503,6 +1570,35 @@
     opacity: 0.7;
 }
 
+.gallery-delete-btn {
+    position: absolute;
+    top: 20px;
+    right: 80px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    cursor: pointer;
+    z-index: 2001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.gallery-delete-btn:hover {
+    background: rgba(220, 53, 69, 1);
+    transform: scale(1.1);
+}
+
+.gallery-delete-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
 .gallery-main {
     position: relative;
     display: flex;
@@ -1999,6 +2095,19 @@
     .action-buttons .btn {
         width: 100%;
         text-align: center;
+    }
+    
+    .gallery-delete-btn {
+        top: 15px;
+        right: 60px;
+        width: 40px;
+        height: 40px;
+    }
+    
+    .gallery-close {
+        top: 15px;
+        right: 20px;
+        font-size: 30px;
     }
 }
 
@@ -2957,6 +3066,7 @@ document.addEventListener('DOMContentLoaded', function() {
         galleryItems = [
             @foreach($product->mediaOrdered as $media)
                 {
+                    id: {{ $media->id }},
                     url: '{{ asset('storage/' . $media->file_path) }}',
                     type: '{{ $media->file_type }}',
                     name: '{{ $media->file_name }}',
@@ -3004,6 +3114,7 @@ function showGalleryItem(index) {
     const image = document.getElementById('galleryImage');
     const video = document.getElementById('galleryVideo');
     const counter = document.getElementById('galleryCounter');
+    const deleteBtn = document.getElementById('galleryDeleteBtn');
     
     if (item.type === 'image') {
         image.src = item.url;
@@ -3016,6 +3127,11 @@ function showGalleryItem(index) {
     }
     
     counter.textContent = `${index + 1} / ${galleryItems.length}`;
+    
+    // Показываем кнопку удаления если пользователь может редактировать
+    if (deleteBtn && canEdit) {
+        deleteBtn.style.display = 'block';
+    }
 }
 
 function prevImage() {
@@ -5646,6 +5762,364 @@ window.addEventListener('click', function(event) {
     const modal = document.getElementById('individualDownloadModal');
     if (event.target === modal) {
         closeIndividualDownloadModal();
+    }
+});
+</script>
+
+<!-- Оверлей загрузки файлов -->
+<div class="upload-overlay" id="uploadOverlay">
+    <div class="upload-progress-container">
+        <div class="upload-progress-header">
+            <h3 class="upload-progress-title">
+                <span class="upload-spinner" id="uploadSpinner"></span>
+                Загрузка медиафайлов
+            </h3>
+            <p class="upload-progress-subtitle">Пожалуйста, дождитесь завершения загрузки файлов</p>
+        </div>
+        
+        <div class="upload-progress-bar-container">
+            <div class="upload-progress-bar" id="uploadProgressBar"></div>
+        </div>
+        
+        <div class="upload-progress-text" id="uploadProgressText">
+            Подготовка к загрузке...
+        </div>
+        
+        <div class="upload-progress-details" id="uploadProgressDetails" style="display: none;">
+            <div class="upload-progress-file">
+                <span class="upload-progress-file-name">Файл 1</span>
+                <span class="upload-progress-file-status">Загружается...</span>
+            </div>
+        </div>
+        
+        <div class="upload-progress-actions" id="uploadProgressActions" style="display: none;">
+            <button class="upload-progress-btn secondary" id="cancelUploadBtn">Отмена</button>
+            <button class="upload-progress-btn primary" id="continueBtn" style="display: none;">Продолжить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Переменные для загрузки файлов
+let uploadInProgress = false;
+let uploadCancelled = false;
+
+// Функции для работы с прогрессбаром загрузки
+function showUploadProgress() {
+    const overlay = document.getElementById('uploadOverlay');
+    const progressBar = document.getElementById('uploadProgressBar');
+    const progressText = document.getElementById('uploadProgressText');
+    const progressDetails = document.getElementById('uploadProgressDetails');
+    const progressActions = document.getElementById('uploadProgressActions');
+    
+    overlay.classList.add('active');
+    progressBar.style.width = '0%';
+    progressText.textContent = 'Подготовка к загрузке...';
+    progressDetails.style.display = 'none';
+    progressActions.style.display = 'none';
+    
+    uploadInProgress = true;
+    uploadCancelled = false;
+    
+    // Блокируем прокрутку страницы
+    document.body.style.overflow = 'hidden';
+}
+
+function updateUploadProgress(percent, text) {
+    const progressBar = document.getElementById('uploadProgressBar');
+    const progressText = document.getElementById('uploadProgressText');
+    
+    progressBar.style.width = percent + '%';
+    progressText.textContent = text;
+}
+
+function updateFileProgress(files) {
+    const progressDetails = document.getElementById('uploadProgressDetails');
+    const progressActions = document.getElementById('uploadProgressActions');
+    
+    progressDetails.style.display = 'block';
+    progressActions.style.display = 'flex';
+    
+    let html = '';
+    let completedFiles = 0;
+    let totalFiles = files.length;
+    
+    files.forEach((file, index) => {
+        if (file.status === 'success') {
+            completedFiles++;
+        }
+        
+        let statusClass = file.status;
+        let statusText = file.statusText;
+        
+        // Улучшенные статусы
+        switch(file.status) {
+            case 'success':
+                statusClass = 'success';
+                statusText = '✓ Загружен';
+                break;
+            case 'loading':
+                statusClass = 'loading';
+                statusText = '⏳ Загружается...';
+                break;
+            case 'error':
+                statusClass = 'error';
+                statusText = '✗ Ошибка';
+                break;
+            default:
+                statusClass = 'pending';
+                statusText = '⏸ Ожидает';
+        }
+        
+        html += `
+            <div class="upload-progress-file">
+                <span class="upload-progress-file-name" title="${file.fullName}">${file.name}</span>
+                <span class="upload-progress-file-status ${statusClass}">${statusText}</span>
+            </div>
+        `;
+    });
+    
+    // Добавляем заголовок с информацией о прогрессе
+    const progressHeader = `
+        <div class="upload-progress-file" style="background: #e3f2fd; margin: -15px -15px 10px -15px; padding: 10px 15px; border-radius: 8px 8px 0 0; font-weight: 600; color: #133E71;">
+            Загружено: ${completedFiles} из ${totalFiles} файлов
+        </div>
+    `;
+    
+    progressDetails.innerHTML = progressHeader + html;
+}
+
+function hideUploadProgress() {
+    const overlay = document.getElementById('uploadOverlay');
+    overlay.classList.remove('active');
+    document.body.style.overflow = 'auto';
+    uploadInProgress = false;
+}
+
+function showUploadSuccess() {
+    updateUploadProgress(100, 'Загрузка завершена! Перенаправление...');
+    
+    setTimeout(() => {
+        hideUploadProgress();
+        // Перезагружаем страницу для обновления медиафайлов
+        window.location.reload();
+    }, 1500);
+}
+
+function showUploadError(message) {
+    updateUploadProgress(0, `Ошибка: ${message}`);
+    
+    setTimeout(() => {
+        hideUploadProgress();
+    }, 3000);
+}
+
+// Функция для запуска загрузки файлов
+function triggerFileUpload() {
+    const fileInput = document.getElementById('media_files');
+    fileInput.click();
+}
+
+// Обработчик выбора файлов
+document.getElementById('media_files').addEventListener('change', function(e) {
+    const files = Array.from(e.target.files);
+    
+    if (files.length === 0) {
+        return;
+    }
+    
+    // Показываем прогрессбар и начинаем загрузку
+    showUploadProgress();
+    uploadFilesWithProgress(files);
+});
+
+// Функция для загрузки файлов с прогрессбаром
+function uploadFilesWithProgress(files) {
+    const formData = new FormData();
+    
+    // Добавляем файлы в FormData
+    files.forEach(file => {
+        formData.append('media_files[]', file);
+    });
+    
+    // Подготавливаем данные о файлах для отображения прогресса
+    const fileProgressData = files.map(file => ({
+        name: file.name.length > 30 ? file.name.substring(0, 27) + '...' : file.name,
+        fullName: file.name,
+        status: 'pending',
+        statusText: 'Ожидает загрузки',
+        size: file.size
+    }));
+    
+    updateFileProgress(fileProgressData);
+    
+    // Создаем XMLHttpRequest для отслеживания прогресса
+    const xhr = new XMLHttpRequest();
+    
+    xhr.upload.addEventListener('progress', function(e) {
+        if (e.lengthComputable) {
+            const percentComplete = Math.round((e.loaded / e.total) * 100);
+            updateUploadProgress(percentComplete, `Загрузка файлов: ${percentComplete}%`);
+            
+            // Более точное обновление статуса файлов
+            const totalSize = e.total;
+            const loadedSize = e.loaded;
+            const filesPerPercent = files.length / 100;
+            const currentFileIndex = Math.floor(percentComplete * filesPerPercent);
+            
+            fileProgressData.forEach((file, index) => {
+                if (index < currentFileIndex) {
+                    file.status = 'success';
+                    file.statusText = '✓ Загружен';
+                } else if (index === currentFileIndex) {
+                    file.status = 'loading';
+                    file.statusText = '⏳ Загружается...';
+                } else {
+                    file.status = 'pending';
+                    file.statusText = '⏸ Ожидает';
+                }
+            });
+            
+            updateFileProgress(fileProgressData);
+        }
+    });
+    
+    xhr.addEventListener('load', function() {
+        if (xhr.status === 200) {
+            try {
+                const response = JSON.parse(xhr.responseText);
+                if (response.success) {
+                    showUploadSuccess();
+                } else {
+                    showUploadError(response.message || 'Ошибка при загрузке файлов');
+                }
+            } catch (e) {
+                showUploadError('Ошибка при обработке ответа сервера');
+            }
+        } else {
+            showUploadError(`Ошибка сервера: ${xhr.status}`);
+        }
+    });
+    
+    xhr.addEventListener('error', function() {
+        showUploadError('Ошибка сети при загрузке файлов');
+    });
+    
+    xhr.addEventListener('abort', function() {
+        hideUploadProgress();
+    });
+    
+    // Отправляем запрос
+    xhr.open('POST', '{{ route("products.upload-media", $product->id) }}');
+    xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').getAttribute('content'));
+    xhr.send(formData);
+}
+
+// Функция для удаления медиафайла
+function deleteMedia(mediaId, event) {
+    if (event) {
+        event.stopPropagation();
+    }
+    
+    if (!confirm('Вы уверены, что хотите удалить этот медиафайл? Если он используется в объявлениях, он будет удален и оттуда.')) {
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const deleteBtn = event.target.closest('.delete-media-btn');
+    const originalContent = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<div class="spinner"></div>';
+    deleteBtn.disabled = true;
+    
+    fetch(`{{ route('products.delete-media', [$product->id, '']) }}/${mediaId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Перезагружаем страницу для обновления медиафайлов
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification(data.message || 'Ошибка при удалении медиафайла', 'error');
+            // Восстанавливаем кнопку
+            deleteBtn.innerHTML = originalContent;
+            deleteBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при удалении медиафайла', 'error');
+        // Восстанавливаем кнопку
+        deleteBtn.innerHTML = originalContent;
+        deleteBtn.disabled = false;
+    });
+}
+
+// Функция для удаления текущего элемента галереи
+function deleteCurrentGalleryItem() {
+    if (galleryItems.length === 0 || currentGalleryIndex < 0 || currentGalleryIndex >= galleryItems.length) {
+        return;
+    }
+    
+    const currentItem = galleryItems[currentGalleryIndex];
+    const mediaId = currentItem.id;
+    
+    if (!confirm('Вы уверены, что хотите удалить этот медиафайл? Если он используется в объявлениях, он будет удален и оттуда.')) {
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const deleteBtn = document.getElementById('galleryDeleteBtn');
+    const originalContent = deleteBtn.innerHTML;
+    deleteBtn.innerHTML = '<div class="spinner"></div>';
+    deleteBtn.disabled = true;
+    
+    fetch(`{{ route('products.delete-media', [$product->id, '']) }}/${mediaId}`, {
+        method: 'DELETE',
+        headers: {
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message, 'success');
+            // Перезагружаем страницу для обновления медиафайлов
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showNotification(data.message || 'Ошибка при удалении медиафайла', 'error');
+            // Восстанавливаем кнопку
+            deleteBtn.innerHTML = originalContent;
+            deleteBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при удалении медиафайла', 'error');
+        // Восстанавливаем кнопку
+        deleteBtn.innerHTML = originalContent;
+        deleteBtn.disabled = false;
+    });
+}
+
+// Обработчик кнопки отмены загрузки
+document.addEventListener('DOMContentLoaded', function() {
+    const cancelBtn = document.getElementById('cancelUploadBtn');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            uploadCancelled = true;
+            hideUploadProgress();
+        });
     }
 });
 </script>

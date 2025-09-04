@@ -344,12 +344,25 @@
                     <td class="action-cell">
                         <div class="action-info">
                             @if($company->actions->isNotEmpty())
-                                @php $lastAction = $company->actions->first(); @endphp
+                                @php 
+                                    $lastAction = $company->actions->first();
+                                    $isOverdue = $lastAction->expired_at->isPast();
+                                @endphp
                                 <div class="action-date">{{ $lastAction->expired_at->format('d.m.Y') }}</div>
                                 <div class="action-text">{{ $lastAction->action }}</div>
+                                <div class="action-status">
+                                    @if($isOverdue)
+                                        <span class="status-indicator overdue">Просрочено</span>
+                                    @else
+                                        <span class="status-indicator pending">Ожидает выполнения</span>
+                                    @endif
+                                </div>
                             @else
                                 <div class="action-date">{{ now()->format('d.m.Y') }}</div>
                                 <div class="action-text">Нет активных действий</div>
+                                <div class="action-status">
+                                    <span class="status-indicator no-action">Действия не заданы</span>
+                                </div>
                             @endif
                         </div>
                     </td>
@@ -1159,6 +1172,36 @@
     padding: 8px;
     border-radius: 4px;
     border: 1px solid #ffeaa7;
+    margin-bottom: 6px;
+}
+
+.action-status {
+    margin-top: 4px;
+}
+
+.status-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-indicator.pending {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-indicator.overdue {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-indicator.no-action {
+    background-color: #6c757d;
+    color: white;
 }
 
 /* Стили для ячейки статуса */
@@ -1848,18 +1891,20 @@ document.addEventListener('DOMContentLoaded', function() {
             searchInput.addEventListener('input', function() {
                 clearTimeout(searchTimeout);
                 searchTimeout = setTimeout(function() {
-                    // Если поле поиска не пустое, отправляем форму
-                    if (searchInput.value.trim() !== '') {
+                    // Начинаем поиск только если введено минимум 3 символа
+                    if (searchInput.value.trim().length >= 3) {
                         searchInput.closest('form').submit();
                     }
-                }, 500); // Задержка 500мс после остановки ввода
+                }, 600); // Задержка 600мс после остановки ввода
             });
             
-            // При нажатии Enter сразу отправляем форму
+            // При нажатии Enter сразу отправляем форму (если есть минимум 3 символа)
             searchInput.addEventListener('keypress', function(e) {
                 if (e.key === 'Enter') {
                     clearTimeout(searchTimeout);
-                    searchInput.closest('form').submit();
+                    if (searchInput.value.trim().length >= 3) {
+                        searchInput.closest('form').submit();
+                    }
                 }
             });
         }

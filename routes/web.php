@@ -32,8 +32,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/company/{company}/actions', [\App\Http\Controllers\Company\CompanyController::class, 'storeAction'])->name('companies.store-action');
     Route::post('/company/{company}/actions/{actionId}/complete', [\App\Http\Controllers\Company\CompanyController::class, 'completeAction'])->name('companies.complete-action');
     Route::get('/company/next-sku/{warehouseName}', [\App\Http\Controllers\Company\CompanyController::class, 'getNextSku'])->name('companies.next-sku');
-    Route::get('/company/regionals/warehouse/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getRegionalsByWarehouse'])->name('companies.regionals-by-warehouse');
-    Route::get('/company/warehouse-region/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getWarehouseRegion'])->name('companies.warehouse-region');
+    Route::get('/company/regionals/warehouse/{warehouseId}/{regionId?}', [\App\Http\Controllers\Company\CompanyController::class, 'getRegionalsByWarehouse'])->name('companies.regionals-by-warehouse');
+    Route::get('/company/warehouse-regions/{warehouseId}', [\App\Http\Controllers\Company\CompanyController::class, 'getWarehouseRegions'])->name('companies.warehouse-regions');
     Route::get('/company/{company}/info', [\App\Http\Controllers\Company\CompanyController::class, 'getCompanyInfo'])->name('companies.info');
     Route::patch('/company/{company}/common-info', [\App\Http\Controllers\Company\CompanyController::class, 'updateCommonInfo'])->name('companies.update-common-info');
     Route::patch('/company/{company}/contact-info', [\App\Http\Controllers\Company\CompanyController::class, 'updateContactInfo'])->name('companies.update-contact-info');
@@ -64,6 +64,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('products.download-media');
     Route::get('/product/{product}/media-list', [\App\Http\Controllers\Product\ProductController::class, 'getMediaList'])->name('products.media-list');
     Route::get('/product/{product}/download-media/{mediaId}', [\App\Http\Controllers\Product\ProductController::class, 'downloadSingleMedia'])->name('products.download-single-media');
+    Route::post('/product/{product}/upload-media', [\App\Http\Controllers\Product\ProductController::class, 'uploadAdditionalMedia'])
+        ->middleware('large.file.upload')
+        ->name('products.upload-media');
+    Route::delete('/product/{product}/media/{mediaId}', [\App\Http\Controllers\Product\ProductController::class, 'deleteMedia'])->name('products.delete-media');
     
     // Маршруты для логов и действий товаров
     Route::get('/product/{product}/logs', [\App\Http\Controllers\Product\ProductController::class, 'getLogs'])->name('products.logs');
@@ -90,6 +94,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/advertisements/product/{product}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getProductMedia'])->name('advertisements.product-media');
     Route::get('/advertisements/product-statuses', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getProductStatuses'])->name('advertisements.product-statuses');
     Route::delete('/advertisements/{advertisement}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'deleteMedia'])->name('advertisements.delete-media');
+    Route::post('/advertisements/{advertisement}/media', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'uploadMedia'])
+        ->middleware('large.file.upload')
+        ->name('advertisements.upload-media');
+    Route::delete('/advertisements/{advertisement}/media/{mediaId}', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'deleteMediaById'])->name('advertisements.delete-media-by-id');
+    Route::patch('/advertisements/{advertisement}/main-image', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateMainImage'])->name('advertisements.update-main-image');
     Route::patch('/advertisements/{advertisement}/comment', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateComment'])->name('advertisements.update-comment');
     Route::patch('/advertisements/{advertisement}/payment-info', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updatePaymentInfo'])->name('advertisements.update-payment-info');
     Route::patch('/advertisements/{advertisement}/check-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCheckStatus'])->name('advertisements.update-check-status');

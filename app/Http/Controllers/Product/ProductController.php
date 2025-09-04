@@ -40,6 +40,7 @@ class ProductController extends Controller
             'company.addresses', 
             'status', 
             'warehouse.regions', 
+            'owner',
             'regional',
             'mediaOrdered',
             'check.checkStatus',
@@ -102,7 +103,7 @@ class ProductController extends Controller
             });
         }
         
-        $products = $productsQuery->paginate(20)->withQueryString();
+        $products = $productsQuery->orderBy('id', 'desc')->paginate(20)->withQueryString();
 
         // Получаем данные для фильтров с учетом прав доступа
         $filterData = $this->getFilterData($user, $currentUserId);
@@ -2122,5 +2123,224 @@ class ProductController extends Controller
         }
         
         return $fileName;
+    }
+
+    /**
+     * Загружает дополнительные медиафайлы для существующего товара
+     */
+    public function uploadAdditionalMedia(Request $request, Product $product)
+    {
+        // Проверяем права пользователя на редактирование товара
+        $user = auth()->user();
+        $canEdit = false;
+        
+        if ($user && $user->role) {
+            // Администратор может редактировать все товары
+            if ($user->role->can_view_companies === 3) {
+                $canEdit = true;
+            }
+            // Владелец товара может редактировать свои товары
+            elseif ($user->role->can_view_companies === 1 && $product->owner_id === $user->id) {
+                $canEdit = true;
+            }
+            // Региональный представитель может редактировать товары, где он назначен
+            elseif ($user->role->name === 'Региональный представитель' && $product->regional_id === $user->id) {
+                $canEdit = true;
+            }
+        }
+        
+        if (!$canEdit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У вас нет прав для редактирования этого товара'
+            ], 403);
+        }
+
+        $validator = \Validator::make($request->all(), [
+            'media_files.*' => 'required|file|mimes:jpeg,png,gif,mp4,mov,avi|max:1024000', // 1000MB max per file
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка валидации',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Дополнительная проверка общего размера файлов
+        if ($request->hasFile('media_files')) {
+            $files = $request->file('media_files');
+            $totalSize = 0;
+            
+            foreach ($files as $file) {
+                if ($file && $file->isValid()) {
+                    $totalSize += $file->getSize();
+                }
+            }
+            
+            // Максимальный общий размер файлов: 1000MB
+            $maxTotalSize = 1000 * 1024 * 1024; // 1000MB в байтах
+            
+            if ($totalSize > $maxTotalSize) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Общий размер файлов превышает лимит в 1000MB. Пожалуйста, загрузите файлы по частям.',
+                    'total_size' => $totalSize,
+                    'max_size' => $maxTotalSize
+                ], 413);
+            }
+        }
+
+        try {
+            // Обработка загрузки медиафайлов
+            if ($request->hasFile('media_files')) {
+                $this->handleMediaFiles($request->file('media_files'), $product);
+            }
+
+            // Создаем лог о загрузке дополнительных медиафайлов
+            $this->logAdditionalMediaUpload($product, $request->file('media_files'));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Медиафайлы успешно загружены!',
+                'redirect' => route('products.show', $product)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при загрузке дополнительных медиафайлов', [
+                'product_id' => $product->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при загрузке медиафайлов: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Удаляет медиафайл товара и связанные медиафайлы из объявлений
+     */
+    public function deleteMedia(Request $request, Product $product, $mediaId)
+    {
+        // Проверяем права пользователя на редактирование товара
+        $user = auth()->user();
+        $canEdit = false;
+        
+        if ($user && $user->role) {
+            // Администратор может редактировать все товары
+            if ($user->role->can_view_companies === 3) {
+                $canEdit = true;
+            }
+            // Владелец товара может редактировать свои товары
+            elseif ($user->role->can_view_companies === 1 && $product->owner_id === $user->id) {
+                $canEdit = true;
+            }
+            // Региональный представитель может редактировать товары, где он назначен
+            elseif ($user->role->name === 'Региональный представитель' && $product->regional_id === $user->id) {
+                $canEdit = true;
+            }
+        }
+        
+        if (!$canEdit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У вас нет прав для редактирования этого товара'
+            ], 403);
+        }
+
+        try {
+            // Находим медиафайл товара
+            $media = $product->mediaOrdered()->find($mediaId);
+            
+            if (!$media) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Медиафайл не найден'
+                ], 404);
+            }
+
+            // Находим все связанные медиафайлы в объявлениях
+            $advertisementMedia = \App\Models\AdvertisementMedia::where('product_media_id', $mediaId)->get();
+            
+            // Удаляем связанные медиафайлы из объявлений
+            foreach ($advertisementMedia as $advMedia) {
+                $advMedia->delete();
+            }
+
+            // Удаляем файл с диска
+            if (Storage::disk('public')->exists($media->file_path)) {
+                Storage::disk('public')->delete($media->file_path);
+            }
+
+            // Удаляем запись из базы данных
+            $media->delete();
+
+            // Создаем лог о удалении медиафайла
+            $this->logMediaDeletion($product, $media, $advertisementMedia->count());
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Медиафайл успешно удален',
+                'deleted_from_advertisements' => $advertisementMedia->count()
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при удалении медиафайла', [
+                'product_id' => $product->id,
+                'media_id' => $mediaId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении медиафайла: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Логирует загрузку дополнительных медиафайлов
+     */
+    private function logAdditionalMediaUpload(Product $product, $files)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $fileCount = count($files);
+        $logMessage = "Пользователь {$userName} загрузил {$fileCount} дополнительных медиафайлов";
+        
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        
+        ProductLog::create([
+            'product_id' => $product->id,
+            'user_id' => auth()->id(),
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
+    }
+
+    /**
+     * Логирует удаление медиафайла
+     */
+    private function logMediaDeletion(Product $product, ProductMedia $media, $deletedFromAdvertisementsCount)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $logMessage = "Пользователь {$userName} удалил медиафайл '{$media->file_name}'";
+        
+        if ($deletedFromAdvertisementsCount > 0) {
+            $logMessage .= " (также удален из {$deletedFromAdvertisementsCount} объявлений)";
+        }
+        
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        
+        ProductLog::create([
+            'product_id' => $product->id,
+            'user_id' => auth()->id(),
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
     }
 }

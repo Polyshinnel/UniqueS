@@ -104,9 +104,22 @@
 
             <div class="form-row">
                 <div class="form-group">
+                    <label for="region">Регион</label>
+                    <select name="region" id="region" class="form-control" required>
+                        <option value="">Сначала выберите склад</option>
+                    </select>
+                    @if(old('region'))
+                        <input type="hidden" id="old_region" value="{{ old('region') }}">
+                    @endif
+                    @error('region')
+                        <span class="error">{{ $message }}</span>
+                    @enderror
+                </div>
+
+                <div class="form-group">
                     <label for="region_id">ФИО регионала</label>
                     <select name="region_id" id="region_id" class="form-control" required>
-                        <option value="">Сначала выберите склад</option>
+                        <option value="">Сначала выберите регион</option>
                     </select>
                     @if(old('region_id'))
                         <input type="hidden" id="old_region_id" value="{{ old('region_id') }}">
@@ -114,12 +127,6 @@
                     @error('region_id')
                         <span class="error">{{ $message }}</span>
                     @enderror
-                </div>
-
-                <div class="form-group">
-                    <label for="region_display">Регион</label>
-                    <input type="text" id="region_display" class="form-control" readonly placeholder="Будет определен автоматически по складу">
-                    <input type="hidden" name="region" id="region" value="">
                 </div>
             </div>
 

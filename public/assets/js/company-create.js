@@ -56,12 +56,11 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Автоматическое формирование артикула и загрузка регионалов при выборе склада
+    // Автоматическое формирование артикула и загрузка регионов при выборе склада
     const warehouseSelect = document.getElementById('warehouse_id');
     const skuInput = document.getElementById('sku');
+    const regionSelect = document.getElementById('region');
     const regionalSelect = document.getElementById('region_id');
-    const regionDisplay = document.getElementById('region_display');
-    const regionHidden = document.getElementById('region');
 
     if (warehouseSelect) {
         warehouseSelect.addEventListener('change', function() {
@@ -70,13 +69,16 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Очищаем поля при смене склада
             if (skuInput) skuInput.value = '';
+            if (regionSelect) {
+                regionSelect.value = '';
+                regionSelect.innerHTML = '<option value="">Загрузка...</option>';
+                regionSelect.disabled = true;
+            }
             if (regionalSelect) {
                 regionalSelect.value = '';
-                regionalSelect.innerHTML = '<option value="">Загрузка...</option>';
+                regionalSelect.innerHTML = '<option value="">Сначала выберите регион</option>';
                 regionalSelect.disabled = true;
             }
-            if (regionDisplay) regionDisplay.value = '';
-            if (regionHidden) regionHidden.value = '';
             
             if (selectedOption.value) {
                 // Получаем название склада
@@ -97,30 +99,19 @@ document.addEventListener('DOMContentLoaded', function() {
                         });
                 }
                 
-                // Загружаем региональных представителей
-                if (regionalSelect) {
-                    loadRegionals(selectedWarehouseId);
-                }
-                
-                // Получаем информацию о регионе
-                if (regionDisplay && regionHidden) {
-                    fetch(`/company/warehouse-region/${selectedWarehouseId}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.region) {
-                                regionDisplay.value = data.region.name;
-                                regionHidden.value = data.region.id;
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Ошибка при получении информации о регионе:', error);
-                        });
+                // Загружаем регионы склада
+                if (regionSelect) {
+                    loadRegions(selectedWarehouseId);
                 }
             } else {
-                // Если склад не выбран, показываем сообщение
+                // Если склад не выбран, показываем сообщения
+                if (regionSelect) {
+                    regionSelect.innerHTML = '<option value="">Сначала выберите склад</option>';
+                    regionSelect.disabled = false;
+                }
                 if (regionalSelect) {
-                    regionalSelect.innerHTML = '<option value="">Сначала выберите склад</option>';
-                    regionalSelect.disabled = false;
+                    regionalSelect.innerHTML = '<option value="">Сначала выберите регион</option>';
+                    regionalSelect.disabled = true;
                 }
             }
         });
@@ -190,6 +181,31 @@ document.addEventListener('DOMContentLoaded', function() {
                             });
                     }
                 }, 1000); // Задержка в 1 секунду
+            }
+        });
+    }
+
+    // Обработчик выбора региона
+    if (regionSelect) {
+        regionSelect.addEventListener('change', function() {
+            const selectedRegionId = this.value;
+            const selectedWarehouseId = warehouseSelect ? warehouseSelect.value : null;
+            
+            // Очищаем поле региональных представителей
+            if (regionalSelect) {
+                regionalSelect.value = '';
+                regionalSelect.innerHTML = '<option value="">Загрузка...</option>';
+                regionalSelect.disabled = true;
+            }
+            
+            if (selectedRegionId && selectedWarehouseId) {
+                // Загружаем региональных представителей для выбранного региона
+                loadRegionals(selectedWarehouseId, selectedRegionId);
+            } else {
+                if (regionalSelect) {
+                    regionalSelect.innerHTML = '<option value="">Сначала выберите регион</option>';
+                    regionalSelect.disabled = true;
+                }
             }
         });
     }
@@ -403,16 +419,60 @@ document.addEventListener('DOMContentLoaded', function() {
         companyEmailsContainer.appendChild(emailBlock);
     }
 
+    // Функция для загрузки регионов склада
+    function loadRegions(warehouseId, selectedRegionId = null) {
+        const regionSelect = document.getElementById('region');
+        if (!regionSelect) return;
+        
+        regionSelect.innerHTML = '<option value="">Загрузка...</option>';
+        regionSelect.disabled = true;
+        
+        if (warehouseId) {
+            fetch(`/company/warehouse-regions/${warehouseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    regionSelect.innerHTML = '<option value="">Выберите регион</option>';
+                    regionSelect.disabled = false;
+                    
+                    if (data.regions && data.regions.length > 0) {
+                        data.regions.forEach(region => {
+                            const option = document.createElement('option');
+                            option.value = region.id;
+                            option.textContent = region.name;
+                            if (selectedRegionId && region.id == selectedRegionId) {
+                                option.selected = true;
+                            }
+                            regionSelect.appendChild(option);
+                        });
+                    } else {
+                        const option = document.createElement('option');
+                        option.value = '';
+                        option.textContent = 'Нет доступных регионов';
+                        option.disabled = true;
+                        regionSelect.appendChild(option);
+                    }
+                })
+                .catch(error => {
+                    console.error('Ошибка при получении регионов:', error);
+                    regionSelect.innerHTML = '<option value="">Ошибка загрузки данных</option>';
+                    regionSelect.disabled = true;
+                });
+        } else {
+            regionSelect.innerHTML = '<option value="">Сначала выберите склад</option>';
+            regionSelect.disabled = false;
+        }
+    }
+
     // Функция для загрузки региональных представителей
-    function loadRegionals(warehouseId, selectedRegionalId = null) {
+    function loadRegionals(warehouseId, regionId, selectedRegionalId = null) {
         const regionalSelect = document.getElementById('region_id');
         if (!regionalSelect) return;
         
         regionalSelect.innerHTML = '<option value="">Загрузка...</option>';
         regionalSelect.disabled = true;
         
-        if (warehouseId) {
-            fetch(`/company/regionals/warehouse/${warehouseId}`)
+        if (warehouseId && regionId) {
+            fetch(`/company/regionals/warehouse/${warehouseId}/${regionId}`)
                 .then(response => response.json())
                 .then(data => {
                     regionalSelect.innerHTML = '<option value="">Выберите регионала</option>';
@@ -442,8 +502,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     regionalSelect.disabled = true;
                 });
         } else {
-            regionalSelect.innerHTML = '<option value="">Сначала выберите склад</option>';
-            regionalSelect.disabled = false;
+            regionalSelect.innerHTML = '<option value="">Сначала выберите регион</option>';
+            regionalSelect.disabled = true;
         }
     }
 
@@ -452,27 +512,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // При загрузке страницы, если есть выбранный склад (например, при ошибках валидации)
     const selectedWarehouseId = warehouseSelect ? warehouseSelect.value : null;
+    const oldRegionId = document.getElementById('old_region') ? document.getElementById('old_region').value : null;
     const oldRegionalId = document.getElementById('old_region_id') ? document.getElementById('old_region_id').value : null;
     
     if (selectedWarehouseId) {
-        loadRegionals(selectedWarehouseId, oldRegionalId);
+        // Загружаем регионы склада
+        loadRegions(selectedWarehouseId, oldRegionId);
         
-        // Загружаем информацию о регионе
-        const selectedOption = warehouseSelect.options[warehouseSelect.selectedIndex];
-        const warehouseName = selectedOption.text.trim();
-        
-        fetch(`/company/warehouse-region/${selectedWarehouseId}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.region) {
-                    const regionDisplay = document.getElementById('region_display');
-                    const regionHidden = document.getElementById('region');
-                    if (regionDisplay) regionDisplay.value = data.region.name;
-                    if (regionHidden) regionHidden.value = data.region.id;
-                }
-            })
-            .catch(error => {
-                console.error('Ошибка при получении информации о регионе:', error);
-            });
+        // Если есть выбранный регион, загружаем региональных представителей
+        if (oldRegionId) {
+            loadRegionals(selectedWarehouseId, oldRegionId, oldRegionalId);
+        }
     }
 }); 

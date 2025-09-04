@@ -21,7 +21,8 @@ class GuidesWarehouses extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'region_id' => 'required|exists:regions,id',
+            'regions' => 'required|array|min:1',
+            'regions.*' => 'exists:regions,id',
             'active' => 'required|boolean'
         ]);
 
@@ -30,10 +31,13 @@ class GuidesWarehouses extends Controller
             'active' => $request->active
         ]);
 
-        WarehousesToRegions::create([
-            'warehouse_id' => $warehouse->id,
-            'region_id' => $request->region_id
-        ]);
+        // Создаем связи с регионами
+        foreach ($request->regions as $regionId) {
+            WarehousesToRegions::create([
+                'warehouse_id' => $warehouse->id,
+                'region_id' => $regionId
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Склад успешно создан');
     }
@@ -41,13 +45,17 @@ class GuidesWarehouses extends Controller
     public function edit(Warehouses $warehouse)
     {
         $warehouse->load('regions');
-        $region = $warehouse->regions->first();
         
         return response()->json([
             'id' => $warehouse->id,
             'name' => $warehouse->name,
             'active' => $warehouse->active,
-            'region_id' => $region ? $region->id : null
+            'regions' => $warehouse->regions->map(function($region) {
+                return [
+                    'id' => $region->id,
+                    'name' => $region->name
+                ];
+            })
         ]);
     }
 
@@ -55,7 +63,8 @@ class GuidesWarehouses extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'region_id' => 'required|exists:regions,id',
+            'regions' => 'required|array|min:1',
+            'regions.*' => 'exists:regions,id',
             'active' => 'required|boolean'
         ]);
 
@@ -64,12 +73,14 @@ class GuidesWarehouses extends Controller
             'active' => $request->active
         ]);
 
-        // Обновляем связь с регионом
+        // Обновляем связи с регионами
         WarehousesToRegions::where('warehouse_id', $warehouse->id)->delete();
-        WarehousesToRegions::create([
-            'warehouse_id' => $warehouse->id,
-            'region_id' => $request->region_id
-        ]);
+        foreach ($request->regions as $regionId) {
+            WarehousesToRegions::create([
+                'warehouse_id' => $warehouse->id,
+                'region_id' => $regionId
+            ]);
+        }
 
         return redirect()->back()->with('success', 'Склад успешно обновлен');
     }

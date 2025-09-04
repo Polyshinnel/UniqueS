@@ -19,13 +19,37 @@
                 Всего просроченных задач: {{ $paginator->total() }}
             </div>
             @if($isAdmin)
-                <div class="admin-badge">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
-                        <path d="M2 17l10 5 10-5"></path>
-                        <path d="M2 12l10 5 10-5"></path>
-                    </svg>
-                    Режим администратора
+                <div class="admin-controls">
+                    <div class="admin-badge">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+                            <path d="M2 17l10 5 10-5"></path>
+                            <path d="M2 12l10 5 10-5"></path>
+                        </svg>
+                        Режим администратора
+                    </div>
+                    <div class="user-filter">
+                        <form method="GET" action="{{ request()->url() }}" class="filter-form">
+                            <select name="user_id" class="user-select" onchange="this.form.submit()">
+                                <option value="">Все ответственные</option>
+                                @if(isset($users))
+                                    @foreach($users as $user)
+                                        <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
+                                            {{ $user->name }} ({{ $user->email }})
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            @if(request('user_id'))
+                                <a href="{{ request()->url() }}" class="clear-filter">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                                    </svg>
+                                </a>
+                            @endif
+                        </form>
+                    </div>
                 </div>
             @endif
         </div>
@@ -267,6 +291,12 @@
     color: #dc3545;
 }
 
+.admin-controls {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
 .admin-badge {
     display: flex;
     align-items: center;
@@ -280,6 +310,62 @@
 }
 
 .admin-badge svg {
+    width: 16px;
+    height: 16px;
+}
+
+.user-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.user-select {
+    padding: 8px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    color: #333;
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 200px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.user-select:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.clear-filter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: #dc3545;
+    color: white;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+}
+
+.clear-filter:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.4);
+}
+
+.clear-filter svg {
     width: 16px;
     height: 16px;
 }
@@ -716,6 +802,18 @@
     .task-type-badge svg {
         width: 14px;
         height: 14px;
+    }
+    
+    /* Адаптивность для админских контролов */
+    .admin-controls {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .user-select {
+        min-width: 180px;
+        font-size: 13px;
     }
     
     /* Адаптивность для пагинации */
