@@ -18,7 +18,33 @@
             <a href="{{ route('advertisements.index') }}">Объявления</a> / {{ $advertisement->title }}
         </div>
         <div class="advertisement-header-actions">
-            <h1 class="advertisement-title">{{ $advertisement->title }}</h1>
+            <div class="advertisement-title-container">
+                <h1 class="advertisement-title" id="title_content">{{ $advertisement->title }}</h1>
+                <div class="advertisement-title-edit" id="title_edit" style="display: none;">
+                    <input type="text" id="title_input" class="title-input" value="{{ $advertisement->title }}" maxlength="255">
+                    <div class="title-edit-buttons">
+                        <button type="button" class="btn btn-success btn-sm" onclick="saveTitle()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20,6 9,17 4,12"></polyline>
+                            </svg>
+                            Сохранить
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelTitleEdit()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm edit-title-btn" onclick="editTitle()" title="Редактировать заголовок">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="advertisement-status">
             <div class="status-selector">
@@ -42,18 +68,6 @@
     <div class="advertisement-content">
         <!-- Блок с медиафайлами -->
         <div class="advertisement-media-section">
-            @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
-            <div class="media-controls">
-                <button class="btn btn-primary" onclick="showMediaUploadModal()">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                        <circle cx="12" cy="13" r="3"/>
-                    </svg>
-                    Добавить медиафайлы
-                </button>
-            </div>
-            @endif
-            
             @if($advertisement->mediaOrdered->count() > 0)
                 <div class="media-gallery">
                     <div class="main-image-container">
@@ -172,6 +186,21 @@
                     <p>Медиафайлы не загружены</p>
                 </div>
             @endif
+
+             @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+             <div class="media-controls">
+                 <button class="btn btn-success btn-full-width" onclick="showMediaUploadModal()">
+                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                         <polyline points="14,2 14,8 20,8"></polyline>
+                         <line x1="16" y1="13" x2="8" y2="13"></line>
+                         <line x1="16" y1="17" x2="8" y2="17"></line>
+                         <polyline points="10,9 9,9 8,9"></polyline>
+                     </svg>
+                     <span>Добавить фото/видео</span>
+                 </button>
+             </div>
+             @endif
 
             <!-- Блок действий и событий -->
             @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
@@ -1211,11 +1240,106 @@
     margin-bottom: 10px;
 }
 
+.advertisement-title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
 .advertisement-title {
     font-size: 28px;
     color: #133E71;
     margin: 0;
     font-weight: 600;
+    flex: 1;
+}
+
+.edit-title-btn {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 6px 8px;
+    border: 1px solid #133E71;
+    color: #133E71;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.advertisement-title-container:hover .edit-title-btn {
+    opacity: 1;
+}
+
+.edit-title-btn:hover {
+    background-color: #133E71;
+    color: white;
+}
+
+.advertisement-title-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.title-input {
+    font-size: 28px;
+    color: #133E71;
+    font-weight: 600;
+    border: 2px solid #133E71;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: white;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.title-input:focus {
+    border-color: #0f2d56;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.title-edit-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.title-edit-buttons .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid;
+}
+
+.title-edit-buttons .btn-success {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.title-edit-buttons .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.title-edit-buttons .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.title-edit-buttons .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
 }
 
 .advertisement-actions {
@@ -1246,6 +1370,27 @@
     background-color: #0f2d56;
     border-color: #0f2d56;
     transform: translateY(-1px);
+}
+
+.advertisement-actions .btn-success {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.advertisement-actions .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-1px);
+}
+
+.btn-full-width {
+    width: 100%;
+    justify-content: center;
+}
+
+.media-controls {
+    margin: 10px 0;
 }
 
 .advertisement-actions .btn svg {
@@ -2309,6 +2454,21 @@
         font-size: 24px;
     }
     
+    .title-input {
+        font-size: 24px;
+    }
+    
+    .advertisement-title-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .edit-title-btn {
+        opacity: 1;
+        align-self: flex-start;
+    }
+    
     .info-grid {
         grid-template-columns: 1fr;
     }
@@ -3321,6 +3481,134 @@ function getNoCommentText(field) {
     };
     return texts[field] || 'Не указано';
 }
+
+// Функции для редактирования заголовка объявления
+let originalTitle = '';
+
+function editTitle() {
+    const content = document.getElementById('title_content');
+    const edit = document.getElementById('title_edit');
+    const input = document.getElementById('title_input');
+    
+    // Сохраняем оригинальное значение
+    originalTitle = content.textContent.trim();
+    
+    // Скрываем заголовок и показываем форму редактирования
+    content.style.display = 'none';
+    edit.style.display = 'flex';
+    
+    // Устанавливаем значение в поле ввода и фокусируемся на нем
+    input.value = originalTitle;
+    input.focus();
+    input.select();
+}
+
+function cancelTitleEdit() {
+    const content = document.getElementById('title_content');
+    const edit = document.getElementById('title_edit');
+    const input = document.getElementById('title_input');
+    
+    // Восстанавливаем оригинальное значение
+    input.value = originalTitle;
+    
+    // Скрываем форму редактирования и показываем заголовок
+    edit.style.display = 'none';
+    content.style.display = 'block';
+}
+
+function saveTitle() {
+    const input = document.getElementById('title_input');
+    const content = document.getElementById('title_content');
+    const edit = document.getElementById('title_edit');
+    const newTitle = input.value.trim();
+    
+    // Проверяем, что заголовок не пустой
+    if (!newTitle) {
+        showNotification('Заголовок не может быть пустым', 'error');
+        return;
+    }
+    
+    // Проверяем, что заголовок изменился
+    if (newTitle === originalTitle) {
+        cancelTitleEdit();
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#title_edit .btn-success');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем запрос на сервер
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/advertisements/{{ $advertisement->id }}/title`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+            title: newTitle
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем заголовок в интерфейсе
+            content.textContent = newTitle;
+            
+            // Обновляем заголовок в breadcrumb
+            const breadcrumb = document.querySelector('.breadcrumb');
+            if (breadcrumb) {
+                const breadcrumbText = breadcrumb.textContent;
+                const newBreadcrumbText = breadcrumbText.replace(originalTitle, newTitle);
+                breadcrumb.textContent = newBreadcrumbText;
+            }
+            
+            // Обновляем заголовок страницы
+            document.title = newTitle + ' - Объявление';
+            
+            // Скрываем форму редактирования и показываем заголовок
+            edit.style.display = 'none';
+            content.style.display = 'block';
+            
+            // Обновляем оригинальное значение
+            originalTitle = newTitle;
+            
+            // Показываем уведомление об успехе
+            showNotification('Заголовок успешно обновлен', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении заголовка');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении заголовка', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Обработчик клавиши Enter для сохранения заголовка
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title_input');
+    if (titleInput) {
+        titleInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveTitle();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelTitleEdit();
+            }
+        });
+    }
+});
 
 // Функции для редактирования блока покупки
 function editPurchaseBlock() {

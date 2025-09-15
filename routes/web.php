@@ -59,6 +59,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/product/{product}/characteristics', [\App\Http\Controllers\Product\ProductController::class, 'updateCharacteristics'])->name('products.update-characteristics');
     Route::patch('/product/{product}/status', [\App\Http\Controllers\Product\ProductController::class, 'updateStatus'])->name('products.update-status');
     Route::patch('/product/{product}/main-info', [\App\Http\Controllers\Product\ProductController::class, 'updateMainInfo'])->name('products.update-main-info');
+    Route::patch('/product/{product}/title', [\App\Http\Controllers\Product\ProductController::class, 'updateTitle'])->name('products.update-title');
     Route::get('/product/{product}/download-media', [\App\Http\Controllers\Product\ProductController::class, 'downloadMedia'])
         ->middleware('large.file.upload')
         ->name('products.download-media');
@@ -106,6 +107,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/advertisements/{advertisement}/removal-status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateRemovalStatus'])->name('advertisements.update-removal-status');
     Route::patch('/advertisements/{advertisement}/sale-info', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateSaleInfo'])->name('advertisements.update-sale-info');
     Route::patch('/advertisements/{advertisement}/characteristics', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCharacteristics'])->name('advertisements.update-characteristics');
+    Route::patch('/advertisements/{advertisement}/title', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateTitle'])->name('advertisements.update-title');
     Route::patch('/advertisements/{advertisement}/status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateStatus'])->name('advertisements.update-status');
     
     // Маршруты для логов и действий объявлений

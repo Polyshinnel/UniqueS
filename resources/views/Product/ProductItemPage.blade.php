@@ -21,7 +21,33 @@
             <a href="{{ route('products.index') }}">Товары</a> / {{ $product->name }}
         </div>
         <div class="product-header-actions">
-            <h1 class="product-title">{{ $product->name }}</h1>
+            <div class="product-title-container">
+                <h1 class="product-title" id="title_content">{{ $product->name }}</h1>
+                <div class="product-title-edit" id="title_edit" style="display: none;">
+                    <input type="text" id="title_input" class="title-input" value="{{ $product->name }}" maxlength="255">
+                    <div class="title-edit-buttons">
+                        <button type="button" class="btn btn-success btn-sm" onclick="saveTitle()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20,6 9,17 4,12"></polyline>
+                            </svg>
+                            Сохранить
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelTitleEdit()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-outline-primary btn-sm edit-title-btn" onclick="editTitle()" title="Редактировать название товара">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                    </svg>
+                </button>
+            </div>
         </div>
         <div class="product-sku">Артикул: {{ $product->sku }}</div>
     </div>
@@ -324,6 +350,30 @@
                                     @endif
                                 </span>
                             </div>
+                            @if($product->advertisements->isNotEmpty())
+                            <div class="info-item">
+                                <span class="label">Объявление:</span>
+                                <span class="value">
+                                    @php $adWithPrice = $product->advertisements->where('adv_price', '!=', null)->where('adv_price', '>', 0)->first(); @endphp
+                                    @if($adWithPrice)
+                                        <a href="{{ route('advertisements.show', $adWithPrice->id) }}" class="advertisement-link">
+                                            {{ $adWithPrice->title ?? 'Объявление #' . $adWithPrice->id }}
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 4px; vertical-align: middle;">
+                                                <path d="M7 17L17 7M17 7H7M17 7V17"></path>
+                                            </svg>
+                                        </a>
+                                    @else
+                                        @php $lastAd = $product->advertisements->first(); @endphp
+                                        <a href="{{ route('advertisements.show', $lastAd->id) }}" class="advertisement-link">
+                                            {{ $lastAd->title ?? 'Объявление #' . $lastAd->id }}
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 4px; vertical-align: middle;">
+                                                <path d="M7 17L17 7M17 7H7M17 7V17"></path>
+                                            </svg>
+                                        </a>
+                                    @endif
+                                </span>
+                            </div>
+                            @endif
                             
                             <div class="info-item">
                                 <span class="label">Региональный:</span>
@@ -825,11 +875,106 @@
     margin-bottom: 10px;
 }
 
+.product-title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
 .product-title {
     font-size: 28px;
     color: #133E71;
     margin: 0;
     font-weight: 600;
+    flex: 1;
+}
+
+.edit-title-btn {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 6px 8px;
+    border: 1px solid #133E71;
+    color: #133E71;
+    background: transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.product-title-container:hover .edit-title-btn {
+    opacity: 1;
+}
+
+.edit-title-btn:hover {
+    background-color: #133E71;
+    color: white;
+}
+
+.product-title-edit {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.title-input {
+    font-size: 28px;
+    color: #133E71;
+    font-weight: 600;
+    border: 2px solid #133E71;
+    border-radius: 6px;
+    padding: 8px 12px;
+    background: white;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.title-input:focus {
+    border-color: #0f2d56;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.title-edit-buttons {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-start;
+}
+
+.title-edit-buttons .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: 1px solid;
+}
+
+.title-edit-buttons .btn-success {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.title-edit-buttons .btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.title-edit-buttons .btn-secondary {
+    background-color: #6c757d;
+    color: white;
+    border-color: #6c757d;
+}
+
+.title-edit-buttons .btn-secondary:hover {
+    background-color: #5a6268;
+    border-color: #545b62;
 }
 
 .product-actions {
@@ -1497,6 +1642,33 @@
     transform: translateY(-1px);
 }
 
+/* Стили для ссылки на объявление */
+.advertisement-link {
+    color: #133E71;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    padding: 2px 4px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+}
+
+.advertisement-link:hover {
+    color: #1C5BA4;
+    background-color: #e8f0fe;
+    text-decoration: underline;
+    transform: translateY(-1px);
+}
+
+.advertisement-link svg {
+    transition: transform 0.3s ease;
+}
+
+.advertisement-link:hover svg {
+    transform: translate(2px, -2px);
+}
+
 .status-comment {
     background: #f8f9fa;
     padding: 15px;
@@ -1975,6 +2147,18 @@
     transform: translateY(-1px);
 }
 
+.btn-success {
+    background-color: #28a745;
+    color: white;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+    transform: translateY(-1px);
+}
+
 .btn-sm {
     padding: 6px 12px;
     font-size: 12px;
@@ -2031,6 +2215,21 @@
     
     .product-title {
         font-size: 24px;
+    }
+    
+    .title-input {
+        font-size: 24px;
+    }
+    
+    .product-title-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .edit-title-btn {
+        opacity: 1;
+        align-self: flex-start;
     }
     
     .info-grid {
@@ -3293,6 +3492,134 @@ function showNotification(message, type = 'info') {
         }, 300);
     }, 3000);
 }
+
+// Функции для редактирования названия товара
+let originalTitle = '';
+
+function editTitle() {
+    const content = document.getElementById('title_content');
+    const edit = document.getElementById('title_edit');
+    const input = document.getElementById('title_input');
+    
+    // Сохраняем оригинальное значение
+    originalTitle = content.textContent.trim();
+    
+    // Скрываем заголовок и показываем форму редактирования
+    content.style.display = 'none';
+    edit.style.display = 'flex';
+    
+    // Устанавливаем значение в поле ввода и фокусируемся на нем
+    input.value = originalTitle;
+    input.focus();
+    input.select();
+}
+
+function cancelTitleEdit() {
+    const content = document.getElementById('title_content');
+    const edit = document.getElementById('title_edit');
+    const input = document.getElementById('title_input');
+    
+    // Восстанавливаем оригинальное значение
+    input.value = originalTitle;
+    
+    // Скрываем форму редактирования и показываем заголовок
+    edit.style.display = 'none';
+    content.style.display = 'block';
+}
+
+function saveTitle() {
+    const input = document.getElementById('title_input');
+    const content = document.getElementById('title_content');
+    const edit = document.getElementById('title_edit');
+    const newTitle = input.value.trim();
+    
+    // Проверяем, что название не пустое
+    if (!newTitle) {
+        showNotification('Название товара не может быть пустым', 'error');
+        return;
+    }
+    
+    // Проверяем, что название изменилось
+    if (newTitle === originalTitle) {
+        cancelTitleEdit();
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#title_edit .btn-success');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем запрос на сервер
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/product/{{ $product->id }}/title`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+            name: newTitle
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем название в интерфейсе
+            content.textContent = newTitle;
+            
+            // Обновляем название в breadcrumb
+            const breadcrumb = document.querySelector('.breadcrumb');
+            if (breadcrumb) {
+                const breadcrumbText = breadcrumb.textContent;
+                const newBreadcrumbText = breadcrumbText.replace(originalTitle, newTitle);
+                breadcrumb.textContent = newBreadcrumbText;
+            }
+            
+            // Обновляем заголовок страницы
+            document.title = newTitle + ' - Товар';
+            
+            // Скрываем форму редактирования и показываем заголовок
+            edit.style.display = 'none';
+            content.style.display = 'block';
+            
+            // Обновляем оригинальное значение
+            originalTitle = newTitle;
+            
+            // Показываем уведомление об успехе
+            showNotification('Название товара успешно обновлено', 'success');
+        } else {
+            throw new Error(data.message || 'Ошибка при сохранении названия товара');
+        }
+    })
+    .catch(error => {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при сохранении названия товара', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Обработчик клавиши Enter для сохранения названия товара
+document.addEventListener('DOMContentLoaded', function() {
+    const titleInput = document.getElementById('title_input');
+    if (titleInput) {
+        titleInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveTitle();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelTitleEdit();
+            }
+        });
+    }
+});
 
 // Добавляем CSS анимации для уведомлений
 const style = document.createElement('style');

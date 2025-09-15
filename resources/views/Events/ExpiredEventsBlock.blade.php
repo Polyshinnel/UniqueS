@@ -32,8 +32,8 @@
                         <form method="GET" action="{{ request()->url() }}" class="filter-form">
                             <select name="user_id" class="user-select" onchange="this.form.submit()">
                                 <option value="">Все ответственные</option>
-                                @if(isset($users))
-                                    @foreach($users as $user)
+                                @if(isset($usersForFilter))
+                                    @foreach($usersForFilter as $user)
                                         <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>
                                             {{ $user->name }} ({{ $user->email }})
                                         </option>

@@ -32,7 +32,7 @@ class AdvertisementController extends Controller
     {
         $user = auth()->user();
         $currentUserId = auth()->id() ?? 1;
-        
+
         $advertisementsQuery = Advertisement::with([
             'category',
             'product.company.addresses',
@@ -44,7 +44,7 @@ class AdvertisementController extends Controller
             'mainImage',
             'tags'
         ]);
-        
+
         // Применяем фильтры по правам доступа (базовая фильтрация)
         if ($user && $user->role) {
             if ($user->role->name === 'Региональный представитель') {
@@ -69,7 +69,7 @@ class AdvertisementController extends Controller
                 $query->where('owner_id', $currentUserId);
             });
         }
-        
+
         // Фильтр по типу объявлений (Свои/Все) - применяется поверх прав доступа
         if ($request->filled('advertisement_type')) {
             if ($request->advertisement_type === 'own') {
@@ -81,28 +81,28 @@ class AdvertisementController extends Controller
             // По умолчанию показываем только свои объявления
             $advertisementsQuery->where('created_by', $currentUserId);
         }
-        
+
         // Применяем фильтры из запроса
         if ($request->filled('category_id')) {
             $advertisementsQuery->where('category_id', $request->category_id);
         }
-        
+
         if ($request->filled('company_id')) {
             $advertisementsQuery->whereHas('product.company', function($query) use ($request) {
                 $query->where('id', $request->company_id);
             });
         }
-        
+
         if ($request->filled('status_id')) {
             $advertisementsQuery->where('status_id', $request->status_id);
         }
-        
+
         if ($request->filled('region_id')) {
             $advertisementsQuery->whereHas('product.warehouse.regions', function($query) use ($request) {
                 $query->where('regions.id', $request->region_id);
             });
         }
-        
+
         // Поиск по названию объявления и артикулу товара
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -113,7 +113,7 @@ class AdvertisementController extends Controller
                       });
             });
         }
-        
+
         $advertisements = $advertisementsQuery->orderBy('id', 'desc')->paginate(20)->withQueryString();
 
         // Получаем данные для фильтров с учетом прав доступа
@@ -128,16 +128,16 @@ class AdvertisementController extends Controller
     private function getFilterData($user, $currentUserId)
     {
         $filterData = [];
-        
+
         // Категории - доступны всем
         $filterData['categories'] = \App\Models\ProductCategories::where('active', true)->get();
-        
+
         // Статусы объявлений - показываем все статусы
         $filterData['statuses'] = \App\Models\AdvertisementStatus::all();
-        
+
         // Поставщики (компании) - с учетом прав доступа
         $companiesQuery = \App\Models\Company::with('status');
-        
+
         if ($user && $user->role) {
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем компании, где он назначен как региональный представитель
@@ -156,12 +156,12 @@ class AdvertisementController extends Controller
             // Если пользователь не авторизован или нет роли, показываем только его компании
             $companiesQuery->where('owner_user_id', $currentUserId);
         }
-        
+
         $filterData['companies'] = $companiesQuery->get();
-        
+
         // Регионы - показываем все активные регионы
         $filterData['regions'] = \App\Models\Regions::where('active', true)->get();
-        
+
         return $filterData;
     }
 
@@ -303,7 +303,7 @@ class AdvertisementController extends Controller
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
             'main_img' => $request->main_img,
-            'status_id' => AdvertisementStatus::where('name', 'Ревизия')->first()->id,
+            'status_id' => AdvertisementStatus::where('name', 'В продаже')->first()->id,
             'created_by' => auth()->id() ?? 1, // Временно используем id=1
         ]);
 
@@ -1043,6 +1043,40 @@ class AdvertisementController extends Controller
         }
     }
 
+    public function updateTitle(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255|min:1'
+        ]);
+
+        try {
+            // Сохраняем старое значение для логирования
+            $oldTitle = $advertisement->title;
+            $newTitle = trim($request->title);
+
+            // Проверяем, что заголовок действительно изменился
+            if ($oldTitle === $newTitle) {
+                return response()->json(['success' => true, 'message' => 'Заголовок не изменился']);
+            }
+
+            // Обновляем заголовок объявления
+            $advertisement->update([
+                'title' => $newTitle
+            ]);
+
+            // Создаем запись в логе от имени системы
+            $this->logAdvertisementTitleChanges($advertisement, $oldTitle, $newTitle);
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Заголовок успешно обновлен',
+                'new_title' => $newTitle
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Ошибка при обновлении заголовка'], 500);
+        }
+    }
+
     private function formatBytes(int $bytes, int $precision = 2): string
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -1524,6 +1558,24 @@ class AdvertisementController extends Controller
     }
 
     /**
+     * Логирует изменения заголовка объявления
+     */
+    private function logAdvertisementTitleChanges(Advertisement $advertisement, $oldTitle, $newTitle)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $logMessage = "Пользователь {$userName} изменил заголовок объявления с '{$oldTitle}' на '{$newTitle}'";
+
+        $systemLogType = LogType::where('name', 'Системный')->first();
+
+        AdvLog::create([
+            'advertisement_id' => $advertisement->id,
+            'user_id' => null, // От имени системы
+            'log' => $logMessage,
+            'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
+    }
+
+    /**
      * Логирует изменения в блоке "Технические характеристики" или "Основная информация" для рекламы
      */
     private function logAdvertisementBlockChanges(Advertisement $advertisement, $field, $oldValue, $newValue)
@@ -1585,7 +1637,7 @@ class AdvertisementController extends Controller
         if (in_array($newStatus->name, $restrictedStatuses)) {
             $product = $advertisement->product;
             $productStatus = $product->status;
-            
+
             if ($productStatus && in_array($productStatus->name, ['Холд', 'Отказ'])) {
                 return response()->json([
                     'success' => false,

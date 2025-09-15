@@ -27,9 +27,8 @@ class ResizeProductImages extends Command
     /**
      * Максимальные размеры изображений
      */
-    private const MAX_WIDTH = 1600;
-    private const MAX_HEIGHT = 900;
-
+    private const MAX_WIDTH = 1900;
+    private const MAX_HEIGHT = 1080;
     /**
      * Execute the console command.
      */

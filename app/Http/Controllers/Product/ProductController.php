@@ -640,7 +640,7 @@ class ProductController extends Controller
             'removal.installStatus',
             'paymentVariants.priceType',
             'mainPaymentMethod',
-            'activeAdvertisement'
+            'advertisements.status'
         ]);
 
         // Получаем последний лог товара
@@ -1157,6 +1157,9 @@ class ProductController extends Controller
             if ($newStatus->name === 'Отказ') {
                 $this->handleProductRefuseStatus($product, auth()->user());
             }
+
+            // Обновляем статус связанных объявлений
+            $this->updateAdvertisementStatuses($product, $oldStatus, $newStatus);
 
             // Создаем запись в логе
             $commentLogType = LogType::where('name', 'Комментарий')->first();
@@ -1708,42 +1711,22 @@ class ProductController extends Controller
             'status' => false
         ]);
 
-        // 2. Находим связанные объявления для товара
-        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив', 'Холд'])->pluck('id');
+        // 2. Создаем задачи для связанных объявлений
+        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
         
         $advertisementsToUpdate = $product->advertisements()
             ->whereNotIn('status_id', $excludedAdvertisementStatuses)
             ->get();
 
-        // 3. Получаем статус "Холд" для объявлений
-        $holdAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Холд')->first();
-
-        if ($holdAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
-            // Обновляем статусы объявлений
-            $product->advertisements()
-                ->whereNotIn('status_id', $excludedAdvertisementStatuses)
-                ->update(['status_id' => $holdAdvertisementStatus->id]);
-
-            // 4. Создаем системные логи для каждого объявления
-            $systemLogType = LogType::where('name', 'Системный')->first();
-            
-            foreach ($advertisementsToUpdate as $advertisement) {
-                \App\Models\AdvLog::create([
-                    'advertisement_id' => $advertisement->id,
-                    'type_id' => $systemLogType ? $systemLogType->id : null,
-                    'log' => "В связи с переводом товара в статус Холд, объявление переводится в статус Холд.",
-                    'user_id' => null // От имени системы
-                ]);
-
-                // Создаем задачу для объявления
-                \App\Models\AdvAction::create([
-                    'advertisement_id' => $advertisement->id,
-                    'user_id' => $advertisement->created_by,
-                    'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                    'expired_at' => $expiredAt,
-                    'status' => false
-                ]);
-            }
+        // 3. Создаем задачи для объявлений
+        foreach ($advertisementsToUpdate as $advertisement) {
+            \App\Models\AdvAction::create([
+                'advertisement_id' => $advertisement->id,
+                'user_id' => $advertisement->created_by,
+                'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                'expired_at' => $expiredAt,
+                'status' => false
+            ]);
         }
     }
 
@@ -1763,42 +1746,22 @@ class ProductController extends Controller
             'status' => false
         ]);
 
-        // 2. Находим связанные объявления для товара
+        // 2. Создаем задачи для связанных объявлений
         $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
         
         $advertisementsToUpdate = $product->advertisements()
             ->whereNotIn('status_id', $excludedAdvertisementStatuses)
             ->get();
 
-        // 3. Получаем статус "Архив" для объявлений
-        $archiveAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Архив')->first();
-
-        if ($archiveAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
-            // Обновляем статусы объявлений
-            $product->advertisements()
-                ->whereNotIn('status_id', $excludedAdvertisementStatuses)
-                ->update(['status_id' => $archiveAdvertisementStatus->id]);
-
-            // 4. Создаем системные логи для каждого объявления
-            $systemLogType = LogType::where('name', 'Системный')->first();
-            
-            foreach ($advertisementsToUpdate as $advertisement) {
-                \App\Models\AdvLog::create([
-                    'advertisement_id' => $advertisement->id,
-                    'type_id' => $systemLogType ? $systemLogType->id : null,
-                    'log' => "В связи с переводом товара в статус Отказ, объявление переводится в статус Архив.",
-                    'user_id' => null // От имени системы
-                ]);
-
-                // Создаем задачу для объявления
-                \App\Models\AdvAction::create([
-                    'advertisement_id' => $advertisement->id,
-                    'user_id' => $advertisement->created_by,
-                    'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                    'expired_at' => $expiredAt,
-                    'status' => false
-                ]);
-            }
+        // 3. Создаем задачи для объявлений
+        foreach ($advertisementsToUpdate as $advertisement) {
+            \App\Models\AdvAction::create([
+                'advertisement_id' => $advertisement->id,
+                'user_id' => $advertisement->created_by,
+                'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                'expired_at' => $expiredAt,
+                'status' => false
+            ]);
         }
     }
 
@@ -1849,6 +1812,40 @@ class ProductController extends Controller
             'success' => true,
             'message' => 'Основная информация успешно обновлена'
         ]);
+    }
+
+    public function updateTitle(Request $request, Product $product)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255|min:1'
+        ]);
+
+        try {
+            // Сохраняем старое значение для логирования
+            $oldName = $product->name;
+            $newName = trim($request->name);
+
+            // Проверяем, что название действительно изменилось
+            if ($oldName === $newName) {
+                return response()->json(['success' => true, 'message' => 'Название товара не изменилось']);
+            }
+
+            // Обновляем название товара
+            $product->update([
+                'name' => $newName
+            ]);
+
+            // Создаем запись в логе от имени системы
+            $this->logProductTitleChanges($product, $oldName, $newName);
+
+            return response()->json([
+                'success' => true, 
+                'message' => 'Название товара успешно обновлено',
+                'new_name' => $newName
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Ошибка при обновлении названия товара'], 500);
+        }
     }
 
     /**
@@ -2341,6 +2338,106 @@ class ProductController extends Controller
             'user_id' => auth()->id(),
             'log' => $logMessage,
             'type_id' => $systemLogType ? $systemLogType->id : null
+        ]);
+    }
+
+    /**
+     * Обновляет статус связанных объявлений при смене статуса товара
+     */
+    private function updateAdvertisementStatuses(Product $product, $oldStatus, $newStatus)
+    {
+        // Получаем все объявления товара, исключая уже завершенные статусы
+        $excludedStatuses = ['Продано', 'Архив'];
+        $excludedStatusIds = AdvertisementStatus::whereIn('name', $excludedStatuses)->pluck('id');
+        
+        $advertisements = $product->advertisements()
+            ->whereNotIn('status_id', $excludedStatusIds)
+            ->get();
+
+        if ($advertisements->isEmpty()) {
+            return;
+        }
+
+        // Определяем новый статус для объявлений на основе статуса товара
+        $newAdvertisementStatusName = $this->getAdvertisementStatusByProductStatus($newStatus->name);
+        
+        if (!$newAdvertisementStatusName) {
+            return; // Если нет соответствующего статуса для объявления
+        }
+
+        // Получаем ID нового статуса объявления
+        $newAdvertisementStatus = AdvertisementStatus::where('name', $newAdvertisementStatusName)->first();
+        
+        if (!$newAdvertisementStatus) {
+            \Log::warning('Статус объявления не найден', [
+                'status_name' => $newAdvertisementStatusName,
+                'product_id' => $product->id
+            ]);
+            return;
+        }
+
+        // Обновляем статусы объявлений
+        foreach ($advertisements as $advertisement) {
+            $oldAdvertisementStatus = $advertisement->status;
+            
+            // Обновляем статус объявления
+            $advertisement->update(['status_id' => $newAdvertisementStatus->id]);
+            
+            // Создаем лог о смене статуса объявления
+            $this->logAdvertisementStatusChange($advertisement, $oldAdvertisementStatus, $newAdvertisementStatus, $newStatus);
+        }
+    }
+
+    /**
+     * Определяет статус объявления на основе статуса товара
+     */
+    private function getAdvertisementStatusByProductStatus($productStatusName)
+    {
+        $statusMapping = [
+            'В работе' => 'В работе',
+            'В продаже' => 'В продаже', 
+            'Резерв' => 'Резерв',
+            'Холд' => 'Холд',
+            'Продано' => 'Продано',
+            'Вторая очередь' => 'Архив',
+            'Отказ' => 'Архив'
+        ];
+
+        return $statusMapping[$productStatusName] ?? null;
+    }
+
+    /**
+     * Логирует смену статуса объявления
+     */
+    private function logAdvertisementStatusChange($advertisement, $oldStatus, $newStatus, $productStatus)
+    {
+        $systemLogType = LogType::where('name', 'Системный')->first();
+        
+        $logMessage = "Статус объявления изменен с '{$oldStatus->name}' на '{$newStatus->name}' в связи со сменой статуса связанного товара на '{$productStatus->name}'";
+        
+        AdvLog::create([
+            'advertisement_id' => $advertisement->id,
+            'type_id' => $systemLogType ? $systemLogType->id : null,
+            'log' => $logMessage,
+            'user_id' => null // От имени системы
+        ]);
+    }
+
+    /**
+     * Логирует изменения названия товара
+     */
+    private function logProductTitleChanges(Product $product, $oldName, $newName)
+    {
+        $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+        $logMessage = "Пользователь {$userName} изменил название товара с '{$oldName}' на '{$newName}'";
+
+        $systemLogType = \App\Models\LogType::where('name', 'Системный')->first();
+
+        ProductLog::create([
+            'product_id' => $product->id,
+            'type_id' => $systemLogType ? $systemLogType->id : null,
+            'log' => $logMessage,
+            'user_id' => null // От имени системы
         ]);
     }
 }
