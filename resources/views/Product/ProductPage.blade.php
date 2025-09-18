@@ -100,6 +100,47 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <!-- Фильтр по состоянию -->
+                    <div class="filter-group">
+                        <label for="state_id">Состояние:</label>
+                        <select name="state_id" id="state_id" class="form-select">
+                            <option value="">Все состояния</option>
+                            @foreach($filterData['states'] as $state)
+                                <option value="{{ $state->id }}" {{ request('state_id') == $state->id ? 'selected' : '' }}>
+                                    {{ $state->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Фильтр по доступности -->
+                    <div class="filter-group">
+                        <label for="available_id">Доступность:</label>
+                        <select name="available_id" id="available_id" class="form-select">
+                            <option value="">Вся доступность</option>
+                            @foreach($filterData['availables'] as $available)
+                                <option value="{{ $available->id }}" {{ request('available_id') == $available->id ? 'selected' : '' }}>
+                                    {{ $available->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Фильтр по ответственному (только для администраторов) -->
+                    @if(auth()->user() && auth()->user()->role && auth()->user()->role->name === 'Администратор')
+                    <div class="filter-group">
+                        <label for="responsible_id">Ответственный:</label>
+                        <select name="responsible_id" id="responsible_id" class="form-select">
+                            <option value="">Все ответственные</option>
+                            @foreach($filterData['users'] as $user)
+                                <option value="{{ $user->id }}" {{ request('responsible_id') == $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }} ({{ $user->role->name ?? 'Без роли' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
                 </div>
 
                 <div class="filters-actions">
@@ -123,7 +164,7 @@
     </div>
 
     <!-- Активные фильтры -->
-    @if(request('category_id') || request('company_id') || request('status_id') || request('region_id') || request('search'))
+    @if(request('category_id') || request('company_id') || request('status_id') || request('region_id') || request('state_id') || request('available_id') || request('responsible_id') || request('search'))
     <div class="active-filters">
         <div class="active-filters-header">
             <h4>Активные фильтры:</h4>
@@ -182,6 +223,36 @@
                 </span>
                 @endif
             @endif
+            
+            @if(request('state_id'))
+                @php $state = $filterData['states']->firstWhere('id', request('state_id')); @endphp
+                @if($state)
+                <span class="filter-tag">
+                    Состояние: {{ $state->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['state_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
+            
+            @if(request('available_id'))
+                @php $available = $filterData['availables']->firstWhere('id', request('available_id')); @endphp
+                @if($available)
+                <span class="filter-tag">
+                    Доступность: {{ $available->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['available_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
+            
+            @if(request('responsible_id'))
+                @php $responsible = $filterData['users']->firstWhere('id', request('responsible_id')); @endphp
+                @if($responsible)
+                <span class="filter-tag">
+                    Ответственный: {{ $responsible->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['responsible_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
         </div>
     </div>
     @endif
@@ -194,7 +265,7 @@
             </svg>
             Найдено товаров: <strong>{{ $products->total() }}</strong>
         </div>
-        @if(request('category_id') || request('company_id') || request('status_id') || request('region_id') || request('search'))
+        @if(request('category_id') || request('company_id') || request('status_id') || request('region_id') || request('state_id') || request('available_id') || request('responsible_id') || request('search'))
         <div class="results-filters-info">
             с примененными фильтрами
         </div>
@@ -403,6 +474,18 @@
                             <div class="char-item">
                                 <span class="char-label">Компл:</span>
                                 <span class="char-value">{{ Str::limit($product->complectation, 50) }}</span>
+                            </div>
+                            @endif
+                            @if($product->state)
+                            <div class="char-item">
+                                <span class="char-label">Состояние:</span>
+                                <span class="char-value">{{ $product->state->name }}</span>
+                            </div>
+                            @endif
+                            @if($product->available)
+                            <div class="char-item">
+                                <span class="char-label">Доступность:</span>
+                                <span class="char-value">{{ $product->available->name }}</span>
                             </div>
                             @endif
                             @if($product->check->count() > 0)

@@ -606,6 +606,33 @@
 .upload-progress-details::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
 }
+
+/* Стили для обязательных полей */
+.required {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.form-group label .required {
+    margin-left: 2px;
+}
+
+/* Стили для ошибок валидации */
+.form-control.error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+}
 </style>
 
 <div class="product-create-container">
@@ -735,15 +762,37 @@
             </div>
 
             <div class="form-row">
-                <div class="form-group">
-                    <label for="product_address">Адрес станка</label>
-                    <input type="text" name="product_address" id="product_address" class="form-control" placeholder="Будет подставлен из основного адреса поставщика">
-                </div>
+            <div class="form-group">
+                <label for="product_address">Адрес станка</label>
+                <input type="text" name="product_address" id="product_address" class="form-control" placeholder="Будет подставлен из основного адреса поставщика">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="state_id">Состояние станка</label>
+                <select name="state_id" id="state_id" class="form-control" required>
+                    <option value="">Выберите состояние</option>
+                    @foreach($states as $state)
+                        <option value="{{ $state->id }}">{{ $state->name }}</option>
+                    @endforeach
+                </select>
             </div>
 
-            <div class="step-actions">
-                <button type="button" class="btn btn-primary next-step">Следующий шаг</button>
+            <div class="form-group">
+                <label for="available_id">Доступность</label>
+                <select name="available_id" id="available_id" class="form-control" required>
+                    <option value="">Выберите доступность</option>
+                    @foreach($availables as $available)
+                        <option value="{{ $available->id }}">{{ $available->name }}</option>
+                    @endforeach
+                </select>
             </div>
+        </div>
+
+        <div class="step-actions">
+            <button type="button" class="btn btn-primary next-step">Следующий шаг</button>
+        </div>
         </div>
 
         <!-- Шаг 2: Характеристики -->
@@ -911,8 +960,8 @@
             </div>
 
             <div class="form-group">
-                <label for="main_payment_method">Основной способ оплаты</label>
-                <select name="main_payment_method" id="main_payment_method" class="form-control">
+                <label for="main_payment_method">Основной способ оплаты <span class="required">*</span></label>
+                <select name="main_payment_method" id="main_payment_method" class="form-control" required>
                     <option value="">Выберите основной способ оплаты</option>
                     @foreach($priceTypes as $priceType)
                         <option value="{{ $priceType->id }}">{{ $priceType->name }}</option>
@@ -927,7 +976,7 @@
 
             <div class="form-group">
                 <label for="payment_comment">
-                    Комментарий
+                    Комментарий <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: Поставщик продает за НАЛ, устно подтвердил любую форму безнала, условия необходимо проговорить дополнительно.">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -935,7 +984,7 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="payment_comment" id="payment_comment" class="form-control" rows="4"></textarea>
+                <textarea name="payment_comment" id="payment_comment" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="step-actions">
@@ -1266,13 +1315,98 @@ document.addEventListener('DOMContentLoaded', function() {
         const stepElement = document.getElementById(`step-${stepNumber}`);
         const requiredFields = stepElement.querySelectorAll('[required]');
 
+        // Очищаем предыдущие ошибки
+        clearValidationErrors(stepElement);
+
+        // Специальная валидация для шага 6 (Оплата)
+        if (stepNumber === 6) {
+            return validateStep6(stepElement);
+        }
+
+        // Стандартная валидация для остальных шагов
         for (let field of requiredFields) {
             if (!field.value.trim()) {
+                showFieldError(field, 'Это поле обязательно для заполнения');
                 field.focus();
                 return false;
             }
         }
         return true;
+    }
+
+    function validateStep6(stepElement) {
+        let isValid = true;
+
+        // Проверяем основной способ оплаты
+        const mainPaymentMethod = stepElement.querySelector('#main_payment_method');
+        if (!mainPaymentMethod.value.trim()) {
+            showFieldError(mainPaymentMethod, 'Выберите основной способ оплаты');
+            isValid = false;
+        }
+
+        // Проверяем комментарий
+        const paymentComment = stepElement.querySelector('#payment_comment');
+        if (!paymentComment.value.trim()) {
+            showFieldError(paymentComment, 'Комментарий обязателен для заполнения');
+            isValid = false;
+        }
+
+        // Проверяем, что выбран хотя бы один вариант оплаты
+        const paymentTypes = stepElement.querySelectorAll('input[name="payment_types[]"]:checked');
+        if (paymentTypes.length === 0) {
+            const paymentTypesContainer = stepElement.querySelector('.payment-checkboxes');
+            showContainerError(paymentTypesContainer, 'Выберите хотя бы один вариант оплаты');
+            isValid = false;
+        }
+
+        if (!isValid) {
+            // Фокусируемся на первом поле с ошибкой
+            const firstErrorField = stepElement.querySelector('.form-control.error');
+            if (firstErrorField) {
+                firstErrorField.focus();
+            }
+        }
+
+        return isValid;
+    }
+
+    function showFieldError(field, message) {
+        field.classList.add('error');
+        
+        // Создаем или обновляем сообщение об ошибке
+        let errorMessage = field.parentNode.querySelector('.error-message');
+        if (!errorMessage) {
+            errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message';
+            field.parentNode.appendChild(errorMessage);
+        }
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+    }
+
+    function showContainerError(container, message) {
+        // Создаем или обновляем сообщение об ошибке для контейнера
+        let errorMessage = container.parentNode.querySelector('.error-message');
+        if (!errorMessage) {
+            errorMessage = document.createElement('div');
+            errorMessage.className = 'error-message';
+            container.parentNode.appendChild(errorMessage);
+        }
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+    }
+
+    function clearValidationErrors(stepElement) {
+        // Убираем классы ошибок
+        const errorFields = stepElement.querySelectorAll('.form-control.error');
+        errorFields.forEach(field => field.classList.remove('error'));
+
+        // Скрываем сообщения об ошибках
+        const errorMessages = stepElement.querySelectorAll('.error-message');
+        errorMessages.forEach(message => {
+            message.classList.remove('show');
+            message.textContent = '';
+        });
     }
 
     nextButtons.forEach(button => {

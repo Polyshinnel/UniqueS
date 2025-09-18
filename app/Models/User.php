@@ -56,6 +56,12 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function warehouses()
+    {
+        return $this->belongsToMany(Warehouses::class, 'users_to_warehouses', 'user_id', 'warehouse_id')
+            ->withTimestamps();
+    }
+
     public function role()
     {
         return $this->belongsTo(RoleList::class, 'role_id');

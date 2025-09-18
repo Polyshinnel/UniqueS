@@ -1031,7 +1031,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <small class="form-text text-muted">Доступны для создания товары в статусах: В продаже, Вторая очередь</small>
+                    <small class="form-text text-muted">Доступны для создания товары в статусах: В продаже, Вторая очередь. Товары со статусом "Ревизия" недоступны для создания объявлений.</small>
                     <button type="button" id="copyFromProduct" class="btn btn-secondary mt-2" style="margin-top: 7px;">Заполнить данными товара</button>
                 </div>
 
@@ -1077,6 +1077,32 @@
                         </select>
                     </div>
                     <small class="form-text text-muted">Доступны только категории без подкатегорий</small>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="product_state">Состояние товара</label>
+                    <select name="product_state" id="product_state" class="form-control">
+                        <option value="">Выберите состояние</option>
+                        @foreach($productStates as $state)
+                            <option value="{{ $state->id }}" {{ $product && $product->state_id == $state->id ? 'selected' : '' }}>
+                                {{ $state->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="product_available">Доступность товара</label>
+                    <select name="product_available" id="product_available" class="form-control">
+                        <option value="">Выберите доступность</option>
+                        @foreach($productAvailables as $available)
+                            <option value="{{ $available->id }}" {{ $product && $product->available_id == $available->id ? 'selected' : '' }}>
+                                {{ $available->name }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
             </div>
 
@@ -1336,7 +1362,12 @@
 
 <script>
 // Данные для TreeSelect
+// eslint-disable-next-line
 const categoriesData = @json($categories);
+
+// Данные о товарах с их статусами
+// eslint-disable-next-line
+const productsData = @json($products);
 
 // Глобальные переменные для редакторов
 let technicalEditor, additionalInfoEditor, mainInfoEditor;
@@ -1380,12 +1411,27 @@ document.addEventListener('DOMContentLoaded', function() {
         const stepElement = document.getElementById(`step-${stepNumber}`);
         const requiredFields = stepElement.querySelectorAll('[required]');
 
+        // Проверяем обязательные поля
         for (let field of requiredFields) {
             if (!field.value.trim()) {
                 field.focus();
                 return false;
             }
         }
+
+        // Дополнительная проверка для первого шага - статус товара
+        if (stepNumber === 1) {
+            const productId = document.getElementById('product_id').value;
+            if (productId) {
+                // Находим товар в данных
+                const selectedProduct = productsData.find(product => product.id == productId);
+                if (selectedProduct && selectedProduct.status && selectedProduct.status.name === 'Ревизия') {
+                    showNotification('Нельзя создавать объявления для товаров со статусом "Ревизия". Пожалуйста, выберите другой товар.', 'error');
+                    return false;
+                }
+            }
+        }
+
         return true;
     }
 
@@ -1429,6 +1475,20 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('main_characteristics').value = data.main_characteristics || '';
             document.getElementById('complectation').value = data.complectation || '';
             document.getElementById('category_id').value = data.category_id || '';
+            document.getElementById('product_state').value = data.product_state || '';
+            document.getElementById('product_available').value = data.product_available || '';
+            
+            // Обновляем TreeSelect для категории
+            if (data.category_id) {
+                const categorySelect = document.getElementById('category_id');
+                const selectedOption = categorySelect.options[categorySelect.selectedIndex];
+                if (selectedOption) {
+                    // Находим функцию selectNode для категории и вызываем её
+                    if (typeof window.selectCategoryNode === 'function') {
+                        window.selectCategoryNode(data.category_id, selectedOption.textContent);
+                    }
+                }
+            }
             
             // Заполняем редакторы технических характеристик и дополнительной информации
             if (technicalEditor && data.technical_characteristics) {
@@ -2211,6 +2271,11 @@ function initializeTreeSelect(treeselectId, selectId, categories) {
         value.style.display = 'block';
         
         closeDropdown();
+    }
+    
+    // Делаем функцию selectNode глобальной для категории
+    if (treeselectId === 'category_treeselect') {
+        window.selectCategoryNode = selectNode;
     }
     
     // Разворачивание/сворачивание узла

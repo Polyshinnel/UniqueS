@@ -327,6 +327,14 @@
                                 <span class="value">{{ $product->product_address ?? 'Не указан' }}</span>
                             </div>
                             <div class="info-item">
+                                <span class="label">Состояние:</span>
+                                <span class="value">{{ $product->state->name ?? 'Не указано' }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Доступность:</span>
+                                <span class="value">{{ $product->available->name ?? 'Не указана' }}</span>
+                            </div>
+                            <div class="info-item">
                                 <span class="label">Организация:</span>
                                 <span class="value">
                                     @if($product->company)
@@ -434,6 +442,24 @@
                         <div class="form-group">
                             <label for="product_address_input">Адрес станка:</label>
                             <input type="text" id="product_address_input" class="form-control" value="{{ $product->product_address ?? '' }}" placeholder="Введите адрес станка">
+                        </div>
+                        <div class="form-group">
+                            <label for="state_id">Состояние:</label>
+                            <select id="state_id" class="form-control">
+                                <option value="">Выберите состояние</option>
+                                @foreach(\App\Models\ProductState::all() as $state)
+                                    <option value="{{ $state->id }}" {{ $product->state_id == $state->id ? 'selected' : '' }}>{{ $state->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="available_id">Доступность:</label>
+                            <select id="available_id" class="form-control">
+                                <option value="">Выберите доступность</option>
+                                @foreach(\App\Models\ProductAvailable::all() as $available)
+                                    <option value="{{ $available->id }}" {{ $product->available_id == $available->id ? 'selected' : '' }}>{{ $available->name }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                     <!-- Кнопки действий для блока основной информации -->
@@ -5304,6 +5330,8 @@ function cancelMainInfoEdit() {
     // Восстанавливаем оригинальные значения
     const categorySelect = document.getElementById('category_id');
     const productAddressInput = document.getElementById('product_address_input');
+    const stateSelect = document.getElementById('state_id');
+    const availableSelect = document.getElementById('available_id');
     
     if (categorySelect) {
         const originalCategory = categorySelect.getAttribute('data-original') || '';
@@ -5313,6 +5341,16 @@ function cancelMainInfoEdit() {
     if (productAddressInput) {
         const originalAddress = productAddressInput.getAttribute('data-original') || '';
         productAddressInput.value = originalAddress;
+    }
+
+    if (stateSelect) {
+        const originalState = stateSelect.getAttribute('data-original') || '';
+        stateSelect.value = originalState;
+    }
+
+    if (availableSelect) {
+        const originalAvailable = availableSelect.getAttribute('data-original') || '';
+        availableSelect.value = originalAvailable;
     }
     
     // Показываем контент и скрываем формы редактирования
@@ -5330,7 +5368,9 @@ function saveMainInfoBlock() {
     // Собираем данные
     const mainInfoData = {
         category_id: document.getElementById('category_id').value || null,
-        product_address: document.getElementById('product_address_input').value.trim()
+        product_address: document.getElementById('product_address_input').value.trim(),
+        state_id: document.getElementById('state_id').value || null,
+        available_id: document.getElementById('available_id').value || null
     };
     
     // Показываем индикатор загрузки
@@ -5397,12 +5437,36 @@ function updateMainInfoDisplay(mainInfoData) {
     } else {
         addressValue.textContent = 'Не указан';
     }
+
+    // Обновляем отображение состояния
+    const stateValue = document.querySelector('#main_info_content .info-item:nth-child(4) .value');
+    if (mainInfoData.state_id) {
+        const stateSelect = document.getElementById('state_id');
+        const selectedOption = stateSelect.options[stateSelect.selectedIndex];
+        const stateName = selectedOption ? selectedOption.textContent : 'Не указано';
+        stateValue.textContent = stateName;
+    } else {
+        stateValue.textContent = 'Не указано';
+    }
+
+    // Обновляем отображение доступности
+    const availableValue = document.querySelector('#main_info_content .info-item:nth-child(5) .value');
+    if (mainInfoData.available_id) {
+        const availableSelect = document.getElementById('available_id');
+        const selectedOption = availableSelect.options[availableSelect.selectedIndex];
+        const availableName = selectedOption ? selectedOption.textContent : 'Не указана';
+        availableValue.textContent = availableName;
+    } else {
+        availableValue.textContent = 'Не указана';
+    }
 }
 
 // Функции сохранения оригинальных значений
 function saveMainInfoOriginals(mainInfoData) {
     const categorySelect = document.getElementById('category_id');
     const productAddressInput = document.getElementById('product_address_input');
+    const stateSelect = document.getElementById('state_id');
+    const availableSelect = document.getElementById('available_id');
     
     if (categorySelect) {
         categorySelect.setAttribute('data-original', mainInfoData.category_id || '');
@@ -5410,6 +5474,14 @@ function saveMainInfoOriginals(mainInfoData) {
     
     if (productAddressInput) {
         productAddressInput.setAttribute('data-original', mainInfoData.product_address || '');
+    }
+
+    if (stateSelect) {
+        stateSelect.setAttribute('data-original', mainInfoData.state_id || '');
+    }
+
+    if (availableSelect) {
+        availableSelect.setAttribute('data-original', mainInfoData.available_id || '');
     }
 }
 
@@ -5699,6 +5771,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация оригинальных значений для основной информации
     const categorySelect = document.getElementById('category_id');
     const productAddressInput = document.getElementById('product_address_input');
+    const stateSelect = document.getElementById('state_id');
+    const availableSelect = document.getElementById('available_id');
     
     if (categorySelect) {
         categorySelect.setAttribute('data-original', categorySelect.value);
@@ -5706,6 +5780,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (productAddressInput) {
         productAddressInput.setAttribute('data-original', productAddressInput.value);
+    }
+
+    if (stateSelect) {
+        stateSelect.setAttribute('data-original', stateSelect.value);
+    }
+
+    if (availableSelect) {
+        availableSelect.setAttribute('data-original', availableSelect.value);
     }
 });
 </script>

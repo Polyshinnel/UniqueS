@@ -39,6 +39,16 @@ class Product extends Model
         return $this->belongsTo(ProductStatus::class, 'status_id');
     }
 
+    public function state(): BelongsTo
+    {
+        return $this->belongsTo(ProductState::class, 'state_id');
+    }
+
+    public function available(): BelongsTo
+    {
+        return $this->belongsTo(ProductAvailable::class, 'available_id');
+    }
+
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouses::class, 'warehouse_id');

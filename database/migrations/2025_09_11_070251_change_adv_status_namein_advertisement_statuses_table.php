@@ -12,7 +12,6 @@ return new class extends Migration
     public function up(): void
     {
         $updateArr = [
-            'Ревизия' => 'В работе',
             'Активное' => 'В продаже',
         ];
 
@@ -27,7 +26,6 @@ return new class extends Migration
     public function down(): void
     {
         $updateArr = [
-            'В работе' => 'Ревизия',
             'В продаже' => 'Активное',
         ];
 

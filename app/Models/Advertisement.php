@@ -25,6 +25,8 @@ class Advertisement extends Model
         'removal_data',
         'adv_price',
         'adv_price_comment',
+        'product_state',
+        'product_available',
         'main_img',
         'status_id',
         'created_by',
@@ -60,6 +62,18 @@ class Advertisement extends Model
     public function status(): BelongsTo
     {
         return $this->belongsTo(AdvertisementStatus::class, 'status_id');
+    }
+
+    // Связь с состоянием товара
+    public function productState(): BelongsTo
+    {
+        return $this->belongsTo(ProductState::class, 'product_state');
+    }
+
+    // Связь с доступностью товара
+    public function productAvailable(): BelongsTo
+    {
+        return $this->belongsTo(ProductAvailable::class, 'product_available');
     }
 
     // Связь с медиафайлами
@@ -121,6 +135,8 @@ class Advertisement extends Model
         $this->main_characteristics = $product->main_chars;
         $this->complectation = $product->complectation;
         $this->category_id = $product->category_id;
+        $this->product_state = $product->state_id;
+        $this->product_available = $product->available_id;
 
         if (!$this->title) {
             $this->title = $product->name;
@@ -169,7 +185,7 @@ class Advertisement extends Model
     // Проверить, опубликовано ли объявление
     public function isPublished(): bool
     {
-        return $this->status?->is_published === true && $this->published_at !== null;
+        return $this->status instanceof AdvertisementStatus && $this->status->is_published && $this->published_at !== null;
     }
 
     // Опубликовать объявление

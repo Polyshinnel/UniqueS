@@ -49,7 +49,7 @@
                 <tr>
                     <th>Сотрудник</th>
                     <th>Контактная информация</th>
-                    <th>Доступные регионы</th>
+                    <th>Доступные склады</th>
                     <th>Роль</th>
                     <th>Статус</th>
                     <th>Действия</th>
@@ -93,20 +93,20 @@
                         </div>
                     </td>
 
-                    <td class="regions-cell">
-                        <div class="regions-list">
-                            @if($user->regions->isNotEmpty())
-                                @foreach($user->regions as $region)
-                                <div class="region-item">
+                    <td class="warehouses-cell">
+                        <div class="warehouses-list">
+                            @if($user->warehouses->isNotEmpty())
+                                @foreach($user->warehouses as $warehouse)
+                                <div class="warehouse-item">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
                                         <circle cx="12" cy="10" r="3"></circle>
                                     </svg>
-                                    <span>{{ $region->name }}</span>
+                                    <span>{{ $warehouse->name }}</span>
                                 </div>
                                 @endforeach
                             @else
-                                <div class="no-regions">Регионы не назначены</div>
+                                <div class="no-warehouses">Склады не назначены</div>
                             @endif
                         </div>
                     </td>
@@ -206,31 +206,31 @@
                     @enderror
                 </div>
                 <div class="form-group">
-                    <label for="regions">Регионы *</label>
+                    <label for="warehouses">Склады *</label>
                     <div class="multiselect-wrapper">
-                        <div class="multiselect-input" id="regions_multiselect" tabindex="0">
-                            <span class="multiselect-placeholder">Выберите регионы *</span>
+                        <div class="multiselect-input" id="warehouses_multiselect" tabindex="0">
+                            <span class="multiselect-placeholder">Выберите склады *</span>
                             <svg class="multiselect-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="6,9 12,15 18,9"></polyline>
                             </svg>
                         </div>
-                        <div class="multiselect-dropdown" id="regions_multiselect_dropdown">
+                        <div class="multiselect-dropdown" id="warehouses_multiselect_dropdown">
                             <div class="multiselect-search">
-                                <input type="text" id="regions_multiselect_search" placeholder="Поиск регионов..." class="multiselect-search-input">
+                                <input type="text" id="warehouses_multiselect_search" placeholder="Поиск складов..." class="multiselect-search-input">
                             </div>
-                            <div class="multiselect-options" id="regions_multiselect_options">
+                            <div class="multiselect-options" id="warehouses_multiselect_options">
                                 <!-- Опции будут заполнены JavaScript -->
                             </div>
                         </div>
-                        <select name="regions[]" id="regions" class="form-control @error('regions') is-invalid @enderror" multiple style="display: none;">
-                            @foreach($regions as $region)
-                                <option value="{{ $region->id }}" {{ in_array($region->id, old('regions', [])) ? 'selected' : '' }}>
-                                    {{ $region->name }}
+                        <select name="warehouses[]" id="warehouses" class="form-control @error('warehouses') is-invalid @enderror" multiple style="display: none;">
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}" {{ in_array($warehouse->id, old('warehouses', [])) ? 'selected' : '' }}>
+                                    {{ $warehouse->name }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
-                    @error('regions')
+                    @error('warehouses')
                         <span class="error-message">{{ $message }}</span>
                     @enderror
                 </div>
@@ -373,29 +373,29 @@
                     <span class="error-message" id="edit_role_id_error" style="display: none;"></span>
                 </div>
                 <div class="form-group">
-                    <label for="edit_regions">Регионы *</label>
+                    <label for="edit_warehouses">Склады *</label>
                     <div class="multiselect-wrapper">
-                        <div class="multiselect-input" id="edit_regions_multiselect" tabindex="0">
-                            <span class="multiselect-placeholder">Выберите регионы *</span>
+                        <div class="multiselect-input" id="edit_warehouses_multiselect" tabindex="0">
+                            <span class="multiselect-placeholder">Выберите склады *</span>
                             <svg class="multiselect-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="6,9 12,15 18,9"></polyline>
                             </svg>
                         </div>
-                        <div class="multiselect-dropdown" id="edit_regions_multiselect_dropdown">
+                        <div class="multiselect-dropdown" id="edit_warehouses_multiselect_dropdown">
                             <div class="multiselect-search">
-                                <input type="text" id="edit_regions_multiselect_search" placeholder="Поиск регионов..." class="multiselect-search-input">
+                                <input type="text" id="edit_warehouses_multiselect_search" placeholder="Поиск складов..." class="multiselect-search-input">
                             </div>
-                            <div class="multiselect-options" id="edit_regions_multiselect_options">
+                            <div class="multiselect-options" id="edit_warehouses_multiselect_options">
                                 <!-- Опции будут заполнены JavaScript -->
                             </div>
                         </div>
-                        <select name="regions[]" id="edit_regions" class="form-control" multiple style="display: none;">
-                            @foreach($regions as $region)
-                                <option value="{{ $region->id }}">{{ $region->name }}</option>
+                        <select name="warehouses[]" id="edit_warehouses" class="form-control" multiple style="display: none;">
+                            @foreach($warehouses as $warehouse)
+                                <option value="{{ $warehouse->id }}">{{ $warehouse->name }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <span class="error-message" id="edit_regions_error" style="display: none;"></span>
+                    <span class="error-message" id="edit_warehouses_error" style="display: none;"></span>
                 </div>
                 <div class="form-group">
                     <label for="edit_password">Новый пароль (оставьте пустым, если не хотите менять)</label>
@@ -641,18 +641,18 @@
     transform: translateY(-1px);
 }
 
-/* Стили для ячейки регионов */
-.regions-cell {
+/* Стили для ячейки складов */
+.warehouses-cell {
     min-width: 200px;
 }
 
-.regions-list {
+.warehouses-list {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.region-item {
+.warehouse-item {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -664,12 +664,12 @@
     color: #333;
 }
 
-.region-item svg {
+.warehouse-item svg {
     color: #133E71;
     flex-shrink: 0;
 }
 
-.no-regions {
+.no-warehouses {
     color: #999;
     font-style: italic;
     font-size: 13px;
@@ -1493,8 +1493,8 @@ document.addEventListener('DOMContentLoaded', function() {
         @endif
     @endif
     
-    // Инициализация мультиселекта для регионов
-    initializeMultiSelect('regions_multiselect', 'regions', @json($regions));
+    // Инициализация мультиселекта для складов
+    initializeMultiSelect('warehouses_multiselect', 'warehouses', @json($warehouses));
 });
 
 // Функция для очистки формы
@@ -1507,7 +1507,7 @@ function resetForm() {
     errorInputs.forEach(input => input.classList.remove('is-invalid'));
     
     // Сброс мультиселекта
-    const multiselectInput = document.getElementById('regions_multiselect');
+    const multiselectInput = document.getElementById('warehouses_multiselect');
     const placeholder = multiselectInput.querySelector('.multiselect-placeholder');
     const values = multiselectInput.querySelector('.multiselect-values');
     
@@ -1517,7 +1517,7 @@ function resetForm() {
     }
     placeholder.style.display = 'block';
     // Восстанавливаем placeholder с звездочкой
-    placeholder.textContent = 'Выберите регионы *';
+    placeholder.textContent = 'Выберите склады *';
 }
 
 // Функция инициализации мультиселекта
@@ -1598,7 +1598,7 @@ function initializeMultiSelect(multiselectId, selectId, options, preSelectedValu
             values.style.display = 'none';
             // Убеждаемся, что placeholder содержит звездочку
             if (!placeholder.textContent.includes('*')) {
-                placeholder.textContent = placeholder.textContent.replace('Выберите регионы', 'Выберите регионы *');
+                placeholder.textContent = placeholder.textContent.replace('Выберите склады', 'Выберите склады *');
             }
             return;
         }
@@ -1756,13 +1756,13 @@ function openEditModal(userId) {
             // Устанавливаем action для формы
             document.getElementById('editUserForm').action = `/guide/users/${userId}`;
             
-            // Инициализируем мультиселект для регионов с выбранными значениями
-            const selectedRegions = user.regions.map(region => ({
-                id: region.id,
-                name: region.name
+            // Инициализируем мультиселект для складов с выбранными значениями
+            const selectedWarehouses = user.warehouses.map(warehouse => ({
+                id: warehouse.id,
+                name: warehouse.name
             }));
-            console.log('Выбранные регионы для редактирования:', selectedRegions);
-            initializeMultiSelect('edit_regions_multiselect', 'edit_regions', @json($regions), selectedRegions);
+            console.log('Выбранные склады для редактирования:', selectedWarehouses);
+            initializeMultiSelect('edit_warehouses_multiselect', 'edit_warehouses', @json($warehouses), selectedWarehouses);
             
             // Открываем модальное окно
             document.getElementById('editUserModal').classList.add('active');
@@ -1780,10 +1780,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const addForm = document.querySelector('#userModal form');
     if (addForm) {
         addForm.addEventListener('submit', function(e) {
-            const regionsSelect = document.getElementById('regions');
-            if (!regionsSelect || regionsSelect.selectedOptions.length === 0) {
+            const warehousesSelect = document.getElementById('warehouses');
+            if (!warehousesSelect || warehousesSelect.selectedOptions.length === 0) {
                 e.preventDefault();
-                alert('Пожалуйста, выберите хотя бы один регион');
+                alert('Пожалуйста, выберите хотя бы один склад');
                 return false;
             }
         });
@@ -1793,16 +1793,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const editForm = document.getElementById('editUserForm');
     if (editForm) {
         editForm.addEventListener('submit', function(e) {
-            const regionsSelect = document.getElementById('edit_regions');
-            console.log('Валидация регионов:', {
-                selectExists: !!regionsSelect,
-                selectedOptions: regionsSelect ? regionsSelect.selectedOptions.length : 0,
-                allOptions: regionsSelect ? regionsSelect.options.length : 0
+            const warehousesSelect = document.getElementById('edit_warehouses');
+            console.log('Валидация складов:', {
+                selectExists: !!warehousesSelect,
+                selectedOptions: warehousesSelect ? warehousesSelect.selectedOptions.length : 0,
+                allOptions: warehousesSelect ? warehousesSelect.options.length : 0
             });
             
-            if (!regionsSelect || regionsSelect.selectedOptions.length === 0) {
+            if (!warehousesSelect || warehousesSelect.selectedOptions.length === 0) {
                 e.preventDefault();
-                alert('Пожалуйста, выберите хотя бы один регион');
+                alert('Пожалуйста, выберите хотя бы один склад');
                 return false;
             }
         });
@@ -1848,7 +1848,7 @@ function resetEditForm() {
     errorInputs.forEach(input => input.classList.remove('is-invalid'));
     
     // Сброс мультиселекта
-    const multiselectInput = document.getElementById('edit_regions_multiselect');
+    const multiselectInput = document.getElementById('edit_warehouses_multiselect');
     if (multiselectInput) {
         const placeholder = multiselectInput.querySelector('.multiselect-placeholder');
         const values = multiselectInput.querySelector('.multiselect-values');
@@ -1860,7 +1860,7 @@ function resetEditForm() {
         if (placeholder) {
             placeholder.style.display = 'block';
             // Восстанавливаем placeholder с звездочкой
-            placeholder.textContent = 'Выберите регионы *';
+            placeholder.textContent = 'Выберите склады *';
         }
     }
 }

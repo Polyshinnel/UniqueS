@@ -42,7 +42,9 @@ class AdvertisementController extends Controller
             'status',
             'creator',
             'mainImage',
-            'tags'
+            'tags',
+            'productState',
+            'productAvailable'
         ]);
 
         // Применяем фильтры по правам доступа (базовая фильтрация)
@@ -101,6 +103,19 @@ class AdvertisementController extends Controller
             $advertisementsQuery->whereHas('product.warehouse.regions', function($query) use ($request) {
                 $query->where('regions.id', $request->region_id);
             });
+        }
+
+        if ($request->filled('product_state_id')) {
+            $advertisementsQuery->where('product_state', $request->product_state_id);
+        }
+
+        if ($request->filled('product_available_id')) {
+            $advertisementsQuery->where('product_available', $request->product_available_id);
+        }
+
+        // Фильтр по ответственному (только для администраторов)
+        if ($request->filled('responsible_id') && $user && $user->role && $user->role->name === 'Администратор') {
+            $advertisementsQuery->where('created_by', $request->responsible_id);
         }
 
         // Поиск по названию объявления и артикулу товара
@@ -162,6 +177,25 @@ class AdvertisementController extends Controller
         // Регионы - показываем все активные регионы
         $filterData['regions'] = \App\Models\Regions::where('active', true)->get();
 
+        // Состояния товаров - показываем все состояния
+        $filterData['productStates'] = \App\Models\ProductState::all();
+
+        // Доступности товаров - показываем все доступности
+        $filterData['productAvailables'] = \App\Models\ProductAvailable::all();
+
+        // Пользователи (ответственные) - только для администраторов, исключая региональных представителей
+        if ($user && $user->role && $user->role->name === 'Администратор') {
+            $filterData['users'] = \App\Models\User::with('role')
+                ->where('active', true)
+                ->whereHas('role', function($query) {
+                    $query->where('name', '!=', 'Региональный представитель');
+                })
+                ->orderBy('name')
+                ->get();
+        } else {
+            $filterData['users'] = collect();
+        }
+
         return $filterData;
     }
 
@@ -186,13 +220,13 @@ class AdvertisementController extends Controller
 
         $categories = ProductCategories::all();
 
-        // Получаем ID статусов "Холд", "Отказ", "В работе" и "Продано"
+        // Получаем ID статусов "Холд", "Отказ", "В работе", "Продано" и "Ревизия"
 
         $productStatusList = ProductStatus::all();
-        $interestingStatus = ['Холд', 'Отказ', 'В работе', 'Продано', 'Резерв'];
+        $interestingStatus = ['Холд', 'Отказ', 'В работе', 'Продано', 'Резерв', 'Ревизия'];
 
 
-        // Фильтруем товары, исключая статусы "Холд", "Отказ", "В работе" и "Продано"
+        // Фильтруем товары, исключая статусы "Холд", "Отказ", "В работе", "Продано" и "Ревизия"
         $productsQuery = Product::with('category', 'company', 'status')->where('owner_id', auth()->id());
 
         $excludedStatusIds = [];
@@ -214,6 +248,8 @@ class AdvertisementController extends Controller
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();
+        $productStates = \App\Models\ProductState::all();
+        $productAvailables = \App\Models\ProductAvailable::all();
 
         return view('Advertisement.AdvertisementCreatePage', compact(
             'categories',
@@ -221,7 +257,9 @@ class AdvertisementController extends Controller
             'product',
             'checkStatuses',
             'installStatuses',
-            'priceTypes'
+            'priceTypes',
+            'productStates',
+            'productAvailables'
         ));
     }
 
@@ -244,6 +282,8 @@ class AdvertisementController extends Controller
             'removal_comment' => 'nullable|string',
             'adv_price' => 'nullable|numeric|min:0',
             'adv_price_comment' => 'nullable|string',
+            'product_state' => 'nullable|exists:product_states,id',
+            'product_available' => 'nullable|exists:product_availables,id',
             'main_img' => 'nullable|integer|exists:products_media,id',
             'tags' => 'nullable|string',
             'selected_product_media.*' => 'nullable|exists:products_media,id',
@@ -257,8 +297,8 @@ class AdvertisementController extends Controller
             abort(403, 'Вы можете создавать объявления только для своих товаров.');
         }
 
-        // Проверяем, что товар не находится в статусе "Холд", "Отказ", "В работе" или "Продано"
-        if ($product->status && in_array($product->status->name, ['Холд', 'Отказ', 'В работе', 'Продано'])) {
+        // Проверяем, что товар не находится в статусе "Холд", "Отказ", "В работе", "Продано" или "Ревизия"
+        if ($product->status && in_array($product->status->name, ['Холд', 'Отказ', 'В работе', 'Продано', 'Ревизия'])) {
             abort(403, 'Нельзя создавать объявления для товаров со статусом "' . $product->status->name . '".');
         }
 
@@ -302,6 +342,8 @@ class AdvertisementController extends Controller
             'removal_data' => $removalData,
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
+            'product_state' => $request->product_state,
+            'product_available' => $request->product_available,
             'main_img' => $request->main_img,
             'status_id' => AdvertisementStatus::where('name', 'В продаже')->first()->id,
             'created_by' => auth()->id() ?? 1, // Временно используем id=1
@@ -563,6 +605,8 @@ class AdvertisementController extends Controller
             'main_characteristics' => $product->main_chars,
             'complectation' => $product->complectation,
             'category_id' => $product->category_id,
+            'product_state' => $product->state_id,
+            'product_available' => $product->available_id,
             'check_data' => $checkData,
             'loading_data' => $loadingData,
             'removal_data' => $removalData,

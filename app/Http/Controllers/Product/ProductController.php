@@ -19,6 +19,8 @@ use App\Models\ProductCheck;
 use App\Models\ProductLoading;
 use App\Models\ProductRemoval;
 use App\Models\ProductPaymentVariants;
+use App\Models\ProductState;
+use App\Models\ProductAvailable;
 use App\Models\User;
 use App\Models\ProductLog;
 use App\Models\ProductAction;
@@ -39,6 +41,8 @@ class ProductController extends Controller
             'category', 
             'company.addresses', 
             'status', 
+            'state',
+            'available',
             'warehouse.regions', 
             'owner',
             'regional',
@@ -93,6 +97,19 @@ class ProductController extends Controller
             });
         }
         
+        if ($request->filled('state_id')) {
+            $productsQuery->where('state_id', $request->state_id);
+        }
+        
+        if ($request->filled('available_id')) {
+            $productsQuery->where('available_id', $request->available_id);
+        }
+        
+        // Фильтр по ответственному (только для администраторов)
+        if ($request->filled('responsible_id') && $user && $user->role && $user->role->name === 'Администратор') {
+            $productsQuery->where('owner_id', $request->responsible_id);
+        }
+        
         // Поиск по названию, артикулу и адресу товара
         if ($request->filled('search')) {
             $searchTerm = $request->search;
@@ -124,6 +141,12 @@ class ProductController extends Controller
         // Статусы - показываем все статусы товаров
         $filterData['statuses'] = \App\Models\ProductStatus::all();
         
+        // Состояния товаров - доступны всем
+        $filterData['states'] = \App\Models\ProductState::all();
+        
+        // Доступность товаров - доступна всем
+        $filterData['availables'] = \App\Models\ProductAvailable::all();
+        
         // Поставщики (компании) - с учетом прав доступа
         $companiesQuery = \App\Models\Company::with('status');
         
@@ -153,8 +176,8 @@ class ProductController extends Controller
         
         if ($user && $user->role) {
             if ($user->role->name === 'Региональный представитель') {
-                // Для регионального представителя показываем только его регионы
-                $regionsQuery->whereHas('users', function($query) use ($currentUserId) {
+                // Для регионального представителя показываем регионы складов, к которым у него есть доступ
+                $regionsQuery->whereHas('warehouses.users', function($query) use ($currentUserId) {
                     $query->where('users.id', $currentUserId);
                 });
             } elseif ($user->role->can_view_companies === 1) {
@@ -179,6 +202,19 @@ class ProductController extends Controller
         }
         
         $filterData['regions'] = $regionsQuery->get();
+        
+        // Пользователи (ответственные) - только для администраторов, исключая региональных представителей
+        if ($user && $user->role && $user->role->name === 'Администратор') {
+            $filterData['users'] = \App\Models\User::with('role')
+                ->where('active', true)
+                ->whereHas('role', function($query) {
+                    $query->where('name', '!=', 'Региональный представитель');
+                })
+                ->orderBy('name')
+                ->get();
+        } else {
+            $filterData['users'] = collect();
+        }
         
         return $filterData;
     }
@@ -221,6 +257,8 @@ class ProductController extends Controller
         $checkStatuses = ProductCheckStatuses::all();
         $installStatuses = ProductInstallStatuses::all();
         $priceTypes = ProductPriceType::all();
+        $states = ProductState::all();
+        $availables = ProductAvailable::all();
 
         return view('Product.ProductCreatePage', compact(
             'companies', 
@@ -228,7 +266,9 @@ class ProductController extends Controller
             'statuses',
             'checkStatuses',
             'installStatuses',
-            'priceTypes'
+            'priceTypes',
+            'states',
+            'availables'
         ));
     }
 
@@ -240,6 +280,8 @@ class ProductController extends Controller
             'name' => 'required|string|max:255',
             'product_address' => 'nullable|string|max:255',
             'sku' => 'nullable|string|max:255|unique:products,sku',
+            'state_id' => 'required|exists:product_states,id',
+            'available_id' => 'required|exists:product_availables,id',
             'main_chars' => 'nullable|string',
             'mark' => 'nullable|string',
             'complectation' => 'nullable|string',
@@ -249,13 +291,20 @@ class ProductController extends Controller
             'loading_comment' => 'nullable|string',
             'removal_status_id' => 'nullable|exists:product_install_statuses,id',
             'removal_comment' => 'nullable|string',
-            'payment_types' => 'nullable|array',
+            'payment_types' => 'required|array|min:1',
             'payment_types.*' => 'exists:product_price_types,id',
-            'main_payment_method' => 'nullable|exists:product_price_types,id',
+            'main_payment_method' => 'required|exists:product_price_types,id',
             'purchase_price' => 'nullable|numeric|min:0',
-            'payment_comment' => 'nullable|string',
+            'payment_comment' => 'required|string|min:1',
             'common_commentary_after' => 'nullable|string',
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:1024000', // 1000MB max per file
+        ], [
+            'payment_types.required' => 'Выберите хотя бы один вариант оплаты',
+            'payment_types.min' => 'Выберите хотя бы один вариант оплаты',
+            'main_payment_method.required' => 'Выберите основной способ оплаты',
+            'main_payment_method.exists' => 'Выбранный основной способ оплаты не существует',
+            'payment_comment.required' => 'Комментарий обязателен для заполнения',
+            'payment_comment.min' => 'Комментарий не может быть пустым',
         ]);
 
         if ($validator->fails()) {
@@ -389,15 +438,8 @@ class ProductController extends Controller
                 ->withErrors(['company_id' => 'У склада компании нет связанного региона']);
         }
 
-        // Получаем регионального представителя для данного региона
-        $regionalUser = User::where('role_id', 3)
-            ->where('active', true)
-            ->whereHas('regions', function($query) use ($region) {
-                $query->where('regions.id', $region->id);
-            })
-            ->first();
-
-        $regionalUserId = $regionalUser ? $regionalUser->id : 1;
+        // Получаем регионального представителя из компании
+        $regionalUserId = $company->regional_user_id ?: 1;
 
         // Генерируем SKU для товара, если не указан
         $sku = $validated['sku'] ?: $this->generateSku($validated['company_id']);
@@ -413,6 +455,8 @@ class ProductController extends Controller
             'regional_id' => $regionalUserId, // Региональный представитель из выбранной компании
             'status_id' => 1, // Статус "В работе"
             'product_address' => $validated['product_address'] ?? '',
+            'state_id' => $validated['state_id'],
+            'available_id' => $validated['available_id'],
             'main_chars' => $validated['main_chars'],
             'mark' => $validated['mark'],
             'complectation' => $validated['complectation'],
@@ -633,6 +677,8 @@ class ProductController extends Controller
             'owner',
             'regional',
             'status',
+            'state',
+            'available',
             'warehouse',
             'mediaOrdered',
             'check.checkStatus',
@@ -1772,17 +1818,23 @@ class ProductController extends Controller
     {
         $request->validate([
             'category_id' => 'nullable|exists:product_categories,id',
-            'product_address' => 'nullable|string|max:255'
+            'product_address' => 'nullable|string|max:255',
+            'state_id' => 'nullable|exists:product_states,id',
+            'available_id' => 'nullable|exists:product_availables,id'
         ]);
 
         // Сохраняем старые значения для логирования
         $oldCategoryId = $product->category_id;
         $oldProductAddress = $product->product_address;
+        $oldStateId = $product->state_id;
+        $oldAvailableId = $product->available_id;
 
         // Обновляем товар
         $product->update([
             'category_id' => $request->category_id,
-            'product_address' => $request->product_address
+            'product_address' => $request->product_address,
+            'state_id' => $request->state_id,
+            'available_id' => $request->available_id
         ]);
 
         // Создаем лог изменений
@@ -1797,6 +1849,20 @@ class ProductController extends Controller
         
         if ($oldProductAddress != $request->product_address) {
             $logMessages[] = "Адрес станка изменен с '" . ($oldProductAddress ?: 'Не указан') . "' на '" . ($request->product_address ?: 'Не указан') . "'";
+        }
+
+        if ($oldStateId != $request->state_id) {
+            $oldState = $oldStateId ? \App\Models\ProductState::find($oldStateId) : null;
+            $newState = $request->state_id ? \App\Models\ProductState::find($request->state_id) : null;
+            
+            $logMessages[] = "Состояние изменено с '" . ($oldState ? $oldState->name : 'Не указано') . "' на '" . ($newState ? $newState->name : 'Не указано') . "'";
+        }
+
+        if ($oldAvailableId != $request->available_id) {
+            $oldAvailable = $oldAvailableId ? \App\Models\ProductAvailable::find($oldAvailableId) : null;
+            $newAvailable = $request->available_id ? \App\Models\ProductAvailable::find($request->available_id) : null;
+            
+            $logMessages[] = "Доступность изменена с '" . ($oldAvailable ? $oldAvailable->name : 'Не указана') . "' на '" . ($newAvailable ? $newAvailable->name : 'Не указана') . "'";
         }
 
         if (!empty($logMessages)) {
@@ -2385,6 +2451,11 @@ class ProductController extends Controller
             
             // Создаем лог о смене статуса объявления
             $this->logAdvertisementStatusChange($advertisement, $oldAdvertisementStatus, $newAdvertisementStatus, $newStatus);
+            
+            // Если новый статус объявления "Ревизия", создаем задачу на актуализацию
+            if ($newAdvertisementStatusName === 'Ревизия') {
+                $this->createAdvertisementReviewTask($advertisement);
+            }
         }
     }
 
@@ -2394,8 +2465,8 @@ class ProductController extends Controller
     private function getAdvertisementStatusByProductStatus($productStatusName)
     {
         $statusMapping = [
-            'В работе' => 'В работе',
-            'В продаже' => 'В продаже', 
+            'Ревизия' => 'Ревизия',
+            'В продаже' => 'Ревизия', 
             'Резерв' => 'Резерв',
             'Холд' => 'Холд',
             'Продано' => 'Продано',
@@ -2439,5 +2510,47 @@ class ProductController extends Controller
             'log' => $logMessage,
             'user_id' => null // От имени системы
         ]);
+    }
+
+    /**
+     * Создает задачу на актуализацию объявления при переводе в статус "Ревизия"
+     */
+    private function createAdvertisementReviewTask($advertisement)
+    {
+        try {
+            // Создаем задачу на актуализацию объявления сроком на 7 дней
+            $action = AdvAction::create([
+                'advertisement_id' => $advertisement->id,
+                'user_id' => $advertisement->created_by, // Назначаем задачу создателю объявления
+                'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
+                'expired_at' => now()->addDays(7), // Срок выполнения - 7 дней
+                'status' => false, // Задача не выполнена
+            ]);
+
+            // Создаем лог о создании задачи
+            $systemLogType = LogType::where('name', 'Системный')->first();
+            
+            $logMessage = "Создана задача на актуализацию объявления в связи с переводом в статус 'Ревизия'";
+            
+            AdvLog::create([
+                'advertisement_id' => $advertisement->id,
+                'type_id' => $systemLogType ? $systemLogType->id : null,
+                'log' => $logMessage,
+                'user_id' => null // От имени системы
+            ]);
+
+            \Log::info('Создана задача на актуализацию объявления', [
+                'advertisement_id' => $advertisement->id,
+                'action_id' => $action->id,
+                'expired_at' => $action->expired_at
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при создании задачи на актуализацию объявления', [
+                'advertisement_id' => $advertisement->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
 }

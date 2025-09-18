@@ -339,6 +339,14 @@
                         <span class="label">Дата создания:</span>
                         <span class="value">{{ $advertisement->created_at->format('d.m.Y H:i') }}</span>
                     </div>
+                    <div class="info-item">
+                        <span class="label">Состояние станка:</span>
+                        <span class="value">{{ $advertisement->productState?->name ?? 'Не указано' }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="label">Доступность станка:</span>
+                        <span class="value">{{ $advertisement->productAvailable?->name ?? 'Не указано' }}</span>
+                    </div>
                     @if($advertisement->published_at)
                     <div class="info-item">
                         <span class="label">Дата публикации:</span>

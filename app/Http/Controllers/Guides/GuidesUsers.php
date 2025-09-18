@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Regions;
 use App\Models\RoleList;
 use App\Models\User;
+use App\Models\Warehouses;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -14,11 +15,11 @@ class GuidesUsers extends Controller
 {
     public function index()
     {
-        $users = User::with(['regions', 'role'])->get();
-        $regions = Regions::where('active', true)->get();
+        $users = User::with(['warehouses', 'role'])->get();
+        $warehouses = Warehouses::all();
         $roles = RoleList::all();
 
-        return view('Guides.GuidesUsersPage', compact('users', 'regions', 'roles'));
+        return view('Guides.GuidesUsersPage', compact('users', 'warehouses', 'roles'));
     }
 
     /**
@@ -60,8 +61,8 @@ class GuidesUsers extends Controller
             'email' => 'required|string|email|max:255|unique:users',
             'phone' => 'required|string|max:20',
             'role_id' => 'required|exists:role_lists,id',
-            'regions' => 'required|array|min:1',
-            'regions.*' => 'exists:regions,id',
+            'warehouses' => 'required|array|min:1',
+            'warehouses.*' => 'exists:warehouses,id',
             'password' => 'required|string|min:8',
             'has_whatsapp' => 'boolean',
             'has_telegram' => 'boolean',
@@ -92,11 +93,11 @@ class GuidesUsers extends Controller
                 'password' => Hash::make($validated['password']),
             ]);
 
-            // Создаем записи в таблице users_to_regions
-            foreach ($validated['regions'] as $regionId) {
-                DB::table('users_to_regions')->insert([
+            // Создаем записи в таблице users_to_warehouses
+            foreach ($validated['warehouses'] as $warehouseId) {
+                DB::table('users_to_warehouses')->insert([
                     'user_id' => $user->id,
-                    'region_id' => $regionId,
+                    'warehouse_id' => $warehouseId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -121,7 +122,7 @@ class GuidesUsers extends Controller
 
     public function edit(User $user)
     {
-        return response()->json($user->load(['regions', 'role']));
+        return response()->json($user->load(['warehouses', 'role']));
     }
 
     public function update(Request $request, User $user)
@@ -131,8 +132,8 @@ class GuidesUsers extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $user->id,
             'phone' => 'required|string|max:20',
             'role_id' => 'required|exists:role_lists,id',
-            'regions' => 'required|array|min:1',
-            'regions.*' => 'exists:regions,id',
+            'warehouses' => 'required|array|min:1',
+            'warehouses.*' => 'exists:warehouses,id',
             'password' => 'nullable|string|min:8',
             'has_whatsapp' => 'boolean',
             'has_telegram' => 'boolean',
@@ -169,12 +170,12 @@ class GuidesUsers extends Controller
 
             $user->update($userData);
 
-            // Обновляем связи с регионами
-            DB::table('users_to_regions')->where('user_id', $user->id)->delete();
-            foreach ($validated['regions'] as $regionId) {
-                DB::table('users_to_regions')->insert([
+            // Обновляем связи со складами
+            DB::table('users_to_warehouses')->where('user_id', $user->id)->delete();
+            foreach ($validated['warehouses'] as $warehouseId) {
+                DB::table('users_to_warehouses')->insert([
                     'user_id' => $user->id,
-                    'region_id' => $regionId,
+                    'warehouse_id' => $warehouseId,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
