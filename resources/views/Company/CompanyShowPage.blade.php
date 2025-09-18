@@ -13,7 +13,35 @@
             <a href="{{ route('companies.index') }}">Организации</a> / {{ $company->name }}
         </div>
         <div class="company-header-actions">
-            <h1 class="company-title">{{ $company->name ?? 'Название не указано' }}</h1>
+            <div class="company-title-container">
+                <h1 class="company-title" id="company_name_content">{{ $company->name ?? 'Название не указано' }}</h1>
+                <div class="company-title-edit" id="company_name_edit" style="display: none;">
+                    <input type="text" id="company_name_input" class="company-name-input" value="{{ $company->name }}" maxlength="255">
+                    <div class="company-name-edit-buttons">
+                        <button type="button" class="btn btn-success btn-sm" onclick="saveCompanyName()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20,6 9,17 4,12"></polyline>
+                            </svg>
+                            Сохранить
+                        </button>
+                        <button type="button" class="btn btn-secondary btn-sm" onclick="cancelCompanyNameEdit()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"></line>
+                                <line x1="6" y1="6" x2="18" y2="18"></line>
+                            </svg>
+                            Отмена
+                        </button>
+                    </div>
+                </div>
+                @if($canEdit)
+                    <button type="button" class="btn btn-outline-primary btn-sm edit-company-name-btn" onclick="editCompanyName()" title="Редактировать название компании">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                        </svg>
+                    </button>
+                @endif
+            </div>
         </div>
         <div class="company-sku">SKU: {{ $company->sku ?? 'SKU не указан' }}</div>
     </div>
@@ -63,10 +91,24 @@
                             <div class="info-item">
                                 <span class="label">Региональный менеджер:</span>
                                 <span class="value">{{ $company->regional->name ?? 'Регионал не назначен' }}</span>
+                                @if($canEdit && auth()->user()->role && auth()->user()->role->name === 'Администратор')
+                                    <button class="change-owner-btn" onclick="openChangeRegionalModal()" title="Сменить регионального представителя">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                        </svg>
+                                    </button>
+                                @endif
                             </div>
                             <div class="info-item">
                                 <span class="label">Ответственный менеджер:</span>
                                 <span class="value">{{ $company->owner->name ?? 'Менеджер не назначен' }}</span>
+                                @if($canEdit && auth()->user()->role && auth()->user()->role->name === 'Администратор')
+                                    <button class="change-owner-btn" onclick="openChangeOwnerModal()" title="Сменить ответственного">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                                        </svg>
+                                    </button>
+                                @endif
                             </div>
                         </div>
                         @if($company->common_info)
@@ -722,6 +764,62 @@
     color: #133E71;
     margin: 0;
     font-weight: 600;
+}
+
+.company-title-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.company-title-edit {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+}
+
+.company-name-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 2px solid #007bff;
+    border-radius: 6px;
+    font-size: 28px;
+    font-weight: 600;
+    color: #133E71;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.company-name-input:focus {
+    border-color: #0056b3;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.company-name-edit-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.edit-company-name-btn {
+    margin-left: 10px;
+    padding: 8px 12px;
+    border: 1px solid #007bff;
+    background: transparent;
+    color: #007bff;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.edit-company-name-btn:hover {
+    background: #007bff;
+    color: white;
 }
 
 .company-actions {
@@ -1666,6 +1764,28 @@
         font-size: 24px;
     }
     
+    .company-name-input {
+        font-size: 24px;
+    }
+    
+    .company-title-container {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+    
+    .company-title-edit {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        width: 100%;
+    }
+    
+    .company-name-edit-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
     .info-item {
         flex-direction: column;
         align-items: flex-start;
@@ -1730,6 +1850,36 @@
 .edit-comment-btn svg {
     width: 14px;
     height: 14px;
+}
+
+/* Стили для кнопки смены ответственного */
+.change-owner-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid #133E71;
+    color: #133E71;
+    border-radius: 4px;
+    padding: 4px 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: 8px;
+    min-width: 24px;
+    height: 24px;
+}
+
+.change-owner-btn:hover {
+    background-color: #133E71;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.change-owner-btn svg {
+    width: 12px;
+    height: 12px;
 }
 
 /* Стили для контейнеров редактирования */
@@ -2316,11 +2466,263 @@
     margin: 0 !important;
     padding: 0 !important;
 }
+
+/* Стили для модального окна смены ответственного */
+#changeOwnerModal.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+#changeOwnerModal .modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#changeOwnerModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+#changeOwnerModal .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+#changeOwnerModal .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#changeOwnerModal .close-btn:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+#changeOwnerModal .modal-body {
+    padding: 24px;
+}
+
+#changeOwnerModal .modal-body p {
+    margin: 0 0 16px 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+#changeOwnerModal .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    margin-bottom: 20px;
+}
+
+#changeOwnerModal .form-select:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+#changeOwnerModal .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+#changeOwnerModal .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+#changeOwnerModal .btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+#changeOwnerModal .btn-secondary:hover {
+    background-color: #e5e7eb;
+}
+
+#changeOwnerModal .btn-primary {
+    background-color: #133E71;
+    color: white;
+}
+
+#changeOwnerModal .btn-primary:hover {
+    background-color: #0f2d5a;
+}
+
+#changeOwnerModal .btn-primary:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* Стили для модального окна смены регионального представителя */
+#changeRegionalModal.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+#changeRegionalModal .modal-content {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+#changeRegionalModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+#changeRegionalModal .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+#changeRegionalModal .close-btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+
+#changeRegionalModal .close-btn:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+#changeRegionalModal .modal-body {
+    padding: 24px;
+}
+
+#changeRegionalModal .modal-body p {
+    margin: 0 0 16px 0;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+#changeRegionalModal .form-select {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    margin-bottom: 20px;
+}
+
+#changeRegionalModal .form-select:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+#changeRegionalModal .modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+#changeRegionalModal .btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s ease;
+}
+
+#changeRegionalModal .btn-secondary {
+    background-color: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+#changeRegionalModal .btn-secondary:hover {
+    background-color: #e5e7eb;
+}
+
+#changeRegionalModal .btn-primary {
+    background-color: #133E71;
+    color: white;
+}
+
+#changeRegionalModal .btn-primary:hover {
+    background-color: #0f2d5a;
+}
+
+#changeRegionalModal .btn-primary:disabled {
+    background-color: #9ca3af;
+    cursor: not-allowed;
+}
 </style>
 
 <script>
 let currentCompanyId = '{{ $company->id }}';
-let canEdit = {{ $canEdit ? 'true' : 'false' }};
+let canEdit = @if($canEdit) true @else false @endif;
 
 function toggleStatusDropdown() {
     if (!canEdit) return;
@@ -4204,5 +4606,420 @@ function updateLegalInfoDisplay(company) {
         legalInfoContent.innerHTML = '<p style="color: #666; font-style: italic;">Юридическая информация не указана</p>';
     }
 }
+
+// Функции для редактирования названия компании
+let originalCompanyName = '';
+
+function editCompanyName() {
+    const content = document.getElementById('company_name_content');
+    const edit = document.getElementById('company_name_edit');
+    const input = document.getElementById('company_name_input');
+    
+    // Сохраняем оригинальное значение
+    originalCompanyName = content.textContent.trim();
+    
+    // Скрываем заголовок и показываем форму редактирования
+    content.style.display = 'none';
+    edit.style.display = 'flex';
+    
+    // Устанавливаем значение в поле ввода и фокусируемся на нем
+    input.value = originalCompanyName;
+    input.focus();
+    input.select();
+}
+
+function cancelCompanyNameEdit() {
+    const content = document.getElementById('company_name_content');
+    const edit = document.getElementById('company_name_edit');
+    const input = document.getElementById('company_name_input');
+    
+    // Восстанавливаем оригинальное значение
+    input.value = originalCompanyName;
+    
+    // Скрываем форму редактирования и показываем заголовок
+    edit.style.display = 'none';
+    content.style.display = 'block';
+}
+
+function saveCompanyName() {
+    const input = document.getElementById('company_name_input');
+    const content = document.getElementById('company_name_content');
+    const edit = document.getElementById('company_name_edit');
+    const newName = input.value.trim();
+    
+    // Проверяем, что название не пустое
+    if (!newName) {
+        showNotification('Название компании не может быть пустым', 'error');
+        return;
+    }
+    
+    // Проверяем, что название изменилось
+    if (newName === originalCompanyName) {
+        cancelCompanyNameEdit();
+        return;
+    }
+    
+    // Показываем индикатор загрузки
+    const saveBtn = document.querySelector('#company_name_edit .btn-success');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg> Сохранение...';
+    saveBtn.disabled = true;
+    
+    // Отправляем запрос на сервер
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/company/{{ $company->id }}/name`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+            name: newName
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем заголовок
+            content.textContent = newName;
+            
+            // Обновляем breadcrumb
+            const breadcrumb = document.querySelector('.breadcrumb');
+            if (breadcrumb) {
+                const breadcrumbText = breadcrumb.textContent;
+                const parts = breadcrumbText.split(' / ');
+                if (parts.length > 1) {
+                    parts[parts.length - 1] = newName;
+                    breadcrumb.innerHTML = `<a href="{{ route('companies.index') }}">Организации</a> / ${newName}`;
+                }
+            }
+            
+            // Обновляем заголовок страницы
+            document.title = newName + ' - Организация';
+            const headerTitle = document.querySelector('.header-title');
+            if (headerTitle) {
+                headerTitle.textContent = newName;
+            }
+            
+            // Обновляем название в блоке юридической информации, если оно там есть
+            const legalNameValue = document.querySelector('#legal_info_content .legal-item .value');
+            if (legalNameValue && legalNameValue.textContent.trim() === originalCompanyName) {
+                legalNameValue.textContent = newName;
+            }
+            
+            // Обновляем оригинальное значение
+            originalCompanyName = newName;
+            
+            // Скрываем форму редактирования и показываем заголовок
+            edit.style.display = 'none';
+            content.style.display = 'block';
+            
+            showNotification('Название компании успешно обновлено', 'success');
+        } else {
+            showNotification(data.message || 'Ошибка при обновлении названия компании', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при обновлении названия компании', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Обработчик клавиши Enter для сохранения названия компании
+document.addEventListener('DOMContentLoaded', function() {
+    const companyNameInput = document.getElementById('company_name_input');
+    if (companyNameInput) {
+        companyNameInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                saveCompanyName();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                cancelCompanyNameEdit();
+            }
+        });
+    }
+});
+
+// Функции для смены ответственного
+function openChangeOwnerModal() {
+    // Загружаем доступных пользователей
+    fetch(`/company/{{ $company->id }}/available-owners`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateOwnerSelect(data.users);
+                document.getElementById('changeOwnerModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                alert('Ошибка при загрузке пользователей: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при загрузке пользователей');
+        });
+}
+
+function populateOwnerSelect(users) {
+    const select = document.getElementById('newOwnerSelect');
+    select.innerHTML = '<option value="">Выберите нового ответственного</option>';
+    
+    users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.name} (${user.role.name})`;
+        select.appendChild(option);
+    });
+}
+
+function closeChangeOwnerModal() {
+    document.getElementById('changeOwnerModal').style.display = 'none';
+    document.getElementById('newOwnerSelect').value = '';
+    document.body.style.overflow = 'auto';
+}
+
+function changeCompanyOwner() {
+    const newOwnerId = document.getElementById('newOwnerSelect').value;
+    
+    if (!newOwnerId) {
+        alert('Пожалуйста, выберите нового ответственного');
+        return;
+    }
+    
+    const saveBtn = document.getElementById('changeOwnerSaveBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    fetch(`/company/{{ $company->id }}/change-owner`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            new_owner_id: newOwnerId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение ответственного
+            const infoItems = document.querySelectorAll('.info-item');
+            let ownerValue = null;
+            
+            infoItems.forEach(item => {
+                const label = item.querySelector('.label');
+                if (label && label.textContent.includes('Ответственный менеджер')) {
+                    ownerValue = item.querySelector('.value');
+                }
+            });
+            
+            if (ownerValue) {
+                const selectedOption = document.getElementById('newOwnerSelect').selectedOptions[0];
+                const newOwnerName = selectedOption.textContent.split(' (')[0];
+                ownerValue.textContent = newOwnerName;
+                
+                closeChangeOwnerModal();
+                alert(`Ответственный успешно изменен на: ${newOwnerName}`);
+            } else {
+                closeChangeOwnerModal();
+                alert('Ответственный успешно изменен');
+            }
+        } else {
+            alert('Ошибка: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при смене ответственного');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Функции для смены регионального представителя
+function openChangeRegionalModal() {
+    // Загружаем доступных региональных представителей
+    fetch(`/company/{{ $company->id }}/available-regionals`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                populateRegionalSelect(data.users);
+                document.getElementById('changeRegionalModal').style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            } else {
+                alert('Ошибка при загрузке региональных представителей: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Ошибка при загрузке региональных представителей');
+        });
+}
+
+function populateRegionalSelect(users) {
+    const select = document.getElementById('newRegionalSelect');
+    select.innerHTML = '<option value="">Выберите нового регионального представителя</option>';
+    
+    users.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user.id;
+        option.textContent = `${user.name} (${user.role.name})`;
+        select.appendChild(option);
+    });
+}
+
+function closeChangeRegionalModal() {
+    document.getElementById('changeRegionalModal').style.display = 'none';
+    document.getElementById('newRegionalSelect').value = '';
+    document.body.style.overflow = 'auto';
+}
+
+function changeCompanyRegional() {
+    const newRegionalId = document.getElementById('newRegionalSelect').value;
+    
+    if (!newRegionalId) {
+        alert('Пожалуйста, выберите нового регионального представителя');
+        return;
+    }
+    
+    const saveBtn = document.getElementById('changeRegionalSaveBtn');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    fetch(`/company/{{ $company->id }}/change-regional`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        },
+        body: JSON.stringify({
+            new_regional_id: newRegionalId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Обновляем отображение регионального представителя
+            const infoItems = document.querySelectorAll('.info-item');
+            let regionalValue = null;
+            
+            infoItems.forEach(item => {
+                const label = item.querySelector('.label');
+                if (label && label.textContent.includes('Региональный менеджер')) {
+                    regionalValue = item.querySelector('.value');
+                }
+            });
+            
+            if (regionalValue) {
+                const selectedOption = document.getElementById('newRegionalSelect').selectedOptions[0];
+                const newRegionalName = selectedOption.textContent.split(' (')[0];
+                regionalValue.textContent = newRegionalName;
+                
+                closeChangeRegionalModal();
+                alert(`Региональный представитель успешно изменен на: ${newRegionalName}`);
+            } else {
+                closeChangeRegionalModal();
+                alert('Региональный представитель успешно изменен');
+            }
+        } else {
+            alert('Ошибка: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при смене регионального представителя');
+    })
+    .finally(() => {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
+    });
+}
+
+// Обработчик для закрытия модальных окон при клике вне их области
+document.addEventListener('DOMContentLoaded', function() {
+    const changeOwnerModal = document.getElementById('changeOwnerModal');
+    const changeRegionalModal = document.getElementById('changeRegionalModal');
+    
+    if (changeOwnerModal) {
+        changeOwnerModal.addEventListener('click', function(e) {
+            if (e.target === changeOwnerModal) {
+                closeChangeOwnerModal();
+            }
+        });
+    }
+    
+    if (changeRegionalModal) {
+        changeRegionalModal.addEventListener('click', function(e) {
+            if (e.target === changeRegionalModal) {
+                closeChangeRegionalModal();
+            }
+        });
+    }
+    
+    // Обработчик для закрытия модальных окон при нажатии Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            if (changeOwnerModal && changeOwnerModal.style.display === 'flex') {
+                closeChangeOwnerModal();
+            }
+            if (changeRegionalModal && changeRegionalModal.style.display === 'flex') {
+                closeChangeRegionalModal();
+            }
+        }
+    });
+});
 </script>
+
+<!-- Модальное окно для смены ответственного -->
+<div id="changeOwnerModal" class="modal" style="display: none; z-index: 3000;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Смена ответственного</h3>
+            <button class="close-btn" onclick="closeChangeOwnerModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Выберите нового ответственного за компанию:</p>
+            <select id="newOwnerSelect" class="form-select">
+                <option value="">Загрузка...</option>
+            </select>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeChangeOwnerModal()">Отмена</button>
+                <button type="button" class="btn btn-primary" id="changeOwnerSaveBtn" onclick="changeCompanyOwner()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно для смены регионального представителя -->
+<div id="changeRegionalModal" class="modal" style="display: none; z-index: 3000;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Смена регионального представителя</h3>
+            <button class="close-btn" onclick="closeChangeRegionalModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>Выберите нового регионального представителя для компании:</p>
+            <select id="newRegionalSelect" class="form-select">
+                <option value="">Загрузка...</option>
+            </select>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeChangeRegionalModal()">Отмена</button>
+                <button type="button" class="btn btn-primary" id="changeRegionalSaveBtn" onclick="changeCompanyRegional()">Сохранить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection

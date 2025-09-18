@@ -1607,6 +1607,88 @@ class CompanyController extends Controller
     }
 
     /**
+     * Обновляет только название компании
+     */
+    public function updateName(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на обновление компании
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $canViewCompanies = $user->role->can_view_companies;
+        
+        if ($canViewCompanies === 1) {
+            // Пользователь может обновлять только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($canViewCompanies !== 3) {
+            // Пользователь не имеет прав на обновление компаний
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Сохраняем старое значение для лога
+            $oldName = $company->name;
+
+            // Обновляем название компании
+            $company->update([
+                'name' => $validated['name']
+            ]);
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Пользователь {$user->name} изменил название компании с \"{$oldName}\" на \"{$validated['name']}\"";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Название компании успешно обновлено',
+                'company' => [
+                    'name' => $company->name
+                ],
+                'log' => $log ?? null
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении названия компании: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Обрабатывает перевод компании в статус "Отказ"
      */
     private function handleCompanyRefuseStatus(Company $company, $user)
@@ -1617,7 +1699,7 @@ class CompanyController extends Controller
         CompanyActions::create([
             'company_id' => $company->id,
             'user_id' => $user->id,
-            'action' => 'Актуализировать данные, уточнить по оборудованию и ценам',
+            'action' => 'Актуализировать данные, уточнить по оборудованию и цены',
             'expired_at' => $expiredAt,
             'status' => false
         ]);
@@ -1696,6 +1778,220 @@ class CompanyController extends Controller
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Смена ответственного за компанию
+     */
+    public function changeOwner(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на смену ответственного
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Проверяем, что пользователь может менять ответственного
+        if (!$company->canChangeOwner($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Недостаточно прав для смены ответственного. Только администраторы могут выполнять эту операцию.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'new_owner_id' => 'required|integer|exists:users,id'
+        ]);
+
+        try {
+            // Выполняем смену ответственного
+            $company->changeOwner($validated['new_owner_id'], $user);
+
+            // Получаем нового ответственного
+            $newOwner = User::find($validated['new_owner_id']);
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Пользователь {$user->name} сменил ответственного с '{$company->owner->name}' на '{$newOwner->name}'";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            // Обновляем данные компании
+            $company->load('owner');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Ответственный успешно изменен',
+                'company' => [
+                    'owner' => $company->owner
+                ],
+                'log' => $log ?? null
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Получает список доступных пользователей для назначения ответственными
+     */
+    public function getAvailableOwners(Company $company)
+    {
+        // Проверяем права пользователя
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Проверяем, что пользователь может менять ответственного
+        if (!$company->canChangeOwner($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Недостаточно прав для просмотра доступных пользователей'
+            ], 403);
+        }
+
+        try {
+            $availableOwners = $company->getAvailableOwners();
+
+            return response()->json([
+                'success' => true,
+                'users' => $availableOwners
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении списка пользователей: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Смена регионального представителя компании
+     */
+    public function changeRegional(Request $request, Company $company)
+    {
+        // Проверяем права пользователя на смену регионального представителя
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Проверяем, что пользователь может менять регионального представителя
+        if (!$company->canChangeRegional($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Недостаточно прав для смены регионального представителя. Только администраторы могут выполнять эту операцию.'
+            ], 403);
+        }
+
+        $validated = $request->validate([
+            'new_regional_id' => 'required|integer|exists:users,id'
+        ]);
+
+        try {
+            // Выполняем смену регионального представителя
+            $company->changeRegional($validated['new_regional_id'], $user);
+
+            // Получаем нового регионального представителя
+            $newRegional = User::find($validated['new_regional_id']);
+
+            // Создаем запись в логе
+            $commentLogType = LogType::where('name', 'Комментарий')->first();
+            if ($commentLogType) {
+                $logText = "Пользователь {$user->name} сменил регионального представителя с '{$company->regional->name}' на '{$newRegional->name}'";
+                
+                $log = CompanyLog::create([
+                    'company_id' => $company->id,
+                    'user_id' => $user->id,
+                    'log' => $logText,
+                    'type_id' => $commentLogType->id,
+                ]);
+
+                // Загружаем связи для лога
+                $log->load(['type', 'user']);
+            }
+
+            // Обновляем данные компании
+            $company->load('regional');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Региональный представитель успешно изменен',
+                'company' => [
+                    'regional' => $company->regional
+                ],
+                'log' => $log ?? null
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 400);
+        }
+    }
+
+    /**
+     * Получает список доступных пользователей для назначения региональными представителями
+     */
+    public function getAvailableRegionals(Company $company)
+    {
+        // Проверяем права пользователя
+        $user = auth()->user();
+        if (!$user || !$user->role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Доступ запрещен'
+            ], 403);
+        }
+
+        // Проверяем, что пользователь может менять регионального представителя
+        if (!$company->canChangeRegional($user)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Недостаточно прав для просмотра доступных пользователей'
+            ], 403);
+        }
+
+        try {
+            $availableRegionals = $company->getAvailableRegionals();
+
+            return response()->json([
+                'success' => true,
+                'users' => $availableRegionals
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении списка пользователей: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

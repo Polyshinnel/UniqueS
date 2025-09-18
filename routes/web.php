@@ -40,6 +40,11 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/company/{company}/contacts', [\App\Http\Controllers\Company\CompanyController::class, 'updateContacts'])->name('companies.update-contacts');
     Route::patch('/company/{company}/addresses', [\App\Http\Controllers\Company\CompanyController::class, 'updateAddresses'])->name('companies.update-addresses');
     Route::patch('/company/{company}/legal-info', [\App\Http\Controllers\Company\CompanyController::class, 'updateLegalInfo'])->name('companies.update-legal-info');
+    Route::patch('/company/{company}/name', [\App\Http\Controllers\Company\CompanyController::class, 'updateName'])->name('companies.update-name');
+    Route::patch('/company/{company}/change-owner', [\App\Http\Controllers\Company\CompanyController::class, 'changeOwner'])->name('companies.change-owner');
+    Route::get('/company/{company}/available-owners', [\App\Http\Controllers\Company\CompanyController::class, 'getAvailableOwners'])->name('companies.available-owners');
+    Route::patch('/company/{company}/change-regional', [\App\Http\Controllers\Company\CompanyController::class, 'changeRegional'])->name('companies.change-regional');
+    Route::get('/company/{company}/available-regionals', [\App\Http\Controllers\Company\CompanyController::class, 'getAvailableRegionals'])->name('companies.available-regionals');
 
     Route::get('/product', [\App\Http\Controllers\Product\ProductController::class, 'index'])->name('products.index');
     Route::get('/product/create', [\App\Http\Controllers\Product\ProductController::class, 'create'])->name('products.create');

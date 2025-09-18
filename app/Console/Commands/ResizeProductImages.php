@@ -26,9 +26,13 @@ class ResizeProductImages extends Command
 
     /**
      * Максимальные размеры изображений
+     * Для альбомной ориентации: 1920x1080
+     * Для портретной ориентации: 1080x1920
      */
-    private const MAX_WIDTH = 1900;
-    private const MAX_HEIGHT = 1080;
+    private const MAX_LANDSCAPE_WIDTH = 1920;
+    private const MAX_LANDSCAPE_HEIGHT = 1080;
+    private const MAX_PORTRAIT_WIDTH = 1080;
+    private const MAX_PORTRAIT_HEIGHT = 1920;
     /**
      * Execute the console command.
      */
@@ -148,19 +152,19 @@ class ResizeProductImages extends Command
     private function calculateNewDimensions(int $width, int $height, bool $isLandscape): array
     {
         if ($isLandscape) {
-            // Альбомная ориентация
-            if ($width <= self::MAX_WIDTH && $height <= self::MAX_HEIGHT) {
+            // Альбомная ориентация: максимальные размеры 1920x1080
+            if ($width <= self::MAX_LANDSCAPE_WIDTH && $height <= self::MAX_LANDSCAPE_HEIGHT) {
                 return ['width' => $width, 'height' => $height];
             }
             
-            $ratio = min(self::MAX_WIDTH / $width, self::MAX_HEIGHT / $height);
+            $ratio = min(self::MAX_LANDSCAPE_WIDTH / $width, self::MAX_LANDSCAPE_HEIGHT / $height);
         } else {
-            // Портретная ориентация
-            if ($height <= self::MAX_WIDTH && $width <= self::MAX_HEIGHT) {
+            // Портретная ориентация: максимальные размеры 1080x1920
+            if ($width <= self::MAX_PORTRAIT_WIDTH && $height <= self::MAX_PORTRAIT_HEIGHT) {
                 return ['width' => $width, 'height' => $height];
             }
             
-            $ratio = min(self::MAX_WIDTH / $height, self::MAX_HEIGHT / $width);
+            $ratio = min(self::MAX_PORTRAIT_WIDTH / $width, self::MAX_PORTRAIT_HEIGHT / $height);
         }
 
         return [
