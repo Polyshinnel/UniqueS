@@ -195,13 +195,8 @@ class CompanyController extends Controller
                 ->withErrors(['region' => 'Выбранный регион не принадлежит выбранному складу']);
         }
 
-        // Проверяем, что регион доступен пользователю
-        $userRegions = $this->getUserRegions()->pluck('id')->toArray();
-        if (!empty($userRegions) && !in_array($validated['region'], $userRegions)) {
-            return redirect()->back()
-                ->withInput()
-                ->withErrors(['region' => 'Выбранный регион недоступен для вашего пользователя']);
-        }
+        // Проверка доступности региона для пользователя больше не нужна,
+        // так как пользователи теперь привязываются к складам, а не к регионам напрямую
 
         // Проверяем, что выбранный региональный представитель имеет доступ к складу
         $regional = User::where('id', $validated['region_id'])
@@ -708,6 +703,7 @@ class CompanyController extends Controller
 
     /**
      * Получает регионы, доступные авторизованному пользователю
+     * Теперь регионы получаются через склады, к которым привязан пользователь
      */
     private function getUserRegions()
     {
@@ -722,12 +718,16 @@ class CompanyController extends Controller
         if ($user->role && $user->role->can_view_companies === 3) {
             return Regions::where('active', true)->get();
         } else {
-            // Обычные пользователи видят только свои регионы
+            // Обычные пользователи видят регионы через свои склады
             return Regions::where('active', true)
                 ->whereIn('id', function($query) use ($user) {
                     $query->select('region_id')
-                          ->from('users_to_regions')
-                          ->where('user_id', $user->id);
+                          ->from('warehouses_to_regions')
+                          ->whereIn('warehouse_id', function($subQuery) use ($user) {
+                              $subQuery->select('warehouse_id')
+                                       ->from('users_to_warehouses')
+                                       ->where('user_id', $user->id);
+                          });
                 })
                 ->get();
         }
