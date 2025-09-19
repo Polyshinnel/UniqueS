@@ -622,7 +622,7 @@ class CompanyController extends Controller
         }
 
         // Загружаем связанные данные
-        $company->load(['warehouses.regions', 'addresses']);
+        $company->load(['warehouses.regions', 'addresses', 'region']);
 
         // Получаем основной адрес компании
         $mainAddress = $company->addresses->where('main_address', true)->first();
@@ -630,8 +630,8 @@ class CompanyController extends Controller
         // Получаем склад компании
         $warehouse = $company->warehouses->first();
         
-        // Получаем регион склада
-        $region = $warehouse ? $warehouse->regions->first() : null;
+        // Получаем регион компании напрямую из поля region_id
+        $region = $company->region;
 
         return response()->json([
             'success' => true,

@@ -357,7 +357,7 @@ class ProductController extends Controller
         $currentUserId = auth()->id() ?? 1;
         $user = auth()->user();
         
-        $companyQuery = Company::with(['warehouses.regions', 'addresses', 'status'])
+        $companyQuery = Company::with(['warehouses.regions', 'addresses', 'status', 'region'])
             ->where('id', $validated['company_id']);
         
         if ($user && $user->role) {
@@ -423,19 +423,19 @@ class ProductController extends Controller
                 ->withErrors(['company_id' => 'У выбранной компании нет связанного склада']);
         }
 
-        // Получаем регион склада
-        $region = $warehouse->regions->first();
+        // Получаем регион компании напрямую из поля region_id
+        $region = $company->region;
         if (!$region) {
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'У склада компании нет связанного региона'
+                    'message' => 'У компании не указан регион'
                 ], 422);
             }
             
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['company_id' => 'У склада компании нет связанного региона']);
+                ->withErrors(['company_id' => 'У компании не указан регион']);
         }
 
         // Получаем регионального представителя из компании
