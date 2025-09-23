@@ -34,4 +34,13 @@ class Warehouses extends Model
     {
         return $this->hasMany(Product::class, 'warehouse_id');
     }
+
+    /**
+     * Связь с пользователями через промежуточную таблицу
+     */
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'users_to_warehouses', 'warehouse_id', 'user_id')
+            ->withTimestamps();
+    }
 }
