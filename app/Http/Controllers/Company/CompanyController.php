@@ -95,6 +95,11 @@ class CompanyController extends Controller
             $query->where('regional_user_id', request('regional_id'));
         }
 
+        // Фильтр по менеджеру (только для администраторов)
+        if (request('owner_id') && $user && $user->role && $user->role->can_view_companies === 3) {
+            $query->where('owner_user_id', request('owner_id'));
+        }
+
         $companies = $query->orderBy('id', 'desc')->paginate(20);
 
         // Данные для фильтров
@@ -104,7 +109,17 @@ class CompanyController extends Controller
             'sources' => Sources::all(),
             'regionals' => User::where('role_id', 3)
                 ->where('active', true)
-                ->get()
+                ->get(),
+            'owners' => $user && $user->role && $user->role->can_view_companies === 3 
+                ? User::where('active', true)
+                    ->whereIn('id', function($query) {
+                        $query->select('owner_user_id')
+                              ->from('companies')
+                              ->whereNotNull('owner_user_id');
+                    })
+                    ->orderBy('name')
+                    ->get(['id', 'name'])
+                : collect()
         ];
 
         $warehouses = Warehouses::all();

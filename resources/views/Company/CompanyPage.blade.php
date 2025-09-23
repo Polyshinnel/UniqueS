@@ -103,6 +103,21 @@
                             @endforeach
                         </select>
                     </div>
+
+                    <!-- Фильтр по менеджеру (только для администраторов) -->
+                    @if($filterData['owners']->isNotEmpty())
+                    <div class="filter-group">
+                        <label for="owner_id">Менеджер:</label>
+                        <select name="owner_id" id="owner_id" class="form-select">
+                            <option value="">Все менеджеры</option>
+                            @foreach($filterData['owners'] as $owner)
+                                <option value="{{ $owner->id }}" {{ request('owner_id') == $owner->id ? 'selected' : '' }}>
+                                    {{ $owner->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
                 </div>
 
                 <div class="filters-actions">
@@ -126,7 +141,7 @@
     </div>
 
     <!-- Активные фильтры -->
-    @if(request('status_id') || request('region_id') || request('source_id') || request('regional_id') || request('search'))
+    @if(request('status_id') || request('region_id') || request('source_id') || request('regional_id') || request('owner_id') || request('search'))
     <div class="active-filters">
         <div class="active-filters-header">
             <h4>Активные фильтры:</h4>
@@ -185,6 +200,16 @@
                 </span>
                 @endif
             @endif
+            
+            @if(request('owner_id'))
+                @php $owner = $filterData['owners']->firstWhere('id', request('owner_id')); @endphp
+                @if($owner)
+                <span class="filter-tag">
+                    Менеджер: {{ $owner->name }}
+                    <a href="{{ request()->fullUrlWithQuery(['owner_id' => null]) }}" class="remove-filter">×</a>
+                </span>
+                @endif
+            @endif
         </div>
     </div>
     @endif
@@ -197,7 +222,7 @@
             </svg>
             Найдено компаний: <strong>{{ $companies->total() }}</strong>
         </div>
-        @if(request('status_id') || request('region_id') || request('source_id') || request('regional_id') || request('search'))
+        @if(request('status_id') || request('region_id') || request('source_id') || request('regional_id') || request('owner_id') || request('search'))
         <div class="results-filters-info">
             с примененными фильтрами
         </div>
