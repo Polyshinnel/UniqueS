@@ -100,7 +100,7 @@ class CompanyController extends Controller
             $query->where('owner_user_id', request('owner_id'));
         }
 
-        $companies = $query->orderBy('id', 'desc')->paginate(20);
+        $companies = $query->orderBy('id', 'desc')->paginate(4);
 
         // Данные для фильтров
         $filterData = [
