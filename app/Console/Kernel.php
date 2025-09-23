@@ -13,9 +13,9 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        
+
         // Выполнение команды изменения размера изображений товаров каждые 20 минут
-        $schedule->command('images:resize-products')->everyTwentyMinutes();
+        $schedule->command('images:resize-products')->everyFiveMinutes();
     }
 
     /**
