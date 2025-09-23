@@ -1737,4 +1737,89 @@ class AdvertisementController extends Controller
             'type_id' => $systemLogType ? $systemLogType->id : null
         ]);
     }
+
+    /**
+     * Активирует объявление (переводит из статуса "Ревизия" в "В продаже")
+     */
+    public function activate(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'comment' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            // Проверяем, что объявление находится в статусе "Ревизия"
+            if (!$advertisement->status || $advertisement->status->name !== 'Ревизия') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Можно активировать только объявления в статусе "Ревизия"'
+                ], 400);
+            }
+
+            // Проверяем, что объявление связано с товаром
+            if (!$advertisement->product) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Объявление не связано с товаром'
+                ], 400);
+            }
+
+            // Проверяем статус товара
+            $product = $advertisement->product;
+            $productStatus = $product->status;
+
+            if ($productStatus && in_array($productStatus->name, ['Холд', 'Отказ'])) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Нельзя активировать объявление, так как связанный товар находится в статусе '{$productStatus->name}'. Сначала переведите товар из статуса '{$productStatus->name}'.",
+                    'product_status' => $productStatus->name,
+                    'product_id' => $product->id
+                ], 400);
+            }
+
+            // Получаем статус "В продаже"
+            $activeStatus = AdvertisementStatus::where('name', 'В продаже')->first();
+            if (!$activeStatus) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Статус "В продаже" не найден в системе'
+                ], 500);
+            }
+
+            // Сохраняем старый статус для логирования
+            $oldStatusName = $advertisement->status ? $advertisement->status->name : 'Не указан';
+
+            // Обновляем статус объявления
+            $advertisement->update([
+                'status_id' => $activeStatus->id
+            ]);
+
+            // Создаем запись в логе
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $comment = $request->comment ? " Комментарий: {$request->comment}" : '';
+            $logMessage = "Пользователь {$userName} активировал объявление, переведя его из статуса '{$oldStatusName}' в статус '{$activeStatus->name}'.{$comment}";
+
+            $systemLogType = LogType::where('name', 'Системный')->first();
+
+            $log = AdvLog::create([
+                'advertisement_id' => $advertisement->id,
+                'user_id' => auth()->id(),
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Объявление успешно активировано',
+                'status_name' => $activeStatus->name,
+                'status_color' => $activeStatus->color,
+                'log' => $log->load(['type', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при активации объявления: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

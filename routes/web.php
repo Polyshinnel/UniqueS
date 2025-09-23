@@ -114,6 +114,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/advertisements/{advertisement}/characteristics', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateCharacteristics'])->name('advertisements.update-characteristics');
     Route::patch('/advertisements/{advertisement}/title', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateTitle'])->name('advertisements.update-title');
     Route::patch('/advertisements/{advertisement}/status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateStatus'])->name('advertisements.update-status');
+    Route::patch('/advertisements/{advertisement}/activate', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'activate'])->name('advertisements.activate');
     
     // Маршруты для логов и действий объявлений
     Route::get('/advertisements/{advertisement}/logs', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getLogs'])->name('advertisements.logs');

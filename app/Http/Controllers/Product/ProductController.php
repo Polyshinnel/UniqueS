@@ -1758,7 +1758,7 @@ class ProductController extends Controller
         ]);
 
         // 2. Создаем задачи для связанных объявлений
-        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
+        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано'])->pluck('id');
         
         $advertisementsToUpdate = $product->advertisements()
             ->whereNotIn('status_id', $excludedAdvertisementStatuses)
@@ -1793,7 +1793,7 @@ class ProductController extends Controller
         ]);
 
         // 2. Создаем задачи для связанных объявлений
-        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
+        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано'])->pluck('id');
         
         $advertisementsToUpdate = $product->advertisements()
             ->whereNotIn('status_id', $excludedAdvertisementStatuses)
@@ -2412,13 +2412,7 @@ class ProductController extends Controller
      */
     private function updateAdvertisementStatuses(Product $product, $oldStatus, $newStatus)
     {
-        // Получаем все объявления товара, исключая уже завершенные статусы
-        $excludedStatuses = ['Продано', 'Архив'];
-        $excludedStatusIds = AdvertisementStatus::whereIn('name', $excludedStatuses)->pluck('id');
-        
-        $advertisements = $product->advertisements()
-            ->whereNotIn('status_id', $excludedStatusIds)
-            ->get();
+        $advertisements = $product->advertisements()->get();
 
         if ($advertisements->isEmpty()) {
             return;

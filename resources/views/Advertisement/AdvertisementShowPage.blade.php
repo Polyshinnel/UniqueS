@@ -47,20 +47,18 @@
             </div>
         </div>
         <div class="advertisement-status">
-            <div class="status-selector">
-                <div class="status-badge clickable" onclick="toggleAdvertisementStatusDropdown()" style="background-color: {{ $advertisement->status?->color ?? '#6c757d' }}; color: white;">
+            <div class="status-display">
+                <div class="status-badge" style="background-color: {{ $advertisement->status?->color ?? '#6c757d' }}; color: white;">
                     {{ $advertisement->status_name }}
-                    <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <polyline points="6,9 12,15 18,9"></polyline>
-                    </svg>
                 </div>
-                <div class="status-dropdown" id="advertisementStatusDropdown">
-                    @foreach($advertisementStatuses as $status)
-                        <div class="status-option" onclick="changeAdvertisementStatus({{ $status->id }}, '{{ $status->name }}', '{{ $status->color }}')">
-                            <div class="status-badge" style="background-color: {{ $status->color }}; color: white;">{{ $status->name }}</div>
-                        </div>
-                    @endforeach
-                </div>
+                @if($advertisement->status && $advertisement->status->name === 'Ревизия')
+                    <button type="button" class="btn btn-success btn-sm activate-btn" onclick="activateAdvertisement()" title="Активировать объявление">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20,6 9,17 4,12"></polyline>
+                        </svg>
+                        Активировать
+                    </button>
+                @endif
             </div>
         </div>
     </div>
@@ -1026,23 +1024,25 @@
     </div>
 </div>
 
-<!-- Модальное окно для комментария при смене статуса объявления -->
-<div id="advertisementStatusCommentModal" class="modal" style="display: none;">
+
+<!-- Модальное окно для активации объявления -->
+<div id="activateAdvertisementModal" class="modal" style="display: none;">
     <div class="modal-content">
         <div class="modal-header">
-            <h3>Смена статуса объявления</h3>
-            <span class="close" onclick="cancelAdvertisementStatusChange()">&times;</span>
+            <h3>Активация объявления</h3>
+            <span class="close" onclick="cancelActivation()">&times;</span>
         </div>
         <div class="modal-body">
-            <p>Оставьте комментарий по причине смены статуса объявления.</p>
+            <p>Вы уверены, что хотите активировать это объявление?</p>
+            <p><strong>Объявление будет переведено из статуса "Ревизия" в статус "В продаже".</strong></p>
             <div class="form-group">
-                <label for="advertisementStatusComment">Комментарий:</label>
-                <textarea id="advertisementStatusComment" rows="4" placeholder="Введите комментарий..." required></textarea>
+                <label for="activationComment">Комментарий (необязательно):</label>
+                <textarea id="activationComment" rows="3" placeholder="Введите комментарий к активации..."></textarea>
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" onclick="cancelAdvertisementStatusChange()">Отмена</button>
-            <button type="button" class="btn btn-primary" onclick="saveAdvertisementStatusChange()">Сохранить</button>
+            <button type="button" class="btn btn-secondary" onclick="cancelActivation()">Отмена</button>
+            <button type="button" class="btn btn-success" onclick="confirmActivation()">Активировать</button>
         </div>
     </div>
 </div>
@@ -1410,75 +1410,10 @@
     margin-top: 10px;
 }
 
-.status-selector {
-    position: relative;
-    display: inline-block;
-}
-
-.status-badge.clickable {
-    cursor: pointer;
+.status-display {
     display: flex;
     align-items: center;
-    gap: 5px;
-    transition: all 0.3s ease;
-}
-
-.status-badge.clickable:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-}
-
-.dropdown-arrow {
-    transition: transform 0.3s ease;
-}
-
-.status-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    z-index: 1000;
-    display: none;
-    min-width: 150px;
-    margin-top: 5px;
-}
-
-.status-dropdown.show {
-    display: block;
-    animation: fadeInDown 0.3s ease;
-}
-
-.status-option {
-    padding: 8px 12px;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.status-option:hover {
-    background-color: #f8f9fa;
-}
-
-.status-option:first-child {
-    border-radius: 8px 8px 0 0;
-}
-
-.status-option:last-child {
-    border-radius: 0 0 8px 8px;
-}
-
-@keyframes fadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    gap: 10px;
 }
 
 .status-badge {
@@ -1488,6 +1423,28 @@
     font-weight: 600;
     text-align: center;
     width: fit-content;
+}
+
+.activate-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+}
+
+.activate-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.activate-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .advertisement-content {
@@ -5124,38 +5081,10 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Глобальные переменные для хранения данных о смене статуса объявления
-let pendingAdvertisementStatusChange = null;
-
-// Функции для работы с выпадающим списком статусов объявления
-function toggleAdvertisementStatusDropdown() {
-    const dropdown = document.getElementById('advertisementStatusDropdown');
-    const arrow = document.querySelector('.advertisement-status .status-badge.clickable .dropdown-arrow');
-    
-    if (dropdown.classList.contains('show')) {
-        dropdown.classList.remove('show');
-        arrow.style.transform = 'rotate(0deg)';
-    } else {
-        dropdown.classList.add('show');
-        arrow.style.transform = 'rotate(180deg)';
-    }
-}
-
-function changeAdvertisementStatus(statusId, statusName, statusColor) {
-    // Получаем данные о смене статуса
-    pendingAdvertisementStatusChange = {
-        statusId: statusId,
-        statusName: statusName,
-        statusColor: statusColor
-    };
-    
-    // Показываем модальное окно для комментария
-    showAdvertisementStatusModal();
-}
-
-function showAdvertisementStatusModal() {
-    const modal = document.getElementById('advertisementStatusCommentModal');
-    const textarea = document.getElementById('advertisementStatusComment');
+// Функция для активации объявления (перевод из статуса "Ревизия" в "В продаже")
+function activateAdvertisement() {
+    const modal = document.getElementById('activateAdvertisementModal');
+    const textarea = document.getElementById('activationComment');
     
     // Очищаем поле комментария
     textarea.value = '';
@@ -5167,51 +5096,30 @@ function showAdvertisementStatusModal() {
     textarea.focus();
 }
 
-function closeAdvertisementStatusModal() {
-    const modal = document.getElementById('advertisementStatusCommentModal');
+function cancelActivation() {
+    const modal = document.getElementById('activateAdvertisementModal');
     modal.style.display = 'none';
 }
 
-function cancelAdvertisementStatusChange() {
-    const modal = document.getElementById('advertisementStatusCommentModal');
-    modal.style.display = 'none';
+function confirmActivation() {
+    const comment = document.getElementById('activationComment').value.trim();
     
-    // Сбрасываем данные о смене статуса при отмене
-    pendingAdvertisementStatusChange = null;
-}
-
-function saveAdvertisementStatusChange() {
-    const comment = document.getElementById('advertisementStatusComment').value.trim();
-    
-    if (!comment) {
-        alert('Пожалуйста, введите комментарий');
-        return;
-    }
-    
-    if (!pendingAdvertisementStatusChange || !pendingAdvertisementStatusChange.statusId || !pendingAdvertisementStatusChange.statusName) {
-        alert('Ошибка: данные о смене статуса не найдены. Пожалуйста, выберите статус заново.');
-        closeAdvertisementStatusModal();
-        return;
-    }
-    
-    // Показываем индикатор загрузки
-    const statusBadge = document.querySelector('.advertisement-status .status-badge.clickable');
-    const originalContent = statusBadge.innerHTML;
-    const originalStyle = statusBadge.getAttribute('style');
-    statusBadge.innerHTML = '<span>Обновление...</span>';
+    const activateBtn = document.querySelector('.activate-btn');
+    const originalText = activateBtn.innerHTML;
+    activateBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Активация...';
+    activateBtn.disabled = true;
     
     // Закрываем модальное окно
-    closeAdvertisementStatusModal();
+    cancelActivation();
     
     // Отправляем запрос на сервер
-    fetch(`/advertisements/{{ $advertisement->id }}/status`, {
+    fetch(`/advertisements/{{ $advertisement->id }}/activate`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
         body: JSON.stringify({
-            status_id: pendingAdvertisementStatusChange.statusId,
             comment: comment
         })
     })
@@ -5219,17 +5127,15 @@ function saveAdvertisementStatusChange() {
     .then(data => {
         if (data.success) {
             // Обновляем отображение статуса
-            statusBadge.className = 'status-badge clickable';
-            statusBadge.style.cssText = `background-color: ${pendingAdvertisementStatusChange.statusColor}; color: white;`;
-            statusBadge.innerHTML = `
-                ${pendingAdvertisementStatusChange.statusName}
-                <svg class="dropdown-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="6,9 12,15 18,9"></polyline>
-                </svg>
-            `;
+            const statusBadge = document.querySelector('.advertisement-status .status-badge');
+            statusBadge.style.backgroundColor = data.status_color;
+            statusBadge.textContent = data.status_name;
             
-            // Закрываем выпадающий список
-            toggleAdvertisementStatusDropdown();
+            // Удаляем кнопку активации
+            const activateBtn = document.querySelector('.activate-btn');
+            if (activateBtn) {
+                activateBtn.remove();
+            }
             
             // Обновляем лог событий, если получен новый лог
             if (data.log) {
@@ -5237,30 +5143,23 @@ function saveAdvertisementStatusChange() {
             }
             
             // Показываем уведомление об успехе
-            showNotification('Статус объявления успешно обновлен', 'success');
+            showNotification('Объявление успешно активировано', 'success');
         } else {
-            // Проверяем, является ли ошибка связанной со статусом товара
-            if (data.product_status && (data.product_status === 'Холд' || data.product_status === 'Отказ')) {
-                showProductStatusWarning(data.message, data.product_id, data.product_status);
-            } else {
-                throw new Error(data.message || 'Ошибка при обновлении статуса');
-            }
+            showNotification(data.message || 'Ошибка при активации объявления', 'error');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        // Возвращаем оригинальное содержимое при ошибке
-        statusBadge.innerHTML = originalContent;
-        statusBadge.setAttribute('style', originalStyle);
-        showNotification('Ошибка при обновлении статуса объявления', 'error');
+        console.error('Ошибка:', error);
+        showNotification('Ошибка при активации объявления', 'error');
     })
     .finally(() => {
-        // Сбрасываем данные о смене статуса только после завершения операции
-        if (pendingAdvertisementStatusChange) {
-            pendingAdvertisementStatusChange = null;
-        }
+        // Восстанавливаем кнопку
+        activateBtn.innerHTML = originalText;
+        activateBtn.disabled = false;
     });
 }
+
+
 
 function updateAdvertisementEventsLog(log) {
     const eventsList = document.querySelector('.events-list');
@@ -5370,7 +5269,7 @@ document.addEventListener('click', function(event) {
     const logsModal = document.getElementById('logsHistoryModal');
     const actionsModal = document.getElementById('actionsModal');
     const newActionModal = document.getElementById('newActionModal');
-    const advertisementStatusModal = document.getElementById('advertisementStatusCommentModal');
+    const activateAdvertisementModal = document.getElementById('activateAdvertisementModal');
     const productStatusWarningModal = document.getElementById('productStatusWarningModal');
     
     if (event.target === logsModal) {
@@ -5385,8 +5284,8 @@ document.addEventListener('click', function(event) {
         closeNewActionModal();
     }
     
-    if (event.target === advertisementStatusModal) {
-        cancelAdvertisementStatusChange();
+    if (event.target === activateAdvertisementModal) {
+        cancelActivation();
     }
     
     if (event.target === productStatusWarningModal) {
@@ -5401,7 +5300,7 @@ document.addEventListener('keydown', function(event) {
         const logsModal = document.getElementById('logsHistoryModal');
         const actionsModal = document.getElementById('actionsModal');
         const newActionModal = document.getElementById('newActionModal');
-        const advertisementStatusModal = document.getElementById('advertisementStatusCommentModal');
+        const activateAdvertisementModal = document.getElementById('activateAdvertisementModal');
         const productStatusWarningModal = document.getElementById('productStatusWarningModal');
         
         if (logsModal && logsModal.style.display === 'block') {
@@ -5416,8 +5315,8 @@ document.addEventListener('keydown', function(event) {
             closeNewActionModal();
         }
         
-        if (advertisementStatusModal && advertisementStatusModal.style.display === 'block') {
-            cancelAdvertisementStatusChange();
+        if (activateAdvertisementModal && activateAdvertisementModal.style.display === 'block') {
+            cancelActivation();
         }
         
         if (productStatusWarningModal && productStatusWarningModal.style.display === 'block') {
