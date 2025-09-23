@@ -25,6 +25,7 @@ class Advertisement extends Model
         'removal_data',
         'adv_price',
         'adv_price_comment',
+        'show_price',
         'product_state',
         'product_available',
         'main_img',
@@ -38,6 +39,7 @@ class Advertisement extends Model
         'check_data' => 'array',
         'loading_data' => 'array',
         'removal_data' => 'array',
+        'show_price' => 'boolean',
     ];
 
     // Связь с товаром

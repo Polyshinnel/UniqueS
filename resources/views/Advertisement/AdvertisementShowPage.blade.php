@@ -814,6 +814,28 @@
                         </div>
                     </div>
 
+                    <!-- Отображение цены на сайте -->
+                    <div class="payment-item">
+                        <strong>Отображение цены на сайте:</strong>
+                        <div class="payment-content" id="show_price_content">
+                            @if($advertisement->show_price)
+                                <span class="badge badge-success">Показывать цену</span>
+                            @else
+                                <span class="badge badge-warning">Скрыть цену</span>
+                            @endif
+                        </div>
+                        <div class="payment-edit" id="show_price_edit" style="display: none;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="show_price_checkbox" 
+                                       {{ $advertisement->show_price ? 'checked' : '' }}
+                                       data-original="{{ $advertisement->show_price ? '1' : '0' }}">
+                                <label class="form-check-label" for="show_price_checkbox">
+                                    Показывать цену на сайте
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Кнопки действий для блока продажи -->
                     <div class="payment-actions" id="sale_actions" style="display: none;">
                         <button class="btn btn-primary" onclick="saveSaleBlock()">Сохранить</button>
@@ -3712,7 +3734,7 @@ function savePurchaseBlock() {
 // Функции для редактирования блока продажи
 function editSaleBlock() {
     // Скрываем все контенты и показываем формы редактирования для блока продажи
-    const fields = ['adv_price', 'adv_price_comment'];
+    const fields = ['adv_price', 'adv_price_comment', 'show_price'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
@@ -3733,7 +3755,7 @@ function editSaleBlock() {
 
 function cancelSaleEdit() {
     // Восстанавливаем все оригинальные значения для блока продажи
-    const fields = ['adv_price', 'adv_price_comment'];
+    const fields = ['adv_price', 'adv_price_comment', 'show_price'];
     
     fields.forEach(field => {
         const content = document.getElementById(field + '_content');
@@ -3751,6 +3773,12 @@ function cancelSaleEdit() {
                 if (textarea) {
                     const originalValue = textarea.getAttribute('data-original') || '';
                     textarea.value = originalValue;
+                }
+            } else if (field === 'show_price') {
+                const checkbox = document.getElementById('show_price_checkbox');
+                if (checkbox) {
+                    const originalValue = checkbox.getAttribute('data-original') === '1';
+                    checkbox.checked = originalValue;
                 }
             }
             
@@ -3770,7 +3798,8 @@ function saveSaleBlock() {
     // Собираем данные для отправки (только данные продажи)
     const saleData = {
         adv_price: null,
-        adv_price_comment: null
+        adv_price_comment: null,
+        show_price: true
     };
     
     // Получаем цену продажи
@@ -3783,6 +3812,12 @@ function saveSaleBlock() {
     const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
     if (advPriceCommentTextarea) {
         saleData.adv_price_comment = advPriceCommentTextarea.value.trim();
+    }
+    
+    // Получаем значение чекбокса отображения цены
+    const showPriceCheckbox = document.getElementById('show_price_checkbox');
+    if (showPriceCheckbox) {
+        saleData.show_price = showPriceCheckbox.checked;
     }
     
     // Показываем индикатор загрузки
@@ -3803,11 +3838,11 @@ function saveSaleBlock() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Обновляем отображение
-            updateSaleDisplay(saleData);
+            // Обновляем отображение данными с сервера
+            updateSaleDisplay(data.data || saleData);
             
             // Сохраняем новые значения как оригинальные
-            saveSaleOriginals(saleData);
+            saveSaleOriginals(data.data || saleData);
             
             // Скрываем формы редактирования
             cancelSaleEdit();
@@ -3899,6 +3934,14 @@ function updateSaleDisplay(saleData) {
     } else {
         advPriceCommentContent.innerHTML = '<span class="no-value">Не указан</span>';
     }
+    
+    // Обновляем отображение информации о скрытии цены
+    const showPriceContent = document.getElementById('show_price_content');
+    if (saleData.show_price) {
+        showPriceContent.innerHTML = '<span class="badge badge-success">Показывать цену</span>';
+    } else {
+        showPriceContent.innerHTML = '<span class="badge badge-warning">Скрыть цену</span>';
+    }
 }
 
 function saveSaleOriginals(saleData) {
@@ -3911,6 +3954,11 @@ function saveSaleOriginals(saleData) {
     const advPriceCommentTextarea = document.getElementById('adv_price_comment_textarea');
     if (advPriceCommentTextarea) {
         advPriceCommentTextarea.setAttribute('data-original', saleData.adv_price_comment || '');
+    }
+    
+    const showPriceCheckbox = document.getElementById('show_price_checkbox');
+    if (showPriceCheckbox) {
+        showPriceCheckbox.setAttribute('data-original', saleData.show_price ? '1' : '0');
     }
 }
 

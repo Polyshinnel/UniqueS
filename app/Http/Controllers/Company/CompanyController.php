@@ -45,6 +45,9 @@ class CompanyController extends Controller
             'actions' => function($query) {
                 $query->where('status', false)
                       ->orderBy('expired_at', 'asc');
+            },
+            'products' => function($query) {
+                $query->select('id', 'company_id');
             }
         ]);
 
@@ -100,7 +103,7 @@ class CompanyController extends Controller
             $query->where('owner_user_id', request('owner_id'));
         }
 
-        $companies = $query->orderBy('id', 'desc')->paginate(4);
+        $companies = $query->orderBy('id', 'desc')->paginate(20);
 
         // Данные для фильтров
         $filterData = [

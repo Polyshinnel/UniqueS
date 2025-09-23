@@ -400,6 +400,12 @@
                         @else
                         <div class="status-badge status-unknown">Статус не указан</div>
                         @endif
+                        @php
+                            $productsCount = $company->products->count();
+                        @endphp
+                        <div class="products-count {{ $productsCount < 1 ? 'products-count-red' : 'products-count-blue' }}">
+                            Товаров: {{ $productsCount }}
+                        </div>
                     </td>
                 </tr>
                 @empty
@@ -1252,6 +1258,30 @@
 .status-4 { background-color: #fce4ec !important; color: #c2185b !important; }
 .status-unknown { background-color: #f5f5f5 !important; color: #666 !important; }
 
+/* Стили для отображения количества товаров */
+.products-count {
+    margin-top: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: center;
+    padding: 3px 8px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.products-count-red {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+}
+
+.products-count-blue {
+    background-color: #e3f2fd;
+    color: #1565c0;
+    border: 1px solid #bbdefb;
+}
+
 /* Стили для пустого состояния */
 .empty-state {
     text-align: center;
@@ -1349,6 +1379,11 @@
         font-size: 11px;
         padding: 5px 10px;
     }
+    
+    .products-count {
+        font-size: 10px;
+        padding: 2px 6px;
+    }
 }
 
 @media (max-width: 1200px) {
@@ -1423,6 +1458,11 @@
     .status-badge {
         font-size: 10px;
         padding: 4px 8px;
+    }
+    
+    .products-count {
+        font-size: 9px;
+        padding: 2px 5px;
     }
 }
 

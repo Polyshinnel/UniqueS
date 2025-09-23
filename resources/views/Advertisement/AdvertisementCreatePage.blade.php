@@ -1026,12 +1026,12 @@
                             <option value="">Выберите товар</option>
                             @foreach($products as $productItem)
                                 <option value="{{ $productItem->id }}" {{ $product && $product->id == $productItem->id ? 'selected' : '' }}>
-                                    {{ $productItem->name }} ({{ $productItem->category->name }}) - {{ $productItem->status ? $productItem->status->name : 'Без статуса' }}
+                                    {{ $productItem->name }} ({{ $productItem->sku }}) - {{ $productItem->category->name }}
                                 </option>
                             @endforeach
                         </select>
                     </div>
-                    <small class="form-text text-muted">Доступны для создания товары в статусах: В продаже, Вторая очередь. Товары со статусом "Ревизия" недоступны для создания объявлений.</small>
+                    <small class="form-text text-muted">Доступны для создания только товары со статусом "В продаже" и без созданных объявлений.</small>
                     <button type="button" id="copyFromProduct" class="btn btn-secondary mt-2" style="margin-top: 7px;">Заполнить данными товара</button>
                 </div>
 
@@ -1362,11 +1362,11 @@
 
 <script>
 // Данные для TreeSelect
-// eslint-disable-next-line
+// eslint-disable-next-line no-undef
 const categoriesData = @json($categories);
 
 // Данные о товарах с их статусами
-// eslint-disable-next-line
+// eslint-disable-next-line no-undef
 const productsData = @json($products);
 
 // Глобальные переменные для редакторов
@@ -1419,16 +1419,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Дополнительная проверка для первого шага - статус товара
+        // Дополнительная проверка для первого шага - товар должен быть выбран
         if (stepNumber === 1) {
             const productId = document.getElementById('product_id').value;
-            if (productId) {
-                // Находим товар в данных
-                const selectedProduct = productsData.find(product => product.id == productId);
-                if (selectedProduct && selectedProduct.status && selectedProduct.status.name === 'Ревизия') {
-                    showNotification('Нельзя создавать объявления для товаров со статусом "Ревизия". Пожалуйста, выберите другой товар.', 'error');
-                    return false;
-                }
+            if (!productId) {
+                showNotification('Пожалуйста, выберите товар для создания объявления.', 'error');
+                return false;
             }
         }
 

@@ -220,27 +220,19 @@ class AdvertisementController extends Controller
 
         $categories = ProductCategories::all();
 
-        // Получаем ID статусов "Холд", "Отказ", "В работе", "Продано" и "Ревизия"
+        // Получаем товары со статусом "В продаже" и has_advertise=false
+        $productsQuery = Product::with('category', 'company', 'status')
+            ->where('owner_id', auth()->id())
+            ->where('has_advertise', false);
 
-        $productStatusList = ProductStatus::all();
-        $interestingStatus = ['Холд', 'Отказ', 'В работе', 'Продано', 'Резерв', 'Ревизия'];
-
-
-        // Фильтруем товары, исключая статусы "Холд", "Отказ", "В работе", "Продано" и "Ревизия"
-        $productsQuery = Product::with('category', 'company', 'status')->where('owner_id', auth()->id());
-
-        $excludedStatusIds = [];
-
-        foreach ($productStatusList as $item)
-        {
-            if(in_array($item->name, $interestingStatus))
-            {
-                $excludedStatusIds[] = $item->id;
-            }
-        }
-
-        if (!empty($excludedStatusIds)) {
-            $productsQuery->whereNotIn('status_id', $excludedStatusIds);
+        // Находим статус "В продаже"
+        $inSaleStatus = ProductStatus::where('name', 'В продаже')->first();
+        
+        if ($inSaleStatus) {
+            $productsQuery->where('status_id', $inSaleStatus->id);
+        } else {
+            // Если статус "В продаже" не найден, возвращаем пустой результат
+            $productsQuery->where('status_id', 0);
         }
 
         $products = $productsQuery->get();
@@ -297,9 +289,13 @@ class AdvertisementController extends Controller
             abort(403, 'Вы можете создавать объявления только для своих товаров.');
         }
 
-        // Проверяем, что товар не находится в статусе "Холд", "Отказ", "В работе", "Продано" или "Ревизия"
-        if ($product->status && in_array($product->status->name, ['Холд', 'Отказ', 'В работе', 'Продано', 'Ревизия'])) {
-            abort(403, 'Нельзя создавать объявления для товаров со статусом "' . $product->status->name . '".');
+        // Проверяем, что товар находится в статусе "В продаже" и has_advertise=false
+        if (!$product->status || $product->status->name !== 'В продаже') {
+            abort(403, 'Можно создавать объявления только для товаров со статусом "В продаже".');
+        }
+        
+        if ($product->has_advertise) {
+            abort(403, 'Для этого товара уже создано объявление.');
         }
 
         // Подготавливаем данные для JSON полей
@@ -348,6 +344,9 @@ class AdvertisementController extends Controller
             'status_id' => AdvertisementStatus::where('name', 'В продаже')->first()->id,
             'created_by' => auth()->id() ?? 1, // Временно используем id=1
         ]);
+
+        // Устанавливаем has_advertise=true для товара
+        $product->update(['has_advertise' => true]);
 
         // Обработка выбранных медиафайлов из товара
         if ($request->has('selected_product_media')) {
@@ -541,7 +540,12 @@ class AdvertisementController extends Controller
 
     public function destroy(Advertisement $advertisement)
     {
+        $product = $advertisement->product;
+        
         $advertisement->delete();
+
+        // Обновляем has_advertise для товара
+        $this->updateProductHasAdvertise($product);
 
         return redirect()->route('advertisements.index')
             ->with('success', 'Объявление успешно удалено!');
@@ -1027,13 +1031,15 @@ class AdvertisementController extends Controller
     {
         $request->validate([
             'adv_price' => 'nullable|numeric|min:0',
-            'adv_price_comment' => 'nullable|string|max:1000'
+            'adv_price_comment' => 'nullable|string|max:1000',
+            'show_price' => 'nullable|boolean'
         ]);
 
         try {
             // Сохраняем старые значения для логирования
             $oldAdvPrice = $advertisement->adv_price;
             $oldAdvPriceComment = $advertisement->adv_price_comment;
+            $oldShowPrice = $advertisement->show_price;
 
             // Нормализуем значения для сравнения
             $oldAdvPriceCommentNormalized = $oldAdvPriceComment ? trim($oldAdvPriceComment) : '';
@@ -1042,13 +1048,22 @@ class AdvertisementController extends Controller
             // Обновляем данные в объявлении
             $advertisement->update([
                 'adv_price' => $request->adv_price,
-                'adv_price_comment' => $request->adv_price_comment
+                'adv_price_comment' => $request->adv_price_comment,
+                'show_price' => $request->has('show_price') ? (bool)$request->show_price : true
             ]);
 
             // Создаем запись в логе от имени системы
             $this->logAdvertisementSaleChanges($advertisement, $oldAdvPrice, $request->adv_price, $oldAdvPriceCommentNormalized, $newAdvPriceCommentNormalized);
 
-            return response()->json(['success' => true, 'message' => 'Информация о продаже обновлена']);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Информация о продаже обновлена',
+                'data' => [
+                    'adv_price' => $advertisement->adv_price,
+                    'adv_price_comment' => $advertisement->adv_price_comment,
+                    'show_price' => $advertisement->show_price
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => 'Ошибка при обновлении информации о продаже'], 500);
         }

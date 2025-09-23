@@ -13,6 +13,10 @@ class Product extends Model
 
     protected $guarded = false;
 
+    protected $casts = [
+        'has_advertise' => 'boolean',
+    ];
+
     // Связи
     public function category(): BelongsTo
     {
