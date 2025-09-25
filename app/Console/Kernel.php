@@ -15,7 +15,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')->hourly();
 
         // Выполнение команды изменения размера изображений товаров каждые 20 минут
-        $schedule->command('images:resize-products')->everyFiveMinutes();
+        $schedule->command('images:resize-products')->everyTwoMinutes();
     }
 
     /**
