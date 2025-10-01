@@ -212,6 +212,9 @@
                     </div>
                 </div>
                 <button type="button" class="btn btn-secondary" id="add-contact">+ Добавить контактное лицо</button>
+                @error('main_contact')
+                    <span class="error">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="step-actions">

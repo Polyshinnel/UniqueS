@@ -1265,6 +1265,14 @@
             </div>
 
             <div class="form-group">
+                <div class="form-check">
+                    <input type="checkbox" name="show_price" id="show_price" class="form-check-input" value="1" checked>
+                    <label for="show_price" class="form-check-label">Отображать цену на сайте</label>
+                </div>
+                <small class="form-text text-muted">Если отмечено, цена будет видна посетителям сайта</small>
+            </div>
+
+            <div class="form-group">
                 <label for="adv_price_comment">Комментарий</label>
                 <textarea name="adv_price_comment" id="adv_price_comment" class="form-control" rows="4">{{ $product ? $product->payment_comment : '' }}</textarea>
             </div>
@@ -1362,11 +1370,9 @@
 
 <script>
 // Данные для TreeSelect
-// eslint-disable-next-line no-undef
 const categoriesData = @json($categories);
 
 // Данные о товарах с их статусами
-// eslint-disable-next-line no-undef
 const productsData = @json($products);
 
 // Глобальные переменные для редакторов

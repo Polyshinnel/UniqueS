@@ -274,6 +274,7 @@ class AdvertisementController extends Controller
             'removal_comment' => 'nullable|string',
             'adv_price' => 'nullable|numeric|min:0',
             'adv_price_comment' => 'nullable|string',
+            'show_price' => 'nullable|boolean',
             'product_state' => 'nullable|exists:product_states,id',
             'product_available' => 'nullable|exists:product_availables,id',
             'main_img' => 'nullable|integer|exists:products_media,id',
@@ -338,6 +339,7 @@ class AdvertisementController extends Controller
             'removal_data' => $removalData,
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
+            'show_price' => $request->has('show_price') ? (bool)$request->show_price : true,
             'product_state' => $request->product_state,
             'product_available' => $request->product_available,
             'main_img' => $request->main_img,
@@ -462,6 +464,7 @@ class AdvertisementController extends Controller
             'removal_comment' => 'nullable|string',
             'adv_price' => 'nullable|numeric|min:0',
             'adv_price_comment' => 'nullable|string',
+            'show_price' => 'nullable|boolean',
             'main_img' => 'nullable|integer|exists:products_media,id',
             'tags' => 'nullable|string',
             'media_files.*' => 'nullable|file|mimes:jpeg,png,gif,mp4,mov,avi|max:51200',
@@ -505,6 +508,7 @@ class AdvertisementController extends Controller
             'removal_data' => $removalData,
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
+            'show_price' => $request->has('show_price') ? (bool)$request->show_price : true,
             'main_img' => $request->main_img,
         ]);
 

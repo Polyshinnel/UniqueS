@@ -199,6 +199,13 @@ class CompanyController extends Controller
             'common_info' => 'required|string',
         ]);
 
+        // Проверяем, что выбран хотя бы один основной контакт
+        if (empty($validated['main_contact']) || !in_array('1', $validated['main_contact'])) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['main_contact' => 'Необходимо выбрать хотя бы один основной контакт']);
+        }
+
         // Проверяем, что выбранный склад доступен пользователю
         $userWarehouses = $this->getUserWarehouses();
         $warehouse = $userWarehouses->find($validated['warehouse_id']);

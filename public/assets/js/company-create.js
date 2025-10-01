@@ -35,6 +35,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
         }
+
+        // Дополнительная валидация для шага 3 (контактные лица)
+        if (stepNumber === 3) {
+            const mainContactCheckboxes = stepElement.querySelectorAll('input[name="main_contact[]"]');
+            let hasMainContact = false;
+            
+            for (let checkbox of mainContactCheckboxes) {
+                if (checkbox.checked) {
+                    hasMainContact = true;
+                    break;
+                }
+            }
+            
+            if (!hasMainContact) {
+                alert('Необходимо выбрать хотя бы один основной контакт');
+                return false;
+            }
+        }
+
         return true;
     }
 
