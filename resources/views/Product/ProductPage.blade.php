@@ -601,7 +601,11 @@
                                             Объявление
                                         </a>
                                     </div>
-                                    <div class="price-value">{{ number_format($adWithPrice->adv_price, 0, ',', ' ') }} ₽</div>
+                                    @if($adWithPrice->show_price)
+                                        <div class="price-value">{{ number_format($adWithPrice->adv_price, 0, ',', ' ') }} ₽</div>
+                                    @else
+                                        <div class="price-value price-hidden">Скрыто</div>
+                                    @endif
                                 @else
                                     <div class="price-value">Не указана</div>
                                 @endif
@@ -1747,6 +1751,12 @@ function closeCompanyCard() {
     font-size: 12px;
     color: #333;
     font-weight: 600;
+}
+
+.price-value.price-hidden {
+    color: #999;
+    font-style: italic;
+    font-weight: 500;
 }
 
 /* Стили для пустого состояния */

@@ -514,7 +514,11 @@
                         </div>
                         <div class="price-info">
                             <div class="price-label">Цена продажи:</div>
-                            <div class="price-value">{{ number_format($advertisement->adv_price ?? 0, 0, ',', ' ') }} руб</div>
+                            @if($advertisement->show_price)
+                                <div class="price-value">{{ number_format($advertisement->adv_price ?? 0, 0, ',', ' ') }} руб</div>
+                            @else
+                                <div class="price-value price-hidden">Скрыто</div>
+                            @endif
                         </div>
                     </td>
                 </tr>
@@ -1658,6 +1662,12 @@ function closeCompanyCard() {
     font-size: 12px;
     color: #333;
     font-weight: 600;
+}
+
+.price-value.price-hidden {
+    color: #999;
+    font-style: italic;
+    font-weight: 500;
 }
 
 /* Стили для пустого состояния */
