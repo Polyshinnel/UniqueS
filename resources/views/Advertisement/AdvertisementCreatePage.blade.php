@@ -1267,6 +1267,7 @@
             <div class="form-group">
                 <div class="form-check">
                     <input type="checkbox" name="show_price" id="show_price" class="form-check-input" value="1" checked>
+                    <input type="hidden" name="show_price" value="0">
                     <label for="show_price" class="form-check-label">Отображать цену на сайте</label>
                 </div>
                 <small class="form-text text-muted">Если отмечено, цена будет видна посетителям сайта</small>

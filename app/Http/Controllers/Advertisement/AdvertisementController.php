@@ -339,7 +339,7 @@ class AdvertisementController extends Controller
             'removal_data' => $removalData,
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
-            'show_price' => $request->has('show_price') ? (bool)$request->show_price : true,
+            'show_price' => (bool)$request->show_price,
             'product_state' => $request->product_state,
             'product_available' => $request->product_available,
             'main_img' => $request->main_img,
@@ -508,7 +508,7 @@ class AdvertisementController extends Controller
             'removal_data' => $removalData,
             'adv_price' => $request->adv_price,
             'adv_price_comment' => $request->adv_price_comment,
-            'show_price' => $request->has('show_price') ? (bool)$request->show_price : true,
+            'show_price' => (bool)$request->show_price,
             'main_img' => $request->main_img,
         ]);
 
@@ -1053,7 +1053,7 @@ class AdvertisementController extends Controller
             $advertisement->update([
                 'adv_price' => $request->adv_price,
                 'adv_price_comment' => $request->adv_price_comment,
-                'show_price' => $request->has('show_price') ? (bool)$request->show_price : true
+                'show_price' => (bool)$request->show_price
             ]);
 
             // Создаем запись в логе от имени системы
