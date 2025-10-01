@@ -55,12 +55,15 @@ class CompanyController extends Controller
         if ($user && $user->role) {
             $canViewCompanies = $user->role->can_view_companies;
             
-            if ($canViewCompanies === 1) {
-                // Показываем только компании, где пользователь является владельцем
-                $query->where('owner_user_id', $user->id);
-            } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
+            if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем компании, где он указан как региональный
                 $query->where('regional_user_id', $user->id);
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера показываем только его компании
+                $query->where('owner_user_id', $user->id);
+            } elseif ($canViewCompanies === 1) {
+                // Показываем только компании, где пользователь является владельцем
+                $query->where('owner_user_id', $user->id);
             } elseif ($canViewCompanies === 3) {
                 // Показываем все компании (без дополнительных ограничений)
                 // Query остается без изменений
@@ -396,14 +399,19 @@ class CompanyController extends Controller
 
         $canViewCompanies = $user->role->can_view_companies;
         
-        if ($canViewCompanies === 1) {
-            // Пользователь может видеть только свои компании
+        if ($user->role->name === 'Региональный представитель') {
+            // Региональный представитель может видеть компании, где он указан как региональный
+            if ($company->regional_user_id !== $user->id) {
+                abort(403, 'Доступ запрещен');
+            }
+        } elseif ($user->role->name === 'Менеджер') {
+            // Менеджер может видеть только свои компании
             if ($company->owner_user_id !== $user->id) {
                 abort(403, 'Доступ запрещен');
             }
-        } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
-            // Региональный представитель может видеть компании, где он указан как региональный
-            if ($company->regional_user_id !== $user->id) {
+        } elseif ($canViewCompanies === 1) {
+            // Пользователь может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
                 abort(403, 'Доступ запрещен');
             }
         } elseif ($canViewCompanies !== 3) {
@@ -466,7 +474,7 @@ class CompanyController extends Controller
                     'message' => 'Доступ запрещен'
                 ], 403);
             }
-        } elseif ($canViewCompanies === 0 && $user->role->name === 'Региональный представитель') {
+        } elseif ($user->role->name === 'Региональный представитель') {
             // Региональный представитель не может обновлять статус компаний
             return response()->json([
                 'success' => false,
@@ -623,6 +631,14 @@ class CompanyController extends Controller
                     'message' => 'Доступ запрещен'
                 ], 403);
             }
+        } elseif ($user->role->name === 'Менеджер') {
+            // Менеджер может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
         } elseif ($user->role->can_view_companies === 1) {
             // Пользователь может видеть только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -687,6 +703,14 @@ class CompanyController extends Controller
         if ($user->role->name === 'Региональный представитель') {
             // Для регионального представителя проверяем, что он назначен как региональный представитель
             if ($company->regional_user_id !== $user->id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Доступ запрещен'
+                ], 403);
+            }
+        } elseif ($user->role->name === 'Менеджер') {
+            // Менеджер может видеть только свои компании
+            if ($company->owner_user_id !== $user->id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Доступ запрещен'
