@@ -61,8 +61,11 @@ class ProductController extends Controller
         // Применяем фильтры по правам доступа
         if ($user && $user->role) {
             if ($user->role->name === 'Региональный представитель') {
-                // Для регионального представителя показываем товары, где он назначен как региональный представитель
+                // Для регионального представителя показываем только товары, где он назначен как региональный представитель
                 $productsQuery->where('regional_id', $currentUserId);
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера показываем только товары, где он является владельцем
+                $productsQuery->where('owner_id', $currentUserId);
             } elseif ($user->role->can_view_products === 1) {
                 // Для пользователей с ограниченным доступом показываем только их товары
                 $productsQuery->where('owner_id', $currentUserId);
@@ -154,6 +157,9 @@ class ProductController extends Controller
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем компании, где он назначен как региональный представитель
                 $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера показываем только его компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
             } elseif ($user->role->can_view_companies === 1) {
                 // Для пользователей с ограниченным доступом показываем только их компании
                 $companiesQuery->where('owner_user_id', $currentUserId);
@@ -179,6 +185,11 @@ class ProductController extends Controller
                 // Для регионального представителя показываем регионы складов, к которым у него есть доступ
                 $regionsQuery->whereHas('warehouses.users', function($query) use ($currentUserId) {
                     $query->where('users.id', $currentUserId);
+                });
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера показываем регионы его товаров
+                $regionsQuery->whereHas('warehouses.products', function($query) use ($currentUserId) {
+                    $query->where('products.owner_id', $currentUserId);
                 });
             } elseif ($user->role->can_view_companies === 1) {
                 // Для пользователей с ограниченным доступом показываем регионы их товаров
@@ -236,6 +247,9 @@ class ProductController extends Controller
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем компании, где он назначен как региональный представитель
                 $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера показываем только его компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
             } elseif ($user->role->can_view_companies === 1) {
                 // Для пользователей с ограниченным доступом показываем только их компании
                 $companiesQuery->where('owner_user_id', $currentUserId);
@@ -364,6 +378,9 @@ class ProductController extends Controller
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя проверяем, что он назначен как региональный представитель
                 $companyQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера проверяем, что он владелец
+                $companyQuery->where('owner_user_id', $currentUserId);
             } elseif ($user->role->can_view_companies === 1) {
                 // Для пользователей с ограниченным доступом проверяем, что они владельцы
                 $companyQuery->where('owner_user_id', $currentUserId);
@@ -512,7 +529,6 @@ class ProductController extends Controller
         // Создаем лог о создании товара
         $this->logProductCreation($product);
 
-        // Создаем задачу для владельца компании
         $this->createProductAction($product);
 
         // Проверяем, является ли запрос AJAX
@@ -744,6 +760,9 @@ class ProductController extends Controller
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем компании, где он назначен как региональный представитель
                 $companiesQuery->where('regional_user_id', $currentUserId);
+            } elseif ($user->role->name === 'Менеджер') {
+                // Для менеджера показываем только его компании
+                $companiesQuery->where('owner_user_id', $currentUserId);
             } elseif ($user->role->can_view_companies === 1) {
                 // Для пользователей с ограниченным доступом показываем только их компании
                 $companiesQuery->where('owner_user_id', $currentUserId);
@@ -1194,15 +1213,6 @@ class ProductController extends Controller
             // Получаем новый статус
             $newStatus = $product->status;
 
-            // Специальная обработка для статуса "Холд"
-            if ($newStatus->name === 'Холд') {
-                $this->handleProductHoldStatus($product, auth()->user());
-            }
-
-            // Специальная обработка для статуса "Отказ"
-            if ($newStatus->name === 'Отказ') {
-                $this->handleProductRefuseStatus($product, auth()->user());
-            }
 
             // Обновляем статус связанных объявлений
             $this->updateAdvertisementStatuses($product, $oldStatus, $newStatus);
@@ -1706,8 +1716,8 @@ class ProductController extends Controller
         $action = ProductAction::create([
             'product_id' => $product->id,
             'user_id' => $company->owner_user_id, // ID владельца компании
-            'action' => 'Актуализировать данные по товару, уточнить цену и способ оплаты, принять решение по дальнейшим действиям.',
-            'expired_at' => now()->addDays(7), // Срок выполнения - 7 дней
+            'action' => 'С поставщиком подтвердить цену, условия, принять решение о продаже.',
+            'expired_at' => now()->addDays(2), // Срок выполнения - 7 дней
             'status' => false, // Задача не выполнена
         ]);
 
@@ -1741,75 +1751,11 @@ class ProductController extends Controller
         ]);
     }
 
-    /**
-     * Обрабатывает перевод товара в статус "Холд"
-     */
-    private function handleProductHoldStatus(Product $product, $user)
-    {
-        // 1. Создаем задачу для товара со сроком сейчас + 3 месяца
-        $expiredAt = now()->addMonths(3);
-        
-        ProductAction::create([
-            'product_id' => $product->id,
-            'user_id' => $product->owner_id,
-            'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
-            'expired_at' => $expiredAt,
-            'status' => false
-        ]);
-
-        // 2. Создаем задачи для связанных объявлений
-        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано'])->pluck('id');
-        
-        $advertisementsToUpdate = $product->advertisements()
-            ->whereNotIn('status_id', $excludedAdvertisementStatuses)
-            ->get();
-
-        // 3. Создаем задачи для объявлений
-        foreach ($advertisementsToUpdate as $advertisement) {
-            \App\Models\AdvAction::create([
-                'advertisement_id' => $advertisement->id,
-                'user_id' => $advertisement->created_by,
-                'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                'expired_at' => $expiredAt,
-                'status' => false
-            ]);
-        }
-    }
-
+  
     /**
      * Обрабатывает перевод товара в статус "Отказ"
      */
-    private function handleProductRefuseStatus(Product $product, $user)
-    {
-        // 1. Создаем задачу для товара со сроком сейчас + 6 месяцев
-        $expiredAt = now()->addMonths(6);
-        
-        ProductAction::create([
-            'product_id' => $product->id,
-            'user_id' => $product->owner_id,
-            'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
-            'expired_at' => $expiredAt,
-            'status' => false
-        ]);
 
-        // 2. Создаем задачи для связанных объявлений
-        $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано'])->pluck('id');
-        
-        $advertisementsToUpdate = $product->advertisements()
-            ->whereNotIn('status_id', $excludedAdvertisementStatuses)
-            ->get();
-
-        // 3. Создаем задачи для объявлений
-        foreach ($advertisementsToUpdate as $advertisement) {
-            \App\Models\AdvAction::create([
-                'advertisement_id' => $advertisement->id,
-                'user_id' => $advertisement->created_by,
-                'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                'expired_at' => $expiredAt,
-                'status' => false
-            ]);
-        }
-    }
 
     /**
      * Обновляет основную информацию товара (категория и адрес станка)
@@ -2516,8 +2462,8 @@ class ProductController extends Controller
             $action = AdvAction::create([
                 'advertisement_id' => $advertisement->id,
                 'user_id' => $advertisement->created_by, // Назначаем задачу создателю объявления
-                'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                'expired_at' => now()->addDays(7), // Срок выполнения - 7 дней
+                'action' => 'Актуализировать и опубликовать обьявление',
+                'expired_at' => now()->addDays(1), // Срок выполнения - 7 дней
                 'status' => false, // Задача не выполнена
             ]);
 

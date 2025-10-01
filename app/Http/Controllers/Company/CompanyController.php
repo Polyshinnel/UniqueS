@@ -328,8 +328,8 @@ class CompanyController extends Controller
             CompanyActions::create([
                 'company_id' => $company->id,
                 'user_id' => auth()->id(),
-                'action' => 'Отправить регионала, уточнить список и цены на оборудование',
-                'expired_at' => now()->addDays(7),
+                'action' => 'Отправить регионала на опись / актуализировать статус по описанному  товару',
+                'expired_at' => now()->addDays(2),
                 'status' => false,
             ]);
 
@@ -993,7 +993,7 @@ class CompanyController extends Controller
         CompanyActions::create([
             'company_id' => $company->id,
             'user_id' => $user->id,
-            'action' => 'Актуализировать данные, уточнить по оборудованию и ценам',
+            'action' => 'Актуализировать статус ХОЛД по поставщику, прошло 3 мес.',
             'expired_at' => $expiredAt,
             'status' => false
         ]);
@@ -1717,7 +1717,7 @@ class CompanyController extends Controller
         CompanyActions::create([
             'company_id' => $company->id,
             'user_id' => $user->id,
-            'action' => 'Актуализировать данные, уточнить по оборудованию и цены',
+            'action' => 'Актуализировать статус ОТКАЗ по поставщику, прошло 6 мес.',
             'expired_at' => $expiredAt,
             'status' => false
         ]);
