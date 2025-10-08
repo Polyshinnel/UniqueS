@@ -54,7 +54,7 @@ class CompanyController extends Controller
         // Фильтрация компаний в зависимости от роли пользователя
         if ($user && $user->role) {
             $canViewCompanies = $user->role->can_view_companies;
-            
+
             if ($user->role->name === 'Региональный представитель') {
                 // Для регионального представителя показываем компании, где он указан как региональный
                 $query->where('regional_user_id', $user->id);
@@ -116,7 +116,7 @@ class CompanyController extends Controller
             'regionals' => User::where('role_id', 3)
                 ->where('active', true)
                 ->get(),
-            'owners' => $user && $user->role && $user->role->can_view_companies === 3 
+            'owners' => $user && $user->role && $user->role->can_view_companies === 3
                 ? User::where('active', true)
                     ->whereIn('id', function($query) {
                         $query->select('owner_user_id')
@@ -148,10 +148,10 @@ class CompanyController extends Controller
     {
         // Получаем склады, доступные текущему пользователю
         $userWarehouses = $this->getUserWarehouses();
-        
+
         // Загружаем склады с их регионами
         $warehouses = $userWarehouses->load('regions');
-            
+
         $sources = Sources::all();
         // Не загружаем всех региональных представителей, они будут загружены через AJAX
         $regionals = collect();
@@ -214,7 +214,7 @@ class CompanyController extends Controller
                 ->withInput()
                 ->withErrors(['warehouse_id' => 'Выбранный склад недоступен или не прикреплен к региону']);
         }
-        
+
         // Проверяем, что выбранный регион принадлежит складу
         $selectedRegion = $warehouse->regions->where('id', $validated['region'])->first();
         if (!$selectedRegion) {
@@ -359,17 +359,17 @@ class CompanyController extends Controller
     {
         // Очищаем название склада от лишних символов
         $cleanWarehouseName = preg_replace('/[^A-ZА-Я]/u', '', strtoupper($warehouseName));
-        
+
         // Если название пустое, используем "COMP"
         if (empty($cleanWarehouseName)) {
             $cleanWarehouseName = 'COMP';
         }
-        
+
         // Ищем последний артикул с таким префиксом
         $lastCompany = Company::where('sku', 'LIKE', $cleanWarehouseName . '-%')
             ->orderByRaw('CAST(SUBSTRING_INDEX(sku, "-", -1) AS UNSIGNED) DESC')
             ->first();
-        
+
         if ($lastCompany) {
             // Извлекаем номер из последнего артикула
             $lastNumber = (int) substr($lastCompany->sku, strrpos($lastCompany->sku, '-') + 1);
@@ -377,10 +377,10 @@ class CompanyController extends Controller
         } else {
             $nextNumber = 1;
         }
-        
+
         // Форматируем номер с ведущими нулями
         $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-        
+
         return $cleanWarehouseName . '-' . $formattedNumber;
     }
 
@@ -390,7 +390,7 @@ class CompanyController extends Controller
     public function getNextSku($warehouseName)
     {
         $nextSku = $this->generateUniqueSku($warehouseName);
-        
+
         return response()->json([
             'next_sku' => $nextSku
         ]);
@@ -405,7 +405,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($user->role->name === 'Региональный представитель') {
             // Региональный представитель может видеть компании, где он указан как региональный
             if ($company->regional_user_id !== $user->id) {
@@ -454,7 +454,7 @@ class CompanyController extends Controller
         $statuses = \App\Models\CompanyStatus::all();
 
         // Определяем права пользователя на редактирование
-        $canEdit = $user->role->can_view_companies === 3 || 
+        $canEdit = $user->role->can_view_companies === 3 ||
                    ($user->role->can_view_companies === 1 && $company->owner_user_id === $user->id);
 
         return view('Company.CompanyShowPage', compact('company', 'statuses', 'lastLog', 'lastAction', 'canEdit'));
@@ -472,7 +472,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -528,7 +528,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Смена статуса с '{$oldStatus->name}' на '{$newStatus->name}'. Комментарий: {$validated['comment']}";
-                
+
                 // Добавляем дополнительную информацию в лог
                 if (isset($productsLogText)) {
                     $logText .= $productsLogText;
@@ -572,13 +572,13 @@ class CompanyController extends Controller
     {
         // Проверяем, что склад доступен текущему пользователю
         $userWarehouses = $this->getUserWarehouses();
-        
+
         $warehouse = $userWarehouses->find($warehouseId);
-        
+
         if (!$warehouse) {
             return response()->json([]);
         }
-        
+
         // Получаем региональных представителей, которые имеют доступ к выбранному складу
         $regionals = User::where('role_id', 3)
             ->where('active', true)
@@ -597,20 +597,20 @@ class CompanyController extends Controller
     {
         // Проверяем, что склад доступен текущему пользователю
         $userWarehouses = $this->getUserWarehouses();
-        
+
         $warehouse = $userWarehouses->find($warehouseId);
-        
+
         if (!$warehouse || !$warehouse->regions->count()) {
             return response()->json(['regions' => []]);
         }
-        
+
         $regions = $warehouse->regions->map(function($region) {
             return [
                 'id' => $region->id,
                 'name' => $region->name
             ];
         });
-        
+
         return response()->json([
             'regions' => $regions
         ]);
@@ -667,10 +667,10 @@ class CompanyController extends Controller
 
         // Получаем основной адрес компании
         $mainAddress = $company->addresses->where('main_address', true)->first();
-        
+
         // Получаем склад компании
         $warehouse = $company->warehouses->first();
-        
+
         // Получаем регион компании напрямую из поля region_id
         $region = $company->region;
 
@@ -757,12 +757,12 @@ class CompanyController extends Controller
     private function getUserRegions()
     {
         $user = auth()->user();
-        
+
         // Если пользователь не авторизован, показываем пустой список
         if (!$user) {
             return collect();
         }
-        
+
         // Проверяем роль пользователя - администраторы видят все регионы
         if ($user->role && $user->role->can_view_companies === 3) {
             return Regions::where('active', true)->get();
@@ -788,12 +788,12 @@ class CompanyController extends Controller
     private function getUserWarehouses()
     {
         $user = auth()->user();
-        
+
         // Если пользователь не авторизован, показываем пустой список
         if (!$user) {
             return collect();
         }
-        
+
         // Проверяем роль пользователя - администраторы видят все склады
         if ($user->role && $user->role->can_view_companies === 3) {
             return Warehouses::where('active', true)->get();
@@ -824,7 +824,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может видеть только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -866,7 +866,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может работать только со своими компаниями
             if ($company->owner_user_id !== $user->id) {
@@ -901,9 +901,9 @@ class CompanyController extends Controller
 
             // Создаем лог о создании действия
             $commentType = LogType::where('name', 'Комментарий')->first();
-            
+
             $logMessage = "Пользователь: {$user->name}, создал новую задачу: \"{$validated['action']}\" со сроком до {$validated['expired_at']}";
-            
+
             $log = CompanyLog::create([
                 'company_id' => $company->id,
                 'type_id' => $commentType ? $commentType->id : null,
@@ -940,7 +940,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может работать только со своими компаниями
             if ($company->owner_user_id !== $user->id) {
@@ -990,9 +990,9 @@ class CompanyController extends Controller
 
             // Создаем лог о выполнении действия
             $commentType = LogType::where('name', 'Комментарий')->first();
-            
+
             $logMessage = "Пользователь: {$user->name}, выполнил задачу \"{$action->action}\" с комментарием: {$validated['comment']}";
-            
+
             $log = CompanyLog::create([
                 'company_id' => $company->id,
                 'type_id' => $commentType ? $commentType->id : null,
@@ -1020,7 +1020,7 @@ class CompanyController extends Controller
     {
         // 1. Создаем задачу для компании со сроком сейчас + 3 месяца
         $expiredAt = now()->addMonths(3);
-        
+
         CompanyActions::create([
             'company_id' => $company->id,
             'user_id' => $user->id,
@@ -1048,7 +1048,7 @@ class CompanyController extends Controller
 
             // 5. Создаем системные логи для каждого товара
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             foreach ($productsToUpdate as $product) {
                 // Создаем системный лог для товара
                 \App\Models\ProductLog::create([
@@ -1058,18 +1058,10 @@ class CompanyController extends Controller
                     'user_id' => null // От имени системы
                 ]);
 
-                // Создаем задачу для товара
-                \App\Models\ProductAction::create([
-                    'product_id' => $product->id,
-                    'user_id' => $product->owner_id,
-                    'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
-                    'expired_at' => $expiredAt,
-                    'status' => false
-                ]);
 
                 // 6. Находим связанные объявления для товара
                 $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив', 'Холд'])->pluck('id');
-                
+
                 $advertisementsToUpdate = $product->advertisements()
                     ->whereNotIn('status_id', $excludedAdvertisementStatuses)
                     ->get();
@@ -1090,15 +1082,6 @@ class CompanyController extends Controller
                             'type_id' => $systemLogType ? $systemLogType->id : null,
                             'log' => "В связи с переводом компании \"{$company->name}\" в статус Холд, объявление переводится в статус Холд.",
                             'user_id' => null // От имени системы
-                        ]);
-
-                        // Создаем задачу для объявления
-                        \App\Models\AdvAction::create([
-                            'advertisement_id' => $advertisement->id,
-                            'user_id' => $advertisement->created_by,
-                            'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                            'expired_at' => $expiredAt,
-                            'status' => false
                         ]);
                     }
                 }
@@ -1121,7 +1104,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -1159,7 +1142,7 @@ class CompanyController extends Controller
                 $oldValue = $oldCommonInfo ?: 'пустое';
                 $newValue = $validated['common_info'] ?: 'пустое';
                 $logText = "Пользователь {$user->name} изменил Описание с \"{$oldValue}\" на \"{$newValue}\"";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1202,7 +1185,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -1239,7 +1222,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Обновлена контактная информация компании";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1289,7 +1272,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -1332,7 +1315,7 @@ class CompanyController extends Controller
                     'has_id' => isset($contactData['id']),
                     'id_value' => $contactData['id'] ?? 'null'
                 ]);
-                
+
                 if (isset($contactData['id']) && $contactData['id'] && $contactData['id'] !== '') {
                     // Обновляем существующий контакт
                     $contact = $existingContacts->find($contactData['id']);
@@ -1404,13 +1387,13 @@ class CompanyController extends Controller
             // Удаляем контакты, которые больше не нужны
             $updatedContactIds = collect($updatedContacts)->pluck('id')->toArray();
             $contactsToDelete = array_diff($existingContactIds, $updatedContactIds);
-            
+
             \Log::info('Contacts deletion info', [
                 'existing_contact_ids' => $existingContactIds,
                 'updated_contact_ids' => $updatedContactIds,
                 'contacts_to_delete' => $contactsToDelete
             ]);
-            
+
             if (!empty($contactsToDelete)) {
                 // Сначала удаляем все связанные записи для контактов, которые нужно удалить
                 foreach ($contactsToDelete as $contactId) {
@@ -1430,7 +1413,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Обновлены контакты компании";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1479,7 +1462,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -1535,7 +1518,7 @@ class CompanyController extends Controller
             // Удаляем адреса, которые больше не нужны
             $updatedAddressIds = collect($updatedAddresses)->pluck('id')->toArray();
             $addressesToDelete = array_diff($existingAddressIds, $updatedAddressIds);
-            
+
             if (!empty($addressesToDelete)) {
                 $company->addresses()->whereIn('id', $addressesToDelete)->delete();
             }
@@ -1544,7 +1527,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Обновлены адреса компании";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1588,7 +1571,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -1623,7 +1606,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Обновлена юридическая информация компании";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1670,7 +1653,7 @@ class CompanyController extends Controller
         }
 
         $canViewCompanies = $user->role->can_view_companies;
-        
+
         if ($canViewCompanies === 1) {
             // Пользователь может обновлять только свои компании
             if ($company->owner_user_id !== $user->id) {
@@ -1706,7 +1689,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Пользователь {$user->name} изменил название компании с \"{$oldName}\" на \"{$validated['name']}\"";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1744,7 +1727,7 @@ class CompanyController extends Controller
     {
         // 1. Создаем задачу для компании со сроком сейчас + 6 месяцев
         $expiredAt = now()->addMonths(6);
-        
+
         CompanyActions::create([
             'company_id' => $company->id,
             'user_id' => $user->id,
@@ -1772,7 +1755,7 @@ class CompanyController extends Controller
 
             // 5. Создаем системные логи для каждого товара
             $systemLogType = LogType::where('name', 'Системный')->first();
-            
+
             foreach ($productsToUpdate as $product) {
                 // Создаем системный лог для товара
                 \App\Models\ProductLog::create([
@@ -1793,7 +1776,7 @@ class CompanyController extends Controller
 
                 // 6. Находим связанные объявления для товара
                 $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
-                
+
                 $advertisementsToUpdate = $product->advertisements()
                     ->whereNotIn('status_id', $excludedAdvertisementStatuses)
                     ->get();
@@ -1867,7 +1850,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Пользователь {$user->name} сменил ответственного с '{$company->owner->name}' на '{$newOwner->name}'";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
@@ -1974,7 +1957,7 @@ class CompanyController extends Controller
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
                 $logText = "Пользователь {$user->name} сменил регионального представителя с '{$company->regional->name}' на '{$newRegional->name}'";
-                
+
                 $log = CompanyLog::create([
                     'company_id' => $company->id,
                     'user_id' => $user->id,
