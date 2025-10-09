@@ -199,6 +199,13 @@ class CompanyController extends Controller
             'common_info' => 'required|string',
         ]);
 
+        // Проверяем, что выбран хотя бы один основной адрес
+        if (empty($validated['main_address']) || !in_array('1', $validated['main_address'])) {
+            return redirect()->back()
+                ->withInput()
+                ->withErrors(['main_address' => 'Необходимо выбрать хотя бы один основной адрес']);
+        }
+
         // Проверяем, что выбран хотя бы один основной контакт
         if (empty($validated['main_contact']) || !in_array('1', $validated['main_contact'])) {
             return redirect()->back()

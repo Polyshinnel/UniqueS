@@ -161,6 +161,9 @@
                     </div>
                 </div>
                 <button type="button" class="btn btn-secondary" id="add-address">+ Добавить адрес</button>
+                @error('main_address')
+                    <span class="error">{{ $message }}</span>
+                @enderror
             </div>
 
             <div class="step-actions">

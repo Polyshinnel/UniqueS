@@ -36,6 +36,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
+        // Дополнительная валидация для шага 2 (адреса)
+        if (stepNumber === 2) {
+            const mainAddressCheckboxes = stepElement.querySelectorAll('input[name="main_address[]"]');
+            let hasMainAddress = false;
+            
+            for (let checkbox of mainAddressCheckboxes) {
+                if (checkbox.checked) {
+                    hasMainAddress = true;
+                    break;
+                }
+            }
+            
+            if (!hasMainAddress) {
+                alert('Необходимо выбрать хотя бы один основной адрес');
+                return false;
+            }
+        }
+
         // Дополнительная валидация для шага 3 (контактные лица)
         if (stepNumber === 3) {
             const mainContactCheckboxes = stepElement.querySelectorAll('input[name="main_contact[]"]');
