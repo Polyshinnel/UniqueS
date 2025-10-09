@@ -339,7 +339,7 @@ class CompanyController extends Controller
                 'company_id' => $company->id,
                 'user_id' => auth()->id(),
                 'action' => 'Отправить регионала на опись / актуализировать статус по описанному  товару',
-                'expired_at' => now()->addDays(2),
+                'expired_at' => now()->addDays(1),
                 'status' => false,
             ]);
 
@@ -2092,7 +2092,7 @@ class CompanyController extends Controller
             'company_id' => $company->id,
             'user_id' => $user->id,
             'action' => 'Отправить регионала на опись / Актуализировать статус по описанному  товару',
-            'expired_at' => now()->addDay(),
+            'expired_at' => now()->addDay(1),
             'status' => false
         ]);
     }

@@ -1742,7 +1742,7 @@ class ProductController extends Controller
             'product_id' => $product->id,
             'user_id' => $company->owner_user_id, // ID владельца компании
             'action' => 'С поставщиком подтвердить цену, условия, принять решение о продаже.',
-            'expired_at' => now()->addDays(2), // Срок выполнения - 7 дней
+            'expired_at' => now()->addDays(1), // Срок выполнения - 7 дней
             'status' => false, // Задача не выполнена
         ]);
 
