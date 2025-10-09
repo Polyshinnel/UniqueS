@@ -1213,6 +1213,31 @@ class ProductController extends Controller
             // Получаем новый статус
             $newStatus = $product->status;
 
+            // Проверяем, нужно ли создать задачу для создания объявления
+            if ($newStatus->name === 'В продаже') {
+                $hasAdvertisement = $product->advertisements()->exists();
+                
+                if (!$hasAdvertisement) {
+                    ProductAction::create([
+                        'product_id' => $product->id,
+                        'user_id' => $product->owner_id ?? auth()->id(),
+                        'action' => 'Подготовить и опубликовать объявление на товар',
+                        'expired_at' => now()->addDays(1),
+                        'status' => false
+                    ]);
+                }
+            }
+
+            // Проверяем, нужно ли создать задачу для ревизии товара
+            if ($newStatus->name === 'Ревизия') {
+                ProductAction::create([
+                    'product_id' => $product->id,
+                    'user_id' => $product->owner_id ?? auth()->id(),
+                    'action' => 'С поставщиком актуализировать статус товара, проверить наличие, подтвердить цену',
+                    'expired_at' => now()->addDays(1),
+                    'status' => false
+                ]);
+            }
 
             // Обновляем статус связанных объявлений
             $this->updateAdvertisementStatuses($product, $oldStatus, $newStatus);

@@ -524,6 +524,16 @@ class CompanyController extends Controller
                 $this->handleCompanyRefuseStatus($company, $user);
             }
 
+            // Специальная обработка для статуса "В работе"
+            if ($newStatus->name === 'В работе') {
+                $this->handleCompanyInWorkStatus($company, $user);
+            }
+
+            // Специальная обработка для статуса "Вторая очередь"
+            if ($newStatus->name === 'Вторая очередь') {
+                $this->handleCompanySecondPriorityStatus($company, $user);
+            }
+
             // Создаем запись в логе
             $commentLogType = LogType::where('name', 'Комментарий')->first();
             if ($commentLogType) {
@@ -1765,15 +1775,6 @@ class CompanyController extends Controller
                     'user_id' => null // От имени системы
                 ]);
 
-                // Создаем задачу для товара
-                \App\Models\ProductAction::create([
-                    'product_id' => $product->id,
-                    'user_id' => $product->owner_id,
-                    'action' => 'Актуализировать данные по товару, информации о проверке, погрузке, демонтаже, комплектации и стоимости.',
-                    'expired_at' => $expiredAt,
-                    'status' => false
-                ]);
-
                 // 6. Находим связанные объявления для товара
                 $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
 
@@ -1797,15 +1798,6 @@ class CompanyController extends Controller
                             'type_id' => $systemLogType ? $systemLogType->id : null,
                             'log' => "В связи с переводом компании \"{$company->name}\" в статус Отказ, объявление переводится в статус Архив.",
                             'user_id' => null // От имени системы
-                        ]);
-
-                        // Создаем задачу для объявления
-                        \App\Models\AdvAction::create([
-                            'advertisement_id' => $advertisement->id,
-                            'user_id' => $advertisement->created_by,
-                            'action' => 'Актуализировать данные по объявлению, скорректировать текст объявления, условия продажи и стоимость.',
-                            'expired_at' => $expiredAt,
-                            'status' => false
                         ]);
                     }
                 }
@@ -2025,5 +2017,83 @@ class CompanyController extends Controller
                 'message' => 'Ошибка при получении списка пользователей: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Обрабатывает перевод компании в статус "Вторая очередь"
+     */
+    private function handleCompanySecondPriorityStatus(Company $company, $user)
+    {
+        // 1. Получаем статусы товаров, которые НЕ нужно переводить в "Вторая очередь"
+        $excludedProductStatuses = \App\Models\ProductStatus::whereIn('name', ['Продано', 'Отказ'])->pluck('id');
+
+        // 2. Получаем товары компании, которые нужно перевести в "Вторая очередь"
+        $productsToUpdate = $company->products()
+            ->whereNotIn('status_id', $excludedProductStatuses)
+            ->get();
+
+        // 3. Получаем статус "Вторая очередь" для товаров
+        $secondPriorityProductStatus = \App\Models\ProductStatus::where('name', 'Вторая очередь')->first();
+
+        if ($secondPriorityProductStatus && $productsToUpdate->count() > 0) {
+            // Обновляем статусы товаров
+            $company->products()
+                ->whereNotIn('status_id', $excludedProductStatuses)
+                ->update(['status_id' => $secondPriorityProductStatus->id]);
+
+            // 4. Создаем системные логи для каждого товара
+            $systemLogType = LogType::where('name', 'Системный')->first();
+
+            foreach ($productsToUpdate as $product) {
+                // Создаем системный лог для товара
+                \App\Models\ProductLog::create([
+                    'product_id' => $product->id,
+                    'type_id' => $systemLogType ? $systemLogType->id : null,
+                    'log' => "В связи с переводом компании \"{$company->name}\" в статус Вторая очередь, товар переводится в статус Вторая очередь.",
+                    'user_id' => null
+                ]);
+
+                // 5. Находим связанные объявления для товара (исключая "Продано" и "Архив")
+                $excludedAdvertisementStatuses = \App\Models\AdvertisementStatus::whereIn('name', ['Продано', 'Архив'])->pluck('id');
+
+                $advertisementsToUpdate = $product->advertisements()
+                    ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                    ->get();
+
+                // 6. Получаем статус "Архив" для объявлений
+                $archiveAdvertisementStatus = \App\Models\AdvertisementStatus::where('name', 'Архив')->first();
+
+                if ($archiveAdvertisementStatus && $advertisementsToUpdate->count() > 0) {
+                    // Обновляем статусы объявлений
+                    $product->advertisements()
+                        ->whereNotIn('status_id', $excludedAdvertisementStatuses)
+                        ->update(['status_id' => $archiveAdvertisementStatus->id]);
+
+                    // 7. Создаем системные логи для каждого объявления
+                    foreach ($advertisementsToUpdate as $advertisement) {
+                        \App\Models\AdvLog::create([
+                            'advertisement_id' => $advertisement->id,
+                            'type_id' => $systemLogType ? $systemLogType->id : null,
+                            'log' => "В связи с переводом компании \"{$company->name}\" в статус Вторая очередь, объявление переводится в статус Архив.",
+                            'user_id' => null
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Обрабатывает перевод компании в статус "В работе"
+     */
+    private function handleCompanyInWorkStatus(Company $company, $user)
+    {
+        CompanyActions::create([
+            'company_id' => $company->id,
+            'user_id' => $user->id,
+            'action' => 'Отправить регионала на опись / Актуализировать статус по описанному  товару',
+            'expired_at' => now()->addDay(),
+            'status' => false
+        ]);
     }
 }
