@@ -51,7 +51,7 @@
                 <div class="status-badge" style="background-color: {{ $advertisement->status?->color ?? '#6c757d' }}; color: white;">
                     {{ $advertisement->status_name }}
                 </div>
-                @if($advertisement->status && $advertisement->status->name === 'Ревизия')
+                @if($advertisement->status && $advertisement->status->name === 'Ревизия' && (auth()->id() === $advertisement->created_by || (auth()->user()->role && auth()->user()->role->name === 'Администратор')))
                     <button type="button" class="btn btn-success btn-sm activate-btn" onclick="activateAdvertisement()" title="Активировать объявление">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <polyline points="20,6 9,17 4,12"></polyline>
