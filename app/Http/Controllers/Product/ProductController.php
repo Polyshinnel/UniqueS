@@ -581,12 +581,18 @@ class ProductController extends Controller
     {
         $sortOrder = 0;
 
-        // Получаем артикул организации и товара для создания структуры папок
+        // Получаем название склада, артикул организации и товара для создания структуры папок
+        $warehouseName = $this->transliterate($product->warehouse->name ?? 'unknown');
         $companySku = $this->transliterate($product->company->sku ?? 'unknown');
         $productSku = $this->transliterate($product->sku ?? 'unknown');
 
-        // Создаем структуру папок: Артикул_Организации/Артикул_Товара/
-        $folderPath = "products/{$companySku}/{$productSku}";
+        // Создаем структуру папок: products/название_склада/артикул_организации/артикул_товара
+        $folderPath = "products/{$warehouseName}/{$companySku}/{$productSku}";
+        
+        // Если в конфиге UPLOAD_TO_WINDOWS_FOLDER=true, добавляем webserv/ перед products
+        if (config('filesystems.upload_to_windows_folder')) {
+            $folderPath = "webserv/{$folderPath}";
+        }
 
         foreach ($files as $file) {
             if ($file->isValid()) {
