@@ -2424,7 +2424,7 @@ class ProductController extends Controller
             $this->logAdvertisementStatusChange($advertisement, $oldAdvertisementStatus, $newAdvertisementStatus, $newStatus);
             
             // Если новый статус объявления "Ревизия", создаем задачу на актуализацию
-            if ($newAdvertisementStatusName === 'Ревизия') {
+            if ($newAdvertisementStatusName === 'Ревизия' && $newStatus->name !== 'Ревизия') {
                 $this->createAdvertisementReviewTask($advertisement);
             }
         }
