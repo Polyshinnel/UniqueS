@@ -598,36 +598,91 @@ class ProductController extends Controller
 
         foreach ($files as $file) {
             if ($file->isValid()) {
-                // Определяем тип файла
-                $mimeType = $file->getMimeType();
-                $fileType = $this->getFileType($mimeType);
+                try {
+                    // Определяем тип файла
+                    $mimeType = $file->getMimeType();
+                    $fileType = $this->getFileType($mimeType);
 
-                // Генерируем уникальное имя файла
-                $fileName = $this->generateUniqueFileName($file);
+                    // Генерируем уникальное имя файла
+                    $fileName = $this->generateUniqueFileName($file);
 
-                // Сохраняем файл в созданную структуру папок
-                $filePath = $file->storeAs($folderPath, $fileName, 'public');
+                    // Получаем полный путь к директории для дополнительной диагностики
+                    $fullPath = storage_path('app/public/' . $folderPath);
+                    
+                    // Проверяем права на запись в директорию
+                    if (!is_dir($fullPath)) {
+                        \Log::warning('Директория не существует, будет создана', [
+                            'path' => $fullPath,
+                            'folder_path' => $folderPath
+                        ]);
+                    }
 
-                // Проверяем, что файл успешно сохранен
-                if ($filePath === false) {
-                    \Log::error('Ошибка сохранения медиафайла', [
+                    // Сохраняем файл в созданную структуру папок
+                    $filePath = $file->storeAs($folderPath, $fileName, 'public');
+
+                    // Проверяем, что файл успешно сохранен
+                    if ($filePath === false) {
+                        \Log::error('Ошибка сохранения медиафайла: storeAs вернул false', [
+                            'product_id' => $product->id,
+                            'file_name' => $file->getClientOriginalName(),
+                            'folder_path' => $folderPath,
+                            'file_name_generated' => $fileName,
+                            'full_path' => $fullPath,
+                            'storage_path_exists' => is_dir(storage_path('app/public')),
+                            'storage_writable' => is_writable(storage_path('app/public')),
+                            'target_dir_exists' => is_dir($fullPath),
+                            'target_dir_writable' => is_dir($fullPath) ? is_writable($fullPath) : 'N/A'
+                        ]);
+                        continue; // Пропускаем этот файл и переходим к следующему
+                    }
+
+                    // Проверяем, что файл действительно существует на диске
+                    $savedFilePath = storage_path('app/public/' . $filePath);
+                    if (!file_exists($savedFilePath)) {
+                        \Log::error('Файл сохранен, но не найден на диске', [
+                            'product_id' => $product->id,
+                            'file_path' => $filePath,
+                            'full_saved_path' => $savedFilePath
+                        ]);
+                        continue;
+                    }
+
+                    // Создаем запись в базе данных
+                    ProductMedia::create([
+                        'product_id' => $product->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath,
+                        'file_type' => $fileType,
+                        'mime_type' => $mimeType,
+                        'file_size' => $file->getSize(),
+                        'sort_order' => $sortOrder++,
+                    ]);
+
+                    \Log::info('Медиафайл успешно сохранен', [
+                        'product_id' => $product->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'file_path' => $filePath
+                    ]);
+
+                } catch (\Exception $e) {
+                    \Log::error('Исключение при сохранении медиафайла', [
                         'product_id' => $product->id,
                         'file_name' => $file->getClientOriginalName(),
                         'folder_path' => $folderPath,
-                        'file_name_generated' => $fileName
+                        'error_message' => $e->getMessage(),
+                        'error_code' => $e->getCode(),
+                        'error_file' => $e->getFile(),
+                        'error_line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString()
                     ]);
                     continue; // Пропускаем этот файл и переходим к следующему
                 }
-
-                // Создаем запись в базе данных
-                ProductMedia::create([
+            } else {
+                \Log::warning('Файл не прошел валидацию', [
                     'product_id' => $product->id,
                     'file_name' => $file->getClientOriginalName(),
-                    'file_path' => $filePath,
-                    'file_type' => $fileType,
-                    'mime_type' => $mimeType,
-                    'file_size' => $file->getSize(),
-                    'sort_order' => $sortOrder++,
+                    'error' => $file->getError(),
+                    'error_message' => $file->getErrorMessage()
                 ]);
             }
         }
