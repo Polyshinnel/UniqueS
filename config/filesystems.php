@@ -51,8 +51,8 @@ return [
             'driver' => 'local',
             'root' => storage_path('app/public'),
             'url' => env('APP_URL').'/storage',
-            'visibility' => 'public',
-            'throw' => true, // Временно включено для диагностики
+            // 'visibility' => 'public', // Отключено, чтобы избежать ошибок установки прав на хостинге
+            'throw' => false, // Возвращено в false после диагностики
         ],
 
         's3' => [

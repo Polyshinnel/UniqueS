@@ -618,6 +618,7 @@ class ProductController extends Controller
                     }
 
                     // Сохраняем файл в созданную структуру папок
+                    // Теперь visibility отключена в config/filesystems.php, поэтому не будет ошибки прав доступа
                     $filePath = $file->storeAs($folderPath, $fileName, 'public');
 
                     // Проверяем, что файл успешно сохранен
