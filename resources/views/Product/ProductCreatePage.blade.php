@@ -1027,7 +1027,7 @@
 
             <div class="form-group">
                 <label for="common_commentary_after">
-                    Общий комментарий после осмотра
+                    Общий комментарий после осмотра <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: Станок в хорошем состоянии, имеет минимальный износ, недавно прошел капитальный ремонт.">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -1323,6 +1323,11 @@ document.addEventListener('DOMContentLoaded', function() {
             return validateStep6(stepElement);
         }
 
+        // Специальная валидация для шага 8 (Общий комментарий)
+        if (stepNumber === 8) {
+            return validateStep8(stepElement);
+        }
+
         // Стандартная валидация для остальных шагов
         for (let field of requiredFields) {
             if (!field.value.trim()) {
@@ -1365,6 +1370,20 @@ document.addEventListener('DOMContentLoaded', function() {
             if (firstErrorField) {
                 firstErrorField.focus();
             }
+        }
+
+        return isValid;
+    }
+
+    function validateStep8(stepElement) {
+        let isValid = true;
+
+        // Проверяем общий комментарий после осмотра
+        const commonCommentary = stepElement.querySelector('#common_commentary_after');
+        if (!commonCommentary.value.trim()) {
+            showFieldError(commonCommentary, 'Общий комментарий обязателен для заполнения');
+            isValid = false;
+            commonCommentary.focus();
         }
 
         return isValid;
@@ -1726,6 +1745,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (productForm) {
         productForm.addEventListener('submit', function(e) {
             e.preventDefault();
+            
+            // Валидация шага 8 перед отправкой формы
+            if (!validateStep(8)) {
+                return false;
+            }
             
             // Проверяем, есть ли файлы для загрузки
             const fileInput = document.getElementById('media_files');
