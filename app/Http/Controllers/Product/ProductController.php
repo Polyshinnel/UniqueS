@@ -579,7 +579,9 @@ class ProductController extends Controller
 
     private function handleMediaFiles($files, Product $product)
     {
-        $sortOrder = 0;
+        // Получаем максимальный sort_order для существующих медиафайлов товара
+        $maxSortOrder = ProductMedia::where('product_id', $product->id)->max('sort_order') ?? -1;
+        $sortOrder = $maxSortOrder + 1;
 
         // Получаем название склада, артикул организации и товара для создания структуры папок
         $warehouseName = $this->transliterate($product->warehouse->name ?? 'unknown');
@@ -605,6 +607,17 @@ class ProductController extends Controller
 
                 // Сохраняем файл в созданную структуру папок
                 $filePath = $file->storeAs($folderPath, $fileName, 'public');
+
+                // Проверяем, что файл успешно сохранен
+                if ($filePath === false) {
+                    \Log::error('Ошибка сохранения медиафайла', [
+                        'product_id' => $product->id,
+                        'file_name' => $file->getClientOriginalName(),
+                        'folder_path' => $folderPath,
+                        'file_name_generated' => $fileName
+                    ]);
+                    continue; // Пропускаем этот файл и переходим к следующему
+                }
 
                 // Создаем запись в базе данных
                 ProductMedia::create([
