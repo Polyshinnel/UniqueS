@@ -74,7 +74,7 @@ Route::middleware(['auth'])->group(function () {
         ->middleware('large.file.upload')
         ->name('products.upload-media');
     Route::delete('/product/{product}/media/{mediaId}', [\App\Http\Controllers\Product\ProductController::class, 'deleteMedia'])->name('products.delete-media');
-    
+
     // Маршруты для логов и действий товаров
     Route::get('/product/{product}/logs', [\App\Http\Controllers\Product\ProductController::class, 'getLogs'])->name('products.logs');
     Route::get('/product/{product}/actions', [\App\Http\Controllers\Product\ProductController::class, 'getActions'])->name('products.actions');
@@ -115,7 +115,7 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/advertisements/{advertisement}/title', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateTitle'])->name('advertisements.update-title');
     Route::patch('/advertisements/{advertisement}/status', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'updateStatus'])->name('advertisements.update-status');
     Route::patch('/advertisements/{advertisement}/activate', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'activate'])->name('advertisements.activate');
-    
+
     // Маршруты для логов и действий объявлений
     Route::get('/advertisements/{advertisement}/logs', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getLogs'])->name('advertisements.logs');
     Route::get('/advertisements/{advertisement}/actions', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'getActions'])->name('advertisements.actions');
@@ -123,13 +123,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/advertisements/{advertisement}/actions/{actionId}/complete', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'completeAction'])->name('advertisements.complete-action');
 
     Route::get('/guide', [GuidesMain::class, 'index']);
-    
+
     // Маршруты для событий
     Route::get('/events', [\App\Http\Controllers\Event\EventController::class, 'index'])->name('events.index');
     Route::get('/events/active', [\App\Http\Controllers\Event\EventController::class, 'active'])->name('events.active');
     Route::get('/events/expired', [\App\Http\Controllers\Event\EventController::class, 'expired'])->name('events.expired');
     Route::get('/events/logs', [\App\Http\Controllers\Event\EventController::class, 'logs'])->name('events.logs');
-    
+
     // Тестовый маршрут для проверки транслитерации (удалить после тестирования)
     Route::get('/test-transliterate/{string}', function($string) {
         $controller = new \App\Http\Controllers\Product\ProductController();
@@ -139,7 +139,7 @@ Route::middleware(['auth'])->group(function () {
             'transliterated' => $result
         ]);
     });
-    
+
     // Тестовая страница для проверки транслитерации (удалить после тестирования)
     Route::get('/test-transliterate-page', function() {
         return view('test-transliterate');
@@ -185,4 +185,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/guide/users/{user}/edit', [GuidesUsers::class, 'edit'])->name('users.edit');
     Route::put('/guide/users/{user}', [GuidesUsers::class, 'update'])->name('users.update');
     Route::delete('/guide/users/{user}', [GuidesUsers::class, 'destroy'])->name('users.destroy');
+});
+
+Route::get('/phpinfo', function () {
+    phpinfo();
+    return; // предотвращает вывод шаблона Laravel
 });
