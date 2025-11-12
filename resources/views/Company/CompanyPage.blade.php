@@ -478,7 +478,7 @@
                 {{-- Кнопка "В начало" для последней страницы --}}
                 @if ($currentPage == $lastPage && $lastPage > 1)
                     <li class="page-item">
-                        <a class="page-link" href="{{ $companies->url(1) }}" title="В начало">
+                        <a class="page-link" href="{{ $companies->appends(request()->except('page'))->url(1) }}" title="В начало">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <polyline points="11,17 6,12 11,7"></polyline>
                                 <polyline points="18,17 13,12 18,7"></polyline>
@@ -495,7 +495,7 @@
                         </li>
                     @else
                         <li class="page-item">
-                            <a class="page-link" href="{{ $companies->url($page) }}">{{ $page }}</a>
+                            <a class="page-link" href="{{ $companies->appends(request()->except('page'))->url($page) }}">{{ $page }}</a>
                         </li>
                     @endif
                 @endforeach
