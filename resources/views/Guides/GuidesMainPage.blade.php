@@ -108,6 +108,27 @@
                     </svg>
                 </div>
             </a>
+
+            <a href="/guide/import-export" class="guide-card">
+                <div class="guide-card-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                        <path d="M3 9v4a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9"></path>
+                        <polyline points="7,14 12,9 17,14"></polyline>
+                    </svg>
+                </div>
+                <div class="guide-card-content">
+                    <h3 class="guide-card-title">Импорт/Экспорт</h3>
+                    <p class="guide-card-description">Импорт и экспорт данных системы в различных форматах</p>
+                </div>
+                <div class="guide-card-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9,18 15,12 9,6"></polyline>
+                    </svg>
+                </div>
+            </a>
         </div>
     </div>
 </div>

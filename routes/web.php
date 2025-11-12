@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Guides\GuidesCategories;
+use App\Http\Controllers\Guides\GuidesImportExport;
 use App\Http\Controllers\Guides\GuidesMain;
 use App\Http\Controllers\Guides\GuidesRegions;
 use App\Http\Controllers\Guides\GuidesSources;
@@ -180,6 +181,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/guide/warehouses/{warehouse}/edit', [GuidesWarehouses::class, 'edit'])->name('warehouses.edit');
     Route::put('/guide/warehouses/{warehouse}', [GuidesWarehouses::class, 'update'])->name('warehouses.update');
     Route::delete('/guide/warehouses/{warehouse}', [GuidesWarehouses::class, 'destroy'])->name('warehouses.destroy');
+
+    Route::get('/guide/import-export', [GuidesImportExport::class, 'index'])->name('import-export.index');
+    Route::post('/guide/import-export/companies/import', [GuidesImportExport::class, 'importCompanies'])->name('import-export.companies.import');
+    Route::post('/guide/import-export/companies/export', [GuidesImportExport::class, 'exportCompanies'])->name('import-export.companies.export');
+    Route::post('/guide/import-export/products/export', [GuidesImportExport::class, 'exportProducts'])->name('import-export.products.export');
 
     Route::post('/guide/users', [GuidesUsers::class, 'store'])->name('users.store');
     Route::get('/guide/users/{user}/edit', [GuidesUsers::class, 'edit'])->name('users.edit');
