@@ -547,6 +547,29 @@
         @if($advertisements->hasPages())
         <div class="pagination-links">
             <ul class="pagination">
+                @php
+                    $currentPage = $advertisements->currentPage();
+                    $lastPage = $advertisements->lastPage();
+                    $pagesToShow = [];
+                    
+                    if ($currentPage == 1) {
+                        // Первая страница: следующие 4 страницы
+                        $pagesToShow = range(1, min(5, $lastPage));
+                    } elseif ($currentPage == $lastPage) {
+                        // Последняя страница: предыдущие 4 страницы
+                        $pagesToShow = range(max(1, $lastPage - 4), $lastPage);
+                    } elseif ($currentPage == 2) {
+                        // Вторая страница: предыдущая 1 + следующие 3
+                        $pagesToShow = range(1, min(5, $lastPage));
+                    } elseif ($currentPage == $lastPage - 1) {
+                        // Предпоследняя страница: следующая 1 + предыдущие 3
+                        $pagesToShow = range(max(1, $lastPage - 4), $lastPage);
+                    } else {
+                        // В ином случае: 2 предыдущие + текущая + 2 следующие
+                        $pagesToShow = range(max(1, $currentPage - 2), min($lastPage, $currentPage + 2));
+                    }
+                @endphp
+
                 {{-- Предыдущая страница --}}
                 @if ($advertisements->onFirstPage())
                     <li class="page-item disabled">
@@ -566,15 +589,27 @@
                     </li>
                 @endif
 
+                {{-- Кнопка "В начало" для последней страницы --}}
+                @if ($currentPage == $lastPage && $lastPage > 1)
+                    <li class="page-item">
+                        <a class="page-link" href="{{ $advertisements->url(1) }}" title="В начало">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="11,17 6,12 11,7"></polyline>
+                                <polyline points="18,17 13,12 18,7"></polyline>
+                            </svg>
+                        </a>
+                    </li>
+                @endif
+
                 {{-- Номера страниц --}}
-                @foreach ($advertisements->getUrlRange(1, $advertisements->lastPage()) as $page => $url)
-                    @if ($page == $advertisements->currentPage())
+                @foreach ($pagesToShow as $page)
+                    @if ($page == $currentPage)
                         <li class="page-item active">
                             <span class="page-link">{{ $page }}</span>
                         </li>
                     @else
                         <li class="page-item">
-                            <a class="page-link" href="{{ $url }}">{{ $page }}</a>
+                            <a class="page-link" href="{{ $advertisements->url($page) }}">{{ $page }}</a>
                         </li>
                     @endif
                 @endforeach

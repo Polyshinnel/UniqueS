@@ -54,7 +54,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="sku">Артикул поставщика</label>
-                    <input type="text" name="sku" id="sku" value="{{ old('sku') }}" class="form-control" placeholder="Будет сгенерирован автоматически">
+                    <input type="text" name="sku" id="sku" value="{{ old('sku') }}" class="form-control" placeholder="Будет сгенерирован автоматически" readonly>
                     <small class="form-text text-muted">Артикул будет сгенерирован автоматически при выборе склада</small>
                     @error('sku')
                         <span class="error">{{ $message }}</span>
