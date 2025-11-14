@@ -633,6 +633,157 @@
 .error-message.show {
     display: block;
 }
+
+/* Стили для select с поиском */
+.select-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.select-input {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-height: 48px;
+}
+
+.select-input:hover {
+    border-color: #133E71;
+}
+
+.select-input:focus {
+    outline: none;
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.select-input.active {
+    border-color: #133E71;
+    box-shadow: 0 0 0 3px rgba(19, 62, 113, 0.1);
+}
+
+.select-placeholder {
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.select-value {
+    color: #495057;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.select-arrow {
+    color: #6c757d;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.select-input.active .select-arrow {
+    transform: rotate(180deg);
+}
+
+.select-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+    margin-top: 2px;
+    display: none;
+    max-height: 300px;
+    overflow: hidden;
+}
+
+.select-dropdown.active {
+    display: block;
+    animation: selectFadeIn 0.15s ease-out;
+}
+
+@keyframes selectFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.select-search {
+    padding: 12px;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.select-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.3s ease;
+}
+
+.select-search-input:focus {
+    border-color: #133E71;
+}
+
+.select-options {
+    max-height: 200px;
+    overflow-y: auto;
+    padding: 8px 0;
+}
+
+.select-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 14px;
+    color: #495057;
+}
+
+.select-option:hover {
+    background: #f8f9fa;
+}
+
+.select-option.selected {
+    background: #e3f2fd;
+    color: #133E71;
+    font-weight: 500;
+}
+
+/* Стили для скроллбара в select */
+.select-options::-webkit-scrollbar {
+    width: 6px;
+}
+
+.select-options::-webkit-scrollbar-track {
+    background: #f8f9fa;
+    border-radius: 3px;
+}
+
+.select-options::-webkit-scrollbar-thumb {
+    background: #dee2e6;
+    border-radius: 3px;
+}
+
+.select-options::-webkit-scrollbar-thumb:hover {
+    background: #adb5bd;
+}
 </style>
 
 <div class="product-create-container">
@@ -690,12 +841,28 @@
                             </svg>
                         </span>
                     </label>
-                    <select name="company_id" id="company_id" class="form-control" required>
-                        <option value="">Выберите поставщика</option>
-                        @foreach($companies as $company)
-                            <option value="{{ $company->id }}" data-sku="{{ $company->sku }}">{{ $company->name }}</option>
-                        @endforeach
-                    </select>
+                    <div class="select-wrapper">
+                        <div class="select-input" id="company_select" tabindex="0">
+                            <span class="select-placeholder">Выберите поставщика</span>
+                            <svg class="select-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="6,9 12,15 18,9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="select-dropdown" id="company_select_dropdown">
+                            <div class="select-search">
+                                <input type="text" id="company_select_search" placeholder="Поиск поставщиков..." class="select-search-input">
+                            </div>
+                            <div class="select-options" id="company_select_options">
+                                <!-- Опции будут заполнены JavaScript -->
+                            </div>
+                        </div>
+                        <select name="company_id" id="company_id" class="form-control" required style="display: none;">
+                            <option value="">Выберите поставщика</option>
+                            @foreach($companies as $company)
+                                <option value="{{ $company->id }}" data-sku="{{ $company->sku }}">{{ $company->name }} ({{ $company->sku }})</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <small class="form-text text-muted">Компании со статусами "Холд" и "Отказ" недоступны для создания товаров</small>
                 </div>
 
@@ -1638,6 +1805,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Инициализация TreeSelect для категорий
     initializeTreeSelect('category_treeselect', 'category_id', categoriesData);
     
+    // Инициализация select с поиском для компаний
+    initializeCompanySelect();
+    
     // Обработка редиректа после создания товара без файлов
     const urlParams = new URLSearchParams(window.location.search);
     const createdProductId = urlParams.get('created_product_id');
@@ -2247,6 +2417,227 @@ function initializeTreeSelect(treeselectId, selectId, categories) {
         const selectedOption = hiddenSelect.options[hiddenSelect.selectedIndex];
         if (selectedOption) {
             selectNode(selectedOption.value, selectedOption.textContent);
+        }
+    }
+}
+
+// Функция инициализации select с поиском для компаний
+function initializeCompanySelect() {
+    const selectInput = document.getElementById('company_select');
+    const selectDropdown = document.getElementById('company_select_dropdown');
+    const selectOptions = document.getElementById('company_select_options');
+    const selectSearch = document.getElementById('company_select_search');
+    const hiddenSelect = document.getElementById('company_id');
+    
+    if (!selectInput || !selectDropdown || !selectOptions || !hiddenSelect) return;
+    
+    // Получаем данные компаний из скрытого select
+    const companies = [];
+    const options = hiddenSelect.querySelectorAll('option');
+    options.forEach(option => {
+        if (option.value) {
+            const sku = option.getAttribute('data-sku') || '';
+            // Парсим название из текста опции (формат: "Название (SKU)")
+            const optionText = option.textContent.trim();
+            let name = optionText;
+            // Если есть артикул в скобках, убираем его из названия
+            if (sku && optionText.includes('(' + sku + ')')) {
+                name = optionText.replace(' (' + sku + ')', '').trim();
+            } else if (optionText.match(/\([^)]+\)$/)) {
+                // Если есть скобки в конце, но SKU не совпадает, убираем их
+                name = optionText.replace(/\s*\([^)]+\)$/, '').trim();
+            }
+            companies.push({
+                id: option.value,
+                name: name,
+                sku: sku
+            });
+        }
+    });
+    
+    let isOpen = false;
+    let selectedValue = hiddenSelect.value;
+    
+    // Обновляем опции
+    function updateOptions(filteredCompanies = null) {
+        const companiesToUse = filteredCompanies || companies;
+        
+        let html = '';
+        companiesToUse.forEach(company => {
+            const isSelected = selectedValue && selectedValue.toString() === company.id.toString();
+            html += `<div class="select-option ${isSelected ? 'selected' : ''}" data-value="${company.id}">
+                <span>${company.name}${company.sku ? ' (' + company.sku + ')' : ''}</span>
+            </div>`;
+        });
+        
+        selectOptions.innerHTML = html;
+        attachOptionEvents();
+    }
+    
+    // Привязываем события к опциям
+    function attachOptionEvents() {
+        const optionElements = selectOptions.querySelectorAll('.select-option');
+        optionElements.forEach(option => {
+            option.addEventListener('click', function(e) {
+                e.stopPropagation();
+                const value = this.dataset.value;
+                const companyData = companies.find(comp => comp.id.toString() === value);
+                
+                selectedValue = value;
+                updateSelectedDisplay(companyData);
+                updateHiddenSelect();
+                closeDropdown();
+                
+                // Триггерим событие изменения для совместимости с существующим кодом
+                const event = new Event('change', { bubbles: true });
+                hiddenSelect.dispatchEvent(event);
+            });
+        });
+    }
+    
+    // Обновляем отображение выбранного значения
+    function updateSelectedDisplay(companyData) {
+        const placeholder = selectInput.querySelector('.select-placeholder');
+        const valueElement = selectInput.querySelector('.select-value');
+        
+        if (!companyData) {
+            placeholder.style.display = 'block';
+            if (valueElement) {
+                valueElement.style.display = 'none';
+            }
+            return;
+        }
+        
+        placeholder.style.display = 'none';
+        
+        if (!valueElement) {
+            const newValueElement = document.createElement('span');
+            newValueElement.className = 'select-value';
+            selectInput.insertBefore(newValueElement, selectInput.querySelector('.select-arrow'));
+        }
+        
+        const currentValueElement = selectInput.querySelector('.select-value');
+        currentValueElement.textContent = companyData.name + (companyData.sku ? ' (' + companyData.sku + ')' : '');
+        currentValueElement.style.display = 'block';
+    }
+    
+    // Обновляем скрытый select
+    function updateHiddenSelect() {
+        // Очищаем все опции
+        hiddenSelect.innerHTML = '';
+        
+        if (selectedValue) {
+            const companyData = companies.find(comp => comp.id.toString() === selectedValue.toString());
+            if (companyData) {
+                const option = document.createElement('option');
+                option.value = selectedValue;
+                option.selected = true;
+                option.setAttribute('data-sku', companyData.sku || '');
+                option.textContent = companyData.name + (companyData.sku ? ' (' + companyData.sku + ')' : '');
+                hiddenSelect.appendChild(option);
+            }
+        }
+    }
+    
+    // Открытие/закрытие выпадающего списка
+    function toggleDropdown() {
+        isOpen = !isOpen;
+        
+        if (isOpen) {
+            selectInput.classList.add('active');
+            selectDropdown.classList.add('active');
+            updateOptions();
+            selectSearch.focus();
+        } else {
+            closeDropdown();
+        }
+    }
+    
+    function closeDropdown() {
+        isOpen = false;
+        selectInput.classList.remove('active');
+        selectDropdown.classList.remove('active');
+    }
+    
+    // Фильтрация
+    function filterOptions(searchTerm) {
+        if (!searchTerm) {
+            updateOptions();
+            return;
+        }
+        
+        const searchTermLower = searchTerm.toLowerCase().trim();
+        // Убираем скобки из поискового запроса для более гибкого поиска
+        const searchTermWithoutBrackets = searchTermLower.replace(/[()]/g, '').trim();
+        
+        const filteredCompanies = companies.filter(company => {
+            // Поиск по названию
+            const nameMatch = company.name.toLowerCase().includes(searchTermLower);
+            
+            // Поиск по артикулу (с учетом скобок и без них)
+            let skuMatch = false;
+            if (company.sku) {
+                const skuLower = company.sku.toLowerCase();
+                // Поиск по артикулу напрямую
+                skuMatch = skuLower.includes(searchTermLower);
+                // Поиск по артикулу без скобок в запросе
+                if (!skuMatch && searchTermWithoutBrackets) {
+                    skuMatch = skuLower.includes(searchTermWithoutBrackets);
+                }
+                // Поиск по артикулу в скобках
+                if (!skuMatch) {
+                    const skuInBrackets = '(' + company.sku + ')';
+                    skuMatch = skuInBrackets.toLowerCase().includes(searchTermLower);
+                }
+            }
+            
+            // Поиск по полному тексту (название + артикул в скобках)
+            const fullText = company.name + (company.sku ? ' (' + company.sku + ')' : '');
+            const fullTextMatch = fullText.toLowerCase().includes(searchTermLower);
+            
+            return nameMatch || skuMatch || fullTextMatch;
+        });
+        
+        updateOptions(filteredCompanies);
+    }
+    
+    // События
+    selectInput.addEventListener('click', toggleDropdown);
+    
+    selectInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!isOpen) {
+                toggleDropdown();
+            }
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    selectSearch.addEventListener('input', function() {
+        filterOptions(this.value);
+    });
+    
+    selectSearch.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+    
+    // Закрытие при клике вне
+    document.addEventListener('click', function(e) {
+        if (!selectInput.contains(e.target) && !selectDropdown.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+    
+    // Инициализация с текущими значениями
+    if (selectedValue) {
+        const companyData = companies.find(comp => comp.id.toString() === selectedValue.toString());
+        if (companyData) {
+            updateSelectedDisplay(companyData);
+            updateHiddenSelect();
         }
     }
 }
