@@ -140,6 +140,20 @@ class ResizeProductImages extends Command
             $this->resizeImage($filePath, $newDimensions['width'], $newDimensions['height']);
             $this->markAsArchived($image);
             return 'processed';
+        } catch (\RuntimeException $e) {
+            // Более детальная информация об ошибках прав доступа
+            $directory = dirname($filePath);
+            $this->error("Ошибка при изменении размера {$image->file_name}: " . $e->getMessage());
+            $this->line("  Путь: {$filePath}");
+            $this->line("  Директория: {$directory}");
+            $this->line("  Директория существует: " . (is_dir($directory) ? 'да' : 'нет'));
+            $this->line("  Директория доступна для записи: " . (is_dir($directory) && is_writable($directory) ? 'да' : 'нет'));
+            if (file_exists($filePath)) {
+                $this->line("  Файл существует: да");
+                $this->line("  Файл доступен для записи: " . (is_writable($filePath) ? 'да' : 'нет'));
+                $this->line("  Права доступа файла: " . substr(sprintf('%o', fileperms($filePath)), -4));
+            }
+            return 'error';
         } catch (\Exception $e) {
             $this->error("Ошибка при изменении размера {$image->file_name}: " . $e->getMessage());
             return 'error';
@@ -178,10 +192,60 @@ class ResizeProductImages extends Command
      */
     private function resizeImage(string $filePath, int $newWidth, int $newHeight): void
     {
-        $manager = new ImageManager(new Driver());
-        $image = $manager->read($filePath);
-        $image->scaleDown($newWidth, $newHeight);
-        $image->save($filePath, 90); // Сохраняем с качеством 90%
+        // Проверяем права доступа на директорию
+        $directory = dirname($filePath);
+        if (!is_dir($directory)) {
+            throw new \RuntimeException("Директория не существует: {$directory}");
+        }
+        
+        if (!is_writable($directory)) {
+            throw new \RuntimeException("Директория не доступна для записи: {$directory}");
+        }
+        
+        // Проверяем, доступен ли файл для записи
+        if (file_exists($filePath) && !is_writable($filePath)) {
+            // Пытаемся установить права на запись
+            if (!chmod($filePath, 0644)) {
+                throw new \RuntimeException("Файл не доступен для записи: {$filePath}");
+            }
+        }
+        
+        // Создаем временный файл в той же директории для атомарной замены
+        $tempFilePath = $filePath . '.tmp.' . uniqid();
+        
+        try {
+            $manager = new ImageManager(new Driver());
+            $image = $manager->read($filePath);
+            $image->scaleDown($newWidth, $newHeight);
+            
+            // Сохраняем во временный файл
+            $image->save($tempFilePath, 90);
+            
+            // Проверяем, что временный файл создан
+            if (!file_exists($tempFilePath)) {
+                throw new \RuntimeException("Не удалось создать временный файл: {$tempFilePath}");
+            }
+            
+            // Атомарно заменяем оригинальный файл
+            if (!rename($tempFilePath, $filePath)) {
+                // Если rename не сработал, пытаемся через copy + unlink
+                if (copy($tempFilePath, $filePath)) {
+                    unlink($tempFilePath);
+                } else {
+                    // Очищаем временный файл при ошибке
+                    if (file_exists($tempFilePath)) {
+                        unlink($tempFilePath);
+                    }
+                    throw new \RuntimeException("Не удалось заменить файл: {$filePath}");
+                }
+            }
+        } catch (\Exception $e) {
+            // Очищаем временный файл при ошибке
+            if (file_exists($tempFilePath)) {
+                @unlink($tempFilePath);
+            }
+            throw $e;
+        }
     }
 
     /**
