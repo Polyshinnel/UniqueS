@@ -123,8 +123,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/advertisements/{advertisement}/actions', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'storeAction'])->name('advertisements.store-action');
     Route::post('/advertisements/{advertisement}/actions/{actionId}/complete', [\App\Http\Controllers\Advertisement\AdvertisementController::class, 'completeAction'])->name('advertisements.complete-action');
 
-    Route::get('/guide', [GuidesMain::class, 'index']);
-
     // Маршруты для событий
     Route::get('/events', [\App\Http\Controllers\Event\EventController::class, 'index'])->name('events.index');
     Route::get('/events/active', [\App\Http\Controllers\Event\EventController::class, 'active'])->name('events.active');
@@ -156,8 +154,9 @@ Route::get('/', function () {
     return redirect('/events');
 });
 
-// Защищенные роуты
-Route::middleware(['auth'])->group(function () {
+// Защищенные роуты для справочников (только для администраторов)
+Route::middleware(['auth', 'admin'])->group(function () {
+    Route::get('/guide', [GuidesMain::class, 'index']);
     Route::get('/guide/users', [GuidesUsers::class, 'index'])->name('users.index');
     Route::get('/guide/regions', [GuidesRegions::class, 'index'])->name('regions.index');
     Route::post('/guide/regions', [GuidesRegions::class, 'store'])->name('regions.store');

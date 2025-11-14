@@ -65,5 +65,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'check.auth' => \App\Http\Middleware\CheckAuth::class,
         'large.file.upload' => \App\Http\Middleware\LargeFileUploadMiddleware::class,
+        'admin' => \App\Http\Middleware\EnsureAdminRole::class,
     ];
 }
