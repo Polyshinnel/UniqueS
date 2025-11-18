@@ -890,6 +890,9 @@ class ProductController extends Controller
 
         // Сохраняем старое значение комментария для сравнения
         $oldCommentary = $product->common_commentary_after;
+        
+        // Сохраняем старое значение категории для сравнения
+        $oldCategoryId = $product->category_id;
 
         // Обновляем товар
         $product->update([
@@ -911,6 +914,16 @@ class ProductController extends Controller
             'payment_comment' => $request->payment_comment,
             'common_commentary_after' => $request->common_commentary_after,
         ]);
+
+        // Обновляем категорию в связанных объявлениях, если категория изменилась
+        if ($oldCategoryId != $request->category_id && $request->category_id) {
+            $advertisements = $product->advertisements()->get();
+            if ($advertisements->isNotEmpty()) {
+                foreach ($advertisements as $advertisement) {
+                    $advertisement->update(['category_id' => $request->category_id]);
+                }
+            }
+        }
 
         // Создаем системный лог при изменении общего комментария после осмотра
         if ($oldCommentary !== $request->common_commentary_after) {
@@ -1882,6 +1895,16 @@ class ProductController extends Controller
             'state_id' => $request->state_id,
             'available_id' => $request->available_id
         ]);
+
+        // Обновляем категорию в связанных объявлениях, если категория изменилась
+        if ($oldCategoryId != $request->category_id && $request->category_id) {
+            $advertisements = $product->advertisements()->get();
+            if ($advertisements->isNotEmpty()) {
+                foreach ($advertisements as $advertisement) {
+                    $advertisement->update(['category_id' => $request->category_id]);
+                }
+            }
+        }
 
         // Создаем лог изменений
         $logMessages = [];

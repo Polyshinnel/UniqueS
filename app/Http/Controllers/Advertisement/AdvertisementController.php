@@ -273,7 +273,7 @@ class AdvertisementController extends Controller
             'removal_status_id' => 'nullable|exists:product_install_statuses,id',
             'removal_comment' => 'nullable|string',
             'adv_price' => 'nullable|numeric|min:0',
-            'adv_price_comment' => 'nullable|string',
+            'adv_price_comment' => 'required|string',
             'show_price' => 'nullable|boolean',
             'product_state' => 'nullable|exists:product_states,id',
             'product_available' => 'nullable|exists:product_availables,id',

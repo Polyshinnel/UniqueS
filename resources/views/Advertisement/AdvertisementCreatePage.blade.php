@@ -1274,8 +1274,8 @@
             </div>
 
             <div class="form-group">
-                <label for="adv_price_comment">Комментарий</label>
-                <textarea name="adv_price_comment" id="adv_price_comment" class="form-control" rows="4">{{ $product ? $product->payment_comment : '' }}</textarea>
+                <label for="adv_price_comment">Комментарий <span style="color: red;">*</span></label>
+                <textarea name="adv_price_comment" id="adv_price_comment" class="form-control" rows="4" required>{{ $product ? $product->payment_comment : '' }}</textarea>
             </div>
 
             <div class="step-actions">
@@ -1431,6 +1431,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const productId = document.getElementById('product_id').value;
             if (!productId) {
                 showNotification('Пожалуйста, выберите товар для создания объявления.', 'error');
+                return false;
+            }
+        }
+
+        // Дополнительная проверка для шага 6 - комментарий к цене обязателен
+        if (stepNumber === 6) {
+            const priceComment = document.getElementById('adv_price_comment').value.trim();
+            if (!priceComment) {
+                showNotification('Пожалуйста, заполните комментарий к цене продажи.', 'error');
+                document.getElementById('adv_price_comment').focus();
                 return false;
             }
         }
