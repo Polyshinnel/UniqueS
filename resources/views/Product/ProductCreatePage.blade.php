@@ -1027,7 +1027,7 @@
 
             <div class="form-group">
                 <label for="check_comment">
-                    Комментарий к проверке
+                    Комментарий к проверке <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: Перемещен на склад, может быть подключен своими силами. Подключен, стоит на своем рабочем месте.">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -1035,7 +1035,7 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="check_comment" id="check_comment" class="form-control" rows="4"></textarea>
+                <textarea name="check_comment" id="check_comment" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="step-actions">
@@ -1060,7 +1060,7 @@
 
             <div class="form-group">
                 <label for="loading_comment">
-                    Комментарий
+                    Комментарий <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Поставщиком за доп плату, а арендаторов есть погрузчик, цену согласовывем отдельно. Поставщик погрузит, есть кран балка. Клиентом, потребуется кран, проезд в цех возможен">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -1068,7 +1068,7 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="loading_comment" id="loading_comment" class="form-control" rows="4"></textarea>
+                <textarea name="loading_comment" id="loading_comment" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="step-actions">
@@ -1093,7 +1093,7 @@
 
             <div class="form-group">
                 <label for="removal_comment">
-                    Комментарий
+                    Комментарий <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: Стоит на бетонном основании, потребуется отбить основание. Сложный демонтаж, потребуется разбирать на несколько частей, так как доступ в цех через маленькие ворота.">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -1101,7 +1101,7 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="removal_comment" id="removal_comment" class="form-control" rows="4"></textarea>
+                <textarea name="removal_comment" id="removal_comment" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="step-actions">
@@ -1485,6 +1485,21 @@ document.addEventListener('DOMContentLoaded', function() {
         // Очищаем предыдущие ошибки
         clearValidationErrors(stepElement);
 
+        // Специальная валидация для шага 3 (Проверка)
+        if (stepNumber === 3) {
+            return validateStep3(stepElement);
+        }
+
+        // Специальная валидация для шага 4 (Погрузка)
+        if (stepNumber === 4) {
+            return validateStep4(stepElement);
+        }
+
+        // Специальная валидация для шага 5 (Демонтаж)
+        if (stepNumber === 5) {
+            return validateStep5(stepElement);
+        }
+
         // Специальная валидация для шага 6 (Оплата)
         if (stepNumber === 6) {
             return validateStep6(stepElement);
@@ -1504,6 +1519,48 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         return true;
+    }
+
+    function validateStep3(stepElement) {
+        let isValid = true;
+
+        // Проверяем комментарий к проверке
+        const checkComment = stepElement.querySelector('#check_comment');
+        if (!checkComment.value.trim()) {
+            showFieldError(checkComment, 'Комментарий к проверке обязателен для заполнения');
+            isValid = false;
+            checkComment.focus();
+        }
+
+        return isValid;
+    }
+
+    function validateStep4(stepElement) {
+        let isValid = true;
+
+        // Проверяем комментарий к погрузке
+        const loadingComment = stepElement.querySelector('#loading_comment');
+        if (!loadingComment.value.trim()) {
+            showFieldError(loadingComment, 'Комментарий к погрузке обязателен для заполнения');
+            isValid = false;
+            loadingComment.focus();
+        }
+
+        return isValid;
+    }
+
+    function validateStep5(stepElement) {
+        let isValid = true;
+
+        // Проверяем комментарий к демонтажу
+        const removalComment = stepElement.querySelector('#removal_comment');
+        if (!removalComment.value.trim()) {
+            showFieldError(removalComment, 'Комментарий к демонтажу обязателен для заполнения');
+            isValid = false;
+            removalComment.focus();
+        }
+
+        return isValid;
     }
 
     function validateStep6(stepElement) {
