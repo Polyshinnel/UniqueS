@@ -924,7 +924,7 @@
 
                 <div class="form-group">
                     <label for="sku">Артикул</label>
-                    <input type="text" name="sku" id="sku" class="form-control" placeholder="Генерируется автоматически при выборе поставщика (артикул_поставщика-дата_время)">
+                    <input type="text" name="sku" id="sku" class="form-control" readonly placeholder="Генерируется автоматически при выборе поставщика (артикул_поставщика-дата_время)">
                 </div>
             </div>
 
