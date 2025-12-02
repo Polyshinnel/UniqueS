@@ -150,6 +150,11 @@ class ExportAdvertisementsToXml extends Command
             $adElement->appendChild($dom->createElement('title', htmlspecialchars($advertisement->title ?? '', ENT_XML1, 'UTF-8')));
             $adElement->appendChild($dom->createElement('product_id', $advertisement->product_id ?? ''));
             
+            // Артикул объявления (равен артикулу товара)
+            if ($advertisement->product && isset($advertisement->product->sku)) {
+                $adElement->appendChild($dom->createElement('sku', htmlspecialchars($advertisement->product->sku, ENT_XML1, 'UTF-8')));
+            }
+            
             // Категория
             if ($advertisement->category) {
                 $categoryElement = $dom->createElement('category');
