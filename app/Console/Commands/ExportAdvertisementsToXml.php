@@ -41,7 +41,7 @@ class ExportAdvertisementsToXml extends Command
 
         // Определяем путь для сохранения файла
         $filePath = $this->option('path') 
-            ?: storage_path('app/exports/advertisements.xml');
+            ?: storage_path('app/public/exports/advertisements.xml');
 
         // Создаем директорию, если её нет
         $directory = dirname($filePath);
