@@ -130,7 +130,10 @@ class ExportAdvertisementsToXml extends Command
             'productState',
             'productAvailable',
             'product.warehouse.regions',
-            'product.company.addresses'
+            'product.company.addresses',
+            'creator.role',
+            'product.owner.role',
+            'product.regional.role'
         ])->get();
 
         // Добавляем объявления
@@ -282,6 +285,57 @@ class ExportAdvertisementsToXml extends Command
             
             // Всегда добавляем элемент локации
             $adElement->appendChild($locationElement);
+
+            // Контакты менеджера (ответственного за объявление)
+            $managerElement = $dom->createElement('manager');
+            
+            // Создатель объявления (основной ответственный)
+            if ($advertisement->creator) {
+                $creatorElement = $dom->createElement('creator');
+                $creatorElement->setAttribute('id', (string)$advertisement->creator->id);
+                $creatorElement->appendChild($dom->createElement('name', htmlspecialchars($advertisement->creator->name ?? '', ENT_XML1, 'UTF-8')));
+                $creatorElement->appendChild($dom->createElement('email', htmlspecialchars($advertisement->creator->email ?? '', ENT_XML1, 'UTF-8')));
+                $creatorElement->appendChild($dom->createElement('phone', htmlspecialchars($advertisement->creator->phone ?? '', ENT_XML1, 'UTF-8')));
+                if ($advertisement->creator->role) {
+                    $creatorElement->appendChild($dom->createElement('role', htmlspecialchars($advertisement->creator->role->name ?? '', ENT_XML1, 'UTF-8')));
+                }
+                $creatorElement->appendChild($dom->createElement('has_whatsapp', $advertisement->creator->has_whatsapp ? '1' : '0'));
+                $creatorElement->appendChild($dom->createElement('has_telegram', $advertisement->creator->has_telegram ? '1' : '0'));
+                $managerElement->appendChild($creatorElement);
+            }
+            
+            // Владелец товара
+            if ($advertisement->product && $advertisement->product->owner) {
+                $ownerElement = $dom->createElement('product_owner');
+                $ownerElement->setAttribute('id', (string)$advertisement->product->owner->id);
+                $ownerElement->appendChild($dom->createElement('name', htmlspecialchars($advertisement->product->owner->name ?? '', ENT_XML1, 'UTF-8')));
+                $ownerElement->appendChild($dom->createElement('email', htmlspecialchars($advertisement->product->owner->email ?? '', ENT_XML1, 'UTF-8')));
+                $ownerElement->appendChild($dom->createElement('phone', htmlspecialchars($advertisement->product->owner->phone ?? '', ENT_XML1, 'UTF-8')));
+                if ($advertisement->product->owner->role) {
+                    $ownerElement->appendChild($dom->createElement('role', htmlspecialchars($advertisement->product->owner->role->name ?? '', ENT_XML1, 'UTF-8')));
+                }
+                $ownerElement->appendChild($dom->createElement('has_whatsapp', $advertisement->product->owner->has_whatsapp ? '1' : '0'));
+                $ownerElement->appendChild($dom->createElement('has_telegram', $advertisement->product->owner->has_telegram ? '1' : '0'));
+                $managerElement->appendChild($ownerElement);
+            }
+            
+            // Региональный представитель
+            if ($advertisement->product && $advertisement->product->regional) {
+                $regionalElement = $dom->createElement('regional_representative');
+                $regionalElement->setAttribute('id', (string)$advertisement->product->regional->id);
+                $regionalElement->appendChild($dom->createElement('name', htmlspecialchars($advertisement->product->regional->name ?? '', ENT_XML1, 'UTF-8')));
+                $regionalElement->appendChild($dom->createElement('email', htmlspecialchars($advertisement->product->regional->email ?? '', ENT_XML1, 'UTF-8')));
+                $regionalElement->appendChild($dom->createElement('phone', htmlspecialchars($advertisement->product->regional->phone ?? '', ENT_XML1, 'UTF-8')));
+                if ($advertisement->product->regional->role) {
+                    $regionalElement->appendChild($dom->createElement('role', htmlspecialchars($advertisement->product->regional->role->name ?? '', ENT_XML1, 'UTF-8')));
+                }
+                $regionalElement->appendChild($dom->createElement('has_whatsapp', $advertisement->product->regional->has_whatsapp ? '1' : '0'));
+                $regionalElement->appendChild($dom->createElement('has_telegram', $advertisement->product->regional->has_telegram ? '1' : '0'));
+                $managerElement->appendChild($regionalElement);
+            }
+            
+            // Всегда добавляем элемент менеджера
+            $adElement->appendChild($managerElement);
 
             // Медиафайлы
             $mediaElement = $dom->createElement('media');
