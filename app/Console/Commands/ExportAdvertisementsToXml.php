@@ -128,7 +128,9 @@ class ExportAdvertisementsToXml extends Command
             'mediaOrdered',
             'tags',
             'productState',
-            'productAvailable'
+            'productAvailable',
+            'product.warehouse.regions',
+            'product.company.addresses'
         ])->get();
 
         // Добавляем объявления
@@ -232,6 +234,54 @@ class ExportAdvertisementsToXml extends Command
                 $availableElement->appendChild($dom->createTextNode(htmlspecialchars($advertisement->productAvailable->name ?? '', ENT_XML1, 'UTF-8')));
                 $adElement->appendChild($availableElement);
             }
+
+            // Локация
+            $locationElement = $dom->createElement('location');
+            
+            // Склад
+            if ($advertisement->product && $advertisement->product->warehouse) {
+                $warehouseElement = $dom->createElement('warehouse');
+                $warehouseElement->setAttribute('id', (string)$advertisement->product->warehouse->id);
+                $warehouseElement->appendChild($dom->createElement('name', htmlspecialchars($advertisement->product->warehouse->name ?? '', ENT_XML1, 'UTF-8')));
+                $locationElement->appendChild($warehouseElement);
+                
+                // Регионы склада
+                if ($advertisement->product->warehouse->regions && $advertisement->product->warehouse->regions->count() > 0) {
+                    $regionsElement = $dom->createElement('regions');
+                    foreach ($advertisement->product->warehouse->regions as $region) {
+                        $regionElement = $dom->createElement('region');
+                        $regionElement->setAttribute('id', (string)$region->id);
+                        $regionElement->appendChild($dom->createElement('name', htmlspecialchars($region->name ?? '', ENT_XML1, 'UTF-8')));
+                        if (isset($region->city_name)) {
+                            $regionElement->appendChild($dom->createElement('city_name', htmlspecialchars($region->city_name, ENT_XML1, 'UTF-8')));
+                        }
+                        $regionsElement->appendChild($regionElement);
+                    }
+                    $locationElement->appendChild($regionsElement);
+                }
+            }
+            
+            // Адреса компании
+            if ($advertisement->product && $advertisement->product->company && $advertisement->product->company->addresses) {
+                $companyAddressesElement = $dom->createElement('company_addresses');
+                foreach ($advertisement->product->company->addresses as $companyAddress) {
+                    $addressElement = $dom->createElement('address');
+                    $addressElement->setAttribute('id', (string)$companyAddress->id);
+                    $addressElement->appendChild($dom->createElement('address', htmlspecialchars($companyAddress->address ?? '', ENT_XML1, 'UTF-8')));
+                    $addressElement->appendChild($dom->createElement('main_address', $companyAddress->main_address ? '1' : '0'));
+                    $companyAddressesElement->appendChild($addressElement);
+                }
+                $locationElement->appendChild($companyAddressesElement);
+            }
+            
+            // Адрес товара
+            if ($advertisement->product && !empty($advertisement->product->product_address)) {
+                $productAddressElement = $dom->createElement('product_address', htmlspecialchars($advertisement->product->product_address, ENT_XML1, 'UTF-8'));
+                $locationElement->appendChild($productAddressElement);
+            }
+            
+            // Всегда добавляем элемент локации
+            $adElement->appendChild($locationElement);
 
             // Медиафайлы
             $mediaElement = $dom->createElement('media');
