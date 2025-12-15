@@ -60,7 +60,7 @@ class CheckActiveAdvertisements extends Command
 
         // Находим все объявления в статусе "В продаже", которые не обновлялись 30 дней
         $thirtyDaysAgo = Carbon::now()->subDays(30);
-        
+
         $advertisements = Advertisement::with(['product', 'product.owner'])
             ->where('status_id', $activeStatus->id)
             ->where('updated_at', '<=', $thirtyDaysAgo)
@@ -122,8 +122,8 @@ class CheckActiveAdvertisements extends Command
                     ProductAction::create([
                         'product_id' => $product->id,
                         'user_id' => $product->owner_id,
-                        'action' => "Прошло {$daysActive} дней с момента публикации товара. Требуется актуализация статуса, проверка наличия и актуальности информации.",
-                        'expired_at' => Carbon::now()->addDays(3),
+                        'action' => " С поставщиком актуализировать статус товара, проверить наличие, подтвердить цену.",
+                        'expired_at' => Carbon::now()->addDays(1),
                         'status' => false
                     ]);
 
@@ -163,7 +163,7 @@ class CheckActiveAdvertisements extends Command
         $this->info('=== Результаты обработки ===');
         $this->info("Всего найдено: {$advertisements->count()}");
         $this->info("Успешно обработано: {$successCount}");
-        
+
         if ($errorCount > 0) {
             $this->warn("Ошибок: {$errorCount}");
         }

@@ -4,30 +4,29 @@ namespace App\Console\Commands;
 
 use App\Models\Advertisement;
 use App\Models\AdvertisementStatus;
-use App\Models\ProductStatus;
 use App\Models\AdvLog;
-use App\Models\AdvAction;
-use App\Models\ProductLog;
-use App\Models\ProductAction;
 use App\Models\LogType;
-use Illuminate\Console\Command;
+use App\Models\ProductAction;
+use App\Models\ProductLog;
+use App\Models\ProductStatus;
 use Carbon\Carbon;
+use Illuminate\Console\Command;
 
-class CheckReservedAdvertisements extends Command
+class CheckHoldAdv extends Command
 {
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    protected $signature = 'advertisements:check-reserved';
+    protected $signature = 'app:check-hold-adv';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Проверяет объявления в статусе "Резерв" и переводит их в "Ревизия" если прошло 7 дней';
+    protected $description = 'Command description';
 
     /**
      * Execute the console command.
@@ -38,13 +37,13 @@ class CheckReservedAdvertisements extends Command
         $this->newLine();
 
         // Получаем статусы
-        $reserveStatus = AdvertisementStatus::where('name', 'Резерв')->first();
+        $reserveStatus = AdvertisementStatus::where('name', 'Холд')->first();
         $revisionStatus = AdvertisementStatus::where('name', 'Ревизия')->first();
         $productRevisionStatus = ProductStatus::where('name', 'Ревизия')->first();
         $systemLogType = LogType::where('name', 'Системный')->first();
 
         if (!$reserveStatus) {
-            $this->error('Статус "Резерв" не найден для объявлений!');
+            $this->error('Статус "Холд" не найден для объявлений!');
             return 1;
         }
 
@@ -59,7 +58,7 @@ class CheckReservedAdvertisements extends Command
         }
 
         // Находим все объявления в статусе "Резерв", которые не обновлялись 7 дней
-        $sevenDaysAgo = Carbon::now()->subDays(7);
+        $sevenDaysAgo = Carbon::now()->subDays(30);
 
         $advertisements = Advertisement::with(['product', 'product.owner'])
             ->where('status_id', $reserveStatus->id)
@@ -100,7 +99,7 @@ class CheckReservedAdvertisements extends Command
                 AdvLog::create([
                     'advertisement_id' => $advertisement->id,
                     'type_id' => $systemLogType ? $systemLogType->id : null,
-                    'log' => "Прошло {$daysInReserve} дней с момента резервирования данного объявления. Статус автоматически изменен на 'Ревизия'. Требуется актуализировать статус.",
+                    'log' => "Прошло {$daysInReserve} дней с момента холдирования данного объявления. Статус автоматически изменен на 'Ревизия'. Требуется актуализировать статус.",
                     'user_id' => null // От имени системы
                 ]);
 
@@ -113,7 +112,7 @@ class CheckReservedAdvertisements extends Command
                 ProductLog::create([
                     'product_id' => $product->id,
                     'type_id' => $systemLogType ? $systemLogType->id : null,
-                    'log' => "Прошло {$daysInReserve} дней с момента резервирования данного товара. Статус автоматически изменен на 'Ревизия'. Требуется актуализировать статус.",
+                    'log' => "Прошло {$daysInReserve} дней с момента холдирования данного товара. Статус автоматически изменен на 'Ревизия'. Требуется актуализировать статус.",
                     'user_id' => null // От имени системы
                 ]);
 
@@ -173,4 +172,3 @@ class CheckReservedAdvertisements extends Command
         return 0;
     }
 }
-
