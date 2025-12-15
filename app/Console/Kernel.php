@@ -16,6 +16,12 @@ class Kernel extends ConsoleKernel
 
         // Выполнение команды изменения размера изображений товаров каждые 20 минут
         $schedule->command('images:resize-products')->everyTwoMinutes();
+
+        // Проверка объявлений в резерве и автоматический перевод в ревизию через 7 дней
+        $schedule->command('advertisements:check-reserved')->daily();
+
+        // Проверка объявлений в продаже и автоматический перевод в ревизию через 30 дней
+        $schedule->command('advertisements:check-active')->daily();
     }
 
     /**
