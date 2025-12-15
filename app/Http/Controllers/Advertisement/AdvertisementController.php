@@ -1841,4 +1841,107 @@ class AdvertisementController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Добавляет тег к объявлению
+     */
+    public function addTag(Request $request, Advertisement $advertisement)
+    {
+        $request->validate([
+            'tag' => 'required|string|max:50'
+        ]);
+
+        try {
+            $tagValue = trim($request->tag);
+
+            // Проверяем, что тег не пустой
+            if (empty($tagValue)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Тег не может быть пустым'
+                ], 400);
+            }
+
+            // Проверяем, не существует ли уже такой тег у этого объявления
+            $existingTag = $advertisement->tags()->where('tag', $tagValue)->first();
+            if ($existingTag) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Такой тег уже существует'
+                ], 400);
+            }
+
+            // Создаем новый тег
+            $tag = $advertisement->tags()->create([
+                'tag' => $tagValue
+            ]);
+
+            // Создаем запись в логе
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $logMessage = "Пользователь {$userName} добавил тег '{$tagValue}' к объявлению.";
+
+            $systemLogType = LogType::where('name', 'Системный')->first();
+
+            AdvLog::create([
+                'advertisement_id' => $advertisement->id,
+                'user_id' => auth()->id(),
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Тег успешно добавлен',
+                'tag' => $tag
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при добавлении тега: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Удаляет тег из объявления
+     */
+    public function removeTag(Request $request, Advertisement $advertisement, $tagId)
+    {
+        try {
+            $tag = $advertisement->tags()->find($tagId);
+
+            if (!$tag) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Тег не найден'
+                ], 404);
+            }
+
+            $tagValue = $tag->tag;
+            $tag->delete();
+
+            // Создаем запись в логе
+            $userName = auth()->user()->name ?? 'Неизвестный пользователь';
+            $logMessage = "Пользователь {$userName} удалил тег '{$tagValue}' из объявления.";
+
+            $systemLogType = LogType::where('name', 'Системный')->first();
+
+            AdvLog::create([
+                'advertisement_id' => $advertisement->id,
+                'user_id' => auth()->id(),
+                'log' => $logMessage,
+                'type_id' => $systemLogType ? $systemLogType->id : null
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Тег успешно удален'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении тега: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

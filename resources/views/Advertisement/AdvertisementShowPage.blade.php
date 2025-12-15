@@ -478,16 +478,40 @@
 
             
 
-            @if($advertisement->tags && $advertisement->tags->count() > 0)
-                <div class="info-block">
-                    <h3>Теги</h3>
-                    <div class="tags-container">
-                        @foreach($advertisement->tags as $tag)
-                            <span class="tag">{{ $tag->tag }}</span>
-                        @endforeach
-                    </div>
+            <!-- Блок с тегами -->
+            <div class="info-block">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h3 style="margin: 0;">Теги</h3>
+                    @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                        <button type="button" class="btn btn-sm btn-primary" onclick="showAddTagModal()" style="padding: 4px 12px; font-size: 13px;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 4px;">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                            Добавить тег
+                        </button>
+                    @endif
                 </div>
-            @endif
+                <div class="tags-container" id="tagsContainer">
+                    @if($advertisement->tags && $advertisement->tags->count() > 0)
+                        @foreach($advertisement->tags as $tag)
+                            <span class="tag" data-tag-id="{{ $tag->id }}">
+                                {{ $tag->tag }}
+                                @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+                                    <button type="button" class="tag-remove-btn" onclick="removeTag({{ $tag->id }})" title="Удалить тег">
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                    </button>
+                                @endif
+                            </span>
+                        @endforeach
+                    @else
+                        <p style="color: #666; font-style: italic; margin: 0;">Теги не добавлены</p>
+                    @endif
+                </div>
+            </div>
 
 
             @if($advertisement->check_data || true)
@@ -1832,6 +1856,27 @@
     font-weight: 500;
     border: 1px solid #d1e7ff;
     transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tag-remove-btn {
+    background: none;
+    border: none;
+    padding: 2px;
+    cursor: pointer;
+    color: #133E71;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tag-remove-btn:hover {
+    opacity: 1;
+    color: #dc3545;
 }
 
 .tag:hover {
@@ -5674,5 +5719,170 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+<!-- Модальное окно для добавления тега -->
+<div class="modal" id="addTagModal" style="display: none;">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <h3>Добавить тег</h3>
+            <button class="modal-close" onclick="closeAddTagModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="tag_input">Название тега:</label>
+                <input type="text" id="tag_input" class="form-control" placeholder="Введите тег" maxlength="50">
+                <small class="form-text text-muted">
+                    Максимальная длина: 50 символов
+                </small>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" onclick="closeAddTagModal()">Отмена</button>
+            <button type="button" class="btn btn-primary" onclick="addTag()">Добавить</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Функция для показа модального окна добавления тега
+function showAddTagModal() {
+    const modal = document.getElementById('addTagModal');
+    const input = document.getElementById('tag_input');
+    input.value = '';
+    modal.style.display = 'flex';
+    input.focus();
+}
+
+// Функция для закрытия модального окна добавления тега
+function closeAddTagModal() {
+    const modal = document.getElementById('addTagModal');
+    modal.style.display = 'none';
+}
+
+// Функция для добавления тега
+function addTag() {
+    const input = document.getElementById('tag_input');
+    const tagValue = input.value.trim();
+    
+    if (!tagValue) {
+        alert('Пожалуйста, введите название тега');
+        return;
+    }
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/advertisements/{{ $advertisement->id }}/tags`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({ tag: tagValue })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Добавляем новый тег в контейнер
+            addTagToContainer(data.tag);
+            closeAddTagModal();
+        } else {
+            alert(data.message || 'Ошибка при добавлении тега');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при добавлении тега');
+    });
+}
+
+// Функция для добавления тега в контейнер
+function addTagToContainer(tag) {
+    const container = document.getElementById('tagsContainer');
+    
+    // Удаляем сообщение "Теги не добавлены", если оно есть
+    const emptyMessage = container.querySelector('p[style*="font-style: italic"]');
+    if (emptyMessage) {
+        emptyMessage.remove();
+    }
+    
+    // Создаем элемент тега
+    const tagElement = document.createElement('span');
+    tagElement.className = 'tag';
+    tagElement.setAttribute('data-tag-id', tag.id);
+    tagElement.innerHTML = `
+        ${tag.tag}
+        @if(\App\Helpers\AdvertisementHelper::canEditAdvertisement($advertisement))
+            <button type="button" class="tag-remove-btn" onclick="removeTag(${tag.id})" title="Удалить тег">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
+        @endif
+    `;
+    
+    container.appendChild(tagElement);
+}
+
+// Функция для удаления тега
+function removeTag(tagId) {
+    if (!confirm('Вы уверены, что хотите удалить этот тег?')) {
+        return;
+    }
+    
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    
+    fetch(`/advertisements/{{ $advertisement->id }}/tags/${tagId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Удаляем тег из DOM
+            const tagElement = document.querySelector(`[data-tag-id="${tagId}"]`);
+            if (tagElement) {
+                tagElement.remove();
+                
+                // Проверяем, остались ли еще теги
+                const container = document.getElementById('tagsContainer');
+                if (container.children.length === 0) {
+                    container.innerHTML = '<p style="color: #666; font-style: italic; margin: 0;">Теги не добавлены</p>';
+                }
+            }
+        } else {
+            alert(data.message || 'Ошибка при удалении тега');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при удалении тега');
+    });
+}
+
+// Закрытие модального окна при нажатии на Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeAddTagModal();
+    }
+});
+
+// Закрытие модального окна при клике вне его
+document.getElementById('addTagModal')?.addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeAddTagModal();
+    }
+});
+
+// Добавление тега при нажатии Enter в поле ввода
+document.getElementById('tag_input')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        addTag();
+    }
+});
+</script>
 
 @endsection 
