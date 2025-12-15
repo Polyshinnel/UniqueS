@@ -23,6 +23,7 @@ class Kernel extends ConsoleKernel
         // Проверка объявлений в продаже и автоматический перевод в ревизию через 30 дней
         $schedule->command('advertisements:check-active')->daily();
         $schedule->command('app:check-hold-adv')->daily();
+        $schedule->command('advertisements:export-xml')->everyFiveMinutes();
     }
 
     /**
