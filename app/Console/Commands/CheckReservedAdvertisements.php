@@ -132,18 +132,18 @@ class CheckReservedAdvertisements extends Command
                     $this->warn("  ! У товара нет назначенного владельца, задача не создана");
                 }
 
-                // Создаем задачу для объявления (для создателя объявления)
-                if ($advertisement->created_by) {
-                    AdvAction::create([
-                        'advertisement_id' => $advertisement->id,
-                        'user_id' => $advertisement->created_by,
-                        'action' => "Прошло {$daysInReserve} дней с момента постановки объявления в резерв. Требуется актуализация статуса.",
-                        'expired_at' => Carbon::now()->addDays(1),
-                        'status' => false
-                    ]);
+                // // Создаем задачу для объявления (для создателя объявления)
+                // if ($advertisement->created_by) {
+                //     AdvAction::create([
+                //         'advertisement_id' => $advertisement->id,
+                //         'user_id' => $advertisement->created_by,
+                //         'action' => "Прошло {$daysInReserve} дней с момента постановки объявления в резерв. Требуется актуализация статуса.",
+                //         'expired_at' => Carbon::now()->addDays(1),
+                //         'status' => false
+                //     ]);
 
-                    $this->info("  ✓ Создана задача для создателя объявления ID: {$advertisement->created_by}");
-                }
+                //     $this->info("  ✓ Создана задача для создателя объявления ID: {$advertisement->created_by}");
+                // }
 
                 $this->info("  ✓ Статусы успешно обновлены: Резерв → Ревизия");
                 $this->newLine();

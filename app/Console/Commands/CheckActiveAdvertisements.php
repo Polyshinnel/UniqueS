@@ -132,18 +132,18 @@ class CheckActiveAdvertisements extends Command
                     $this->warn("  ! У товара нет назначенного владельца, задача не создана");
                 }
 
-                // Создаем задачу для объявления (для создателя объявления)
-                if ($advertisement->created_by) {
-                    AdvAction::create([
-                        'advertisement_id' => $advertisement->id,
-                        'user_id' => $advertisement->created_by,
-                        'action' => "Прошло {$daysActive} дней с момента публикации объявления. Требуется актуализация информации, проверка актуальности цены и описания.",
-                        'expired_at' => Carbon::now()->addDays(3),
-                        'status' => false
-                    ]);
+                // // Создаем задачу для объявления (для создателя объявления)
+                // if ($advertisement->created_by) {
+                //     AdvAction::create([
+                //         'advertisement_id' => $advertisement->id,
+                //         'user_id' => $advertisement->created_by,
+                //         'action' => "Прошло {$daysActive} дней с момента публикации объявления. Требуется актуализация информации, проверка актуальности цены и описания.",
+                //         'expired_at' => Carbon::now()->addDays(3),
+                //         'status' => false
+                //     ]);
 
-                    $this->info("  ✓ Создана задача для создателя объявления ID: {$advertisement->created_by}");
-                }
+                //     $this->info("  ✓ Создана задача для создателя объявления ID: {$advertisement->created_by}");
+                // }
 
                 $this->info("  ✓ Статусы успешно обновлены: В продаже → Ревизия");
                 $this->info("  ℹ Товар находился в продаже {$daysActive} дней");
