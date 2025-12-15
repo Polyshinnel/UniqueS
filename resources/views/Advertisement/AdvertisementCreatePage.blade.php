@@ -1568,18 +1568,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Делаем функцию доступной глобально
-    window.removeTag = removeTag;
-
     function updateTagsDisplay() {
         tagsList.innerHTML = '';
-        tags.forEach(tag => {
+        tags.forEach((tag, index) => {
             const tagElement = document.createElement('div');
             tagElement.className = 'tag-item';
-            tagElement.innerHTML = `
-                ${tag.replace(/</g, '&lt;').replace(/>/g, '&gt;')}
-                <span class="tag-remove" onclick="removeTag('${tag.replace(/'/g, '\\\'')}')">&times;</span>
-            `;
+            tagElement.setAttribute('data-tag-index', index);
+            
+            const tagText = document.createElement('span');
+            tagText.className = 'tag-text';
+            tagText.textContent = tag;
+            
+            const removeBtn = document.createElement('span');
+            removeBtn.className = 'tag-remove';
+            removeBtn.innerHTML = '&times;';
+            removeBtn.setAttribute('title', 'Удалить тег');
+            removeBtn.style.cursor = 'pointer';
+            
+            // Добавляем обработчик клика для удаления
+            removeBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                removeTag(tag);
+            });
+            
+            tagElement.appendChild(tagText);
+            tagElement.appendChild(removeBtn);
             tagsList.appendChild(tagElement);
         });
         tagsHidden.value = JSON.stringify(tags);
