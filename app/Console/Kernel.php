@@ -24,6 +24,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('advertisements:check-active')->daily();
         $schedule->command('app:check-hold-adv')->daily();
         $schedule->command('advertisements:export-xml')->everyFiveMinutes();
+
+        // Копирование медиафайлов товаров в webserv/products каждый день в 00:00
+        $schedule->command('products:copy-media-to-webserv')->dailyAt('00:00');
     }
 
     /**

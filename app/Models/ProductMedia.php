@@ -21,12 +21,14 @@ class ProductMedia extends Model
         'file_size',
         'sort_order',
         'achieved',
+        'copied',
     ];
 
     protected $casts = [
         'file_size' => 'integer',
         'sort_order' => 'integer',
         'achieved' => 'boolean',
+        'copied' => 'boolean',
     ];
 
     // Связь с товаром
