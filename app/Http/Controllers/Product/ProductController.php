@@ -95,8 +95,8 @@ class ProductController extends Controller
         }
         
         if ($request->filled('region_id')) {
-            $productsQuery->whereHas('warehouse.regions', function($query) use ($request) {
-                $query->where('regions.id', $request->region_id);
+            $productsQuery->whereHas('company', function($query) use ($request) {
+                $query->where('region_id', $request->region_id);
             });
         }
         
