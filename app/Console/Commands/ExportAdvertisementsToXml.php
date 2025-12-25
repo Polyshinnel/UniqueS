@@ -129,8 +129,9 @@ class ExportAdvertisementsToXml extends Command
             'tags',
             'productState',
             'productAvailable',
-            'product.warehouse.regions',
+            'product.warehouse',
             'product.company.addresses',
+            'product.company.region',
             'creator.role',
             'product.owner.role',
             'product.regional.role'
@@ -252,21 +253,20 @@ class ExportAdvertisementsToXml extends Command
                 $warehouseElement->setAttribute('id', (string)$advertisement->product->warehouse->id);
                 $warehouseElement->appendChild($dom->createElement('name', htmlspecialchars($advertisement->product->warehouse->name ?? '', ENT_XML1, 'UTF-8')));
                 $locationElement->appendChild($warehouseElement);
-                
-                // Регионы склада
-                if ($advertisement->product->warehouse->regions && $advertisement->product->warehouse->regions->count() > 0) {
-                    $regionsElement = $dom->createElement('regions');
-                    foreach ($advertisement->product->warehouse->regions as $region) {
-                        $regionElement = $dom->createElement('region');
-                        $regionElement->setAttribute('id', (string)$region->id);
-                        $regionElement->appendChild($dom->createElement('name', htmlspecialchars($region->name ?? '', ENT_XML1, 'UTF-8')));
-                        if (isset($region->city_name)) {
-                            $regionElement->appendChild($dom->createElement('city_name', htmlspecialchars($region->city_name, ENT_XML1, 'UTF-8')));
-                        }
-                        $regionsElement->appendChild($regionElement);
-                    }
-                    $locationElement->appendChild($regionsElement);
+            }
+            
+            // Регион компании
+            if ($advertisement->product && $advertisement->product->company && $advertisement->product->company->region) {
+                $regionsElement = $dom->createElement('regions');
+                $region = $advertisement->product->company->region;
+                $regionElement = $dom->createElement('region');
+                $regionElement->setAttribute('id', (string)$region->id);
+                $regionElement->appendChild($dom->createElement('name', htmlspecialchars($region->name ?? '', ENT_XML1, 'UTF-8')));
+                if (isset($region->city_name)) {
+                    $regionElement->appendChild($dom->createElement('city_name', htmlspecialchars($region->city_name, ENT_XML1, 'UTF-8')));
                 }
+                $regionsElement->appendChild($regionElement);
+                $locationElement->appendChild($regionsElement);
             }
             
             // Адреса компании
