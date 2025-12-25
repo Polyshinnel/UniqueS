@@ -58,12 +58,13 @@ class CheckActiveAdvertisements extends Command
             return 1;
         }
 
-        // Находим все объявления в статусе "В продаже", которые не обновлялись 30 дней
+        // Находим все объявления в статусе "В продаже", которые были опубликованы 30 дней назад
         $thirtyDaysAgo = Carbon::now()->subDays(30);
 
         $advertisements = Advertisement::with(['product', 'product.owner'])
             ->where('status_id', $activeStatus->id)
-            ->where('updated_at', '<=', $thirtyDaysAgo)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', $thirtyDaysAgo)
             ->get();
 
         if ($advertisements->isEmpty()) {
@@ -89,7 +90,7 @@ class CheckActiveAdvertisements extends Command
                 }
 
                 $product = $advertisement->product;
-                $daysActive = Carbon::parse($advertisement->updated_at)->diffInDays(Carbon::now());
+                $daysActive = Carbon::parse($advertisement->published_at)->diffInDays(Carbon::now());
 
                 // Обновляем статус объявления
                 $advertisement->update([

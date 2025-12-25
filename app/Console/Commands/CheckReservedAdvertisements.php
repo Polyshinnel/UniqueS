@@ -58,12 +58,13 @@ class CheckReservedAdvertisements extends Command
             return 1;
         }
 
-        // Находим все объявления в статусе "Резерв", которые не обновлялись 7 дней
+        // Находим все объявления в статусе "Резерв", которые были опубликованы 7 дней назад
         $sevenDaysAgo = Carbon::now()->subDays(7);
 
         $advertisements = Advertisement::with(['product', 'product.owner'])
             ->where('status_id', $reserveStatus->id)
-            ->where('updated_at', '<=', $sevenDaysAgo)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', $sevenDaysAgo)
             ->get();
 
         if ($advertisements->isEmpty()) {
@@ -89,7 +90,7 @@ class CheckReservedAdvertisements extends Command
                 }
 
                 $product = $advertisement->product;
-                $daysInReserve = Carbon::parse($advertisement->updated_at)->diffInDays(Carbon::now());
+                $daysInReserve = Carbon::parse($advertisement->published_at)->diffInDays(Carbon::now());
 
                 // Обновляем статус объявления
                 $advertisement->update([

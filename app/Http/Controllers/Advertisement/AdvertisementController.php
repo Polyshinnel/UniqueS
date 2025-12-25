@@ -345,6 +345,7 @@ class AdvertisementController extends Controller
             'main_img' => $request->main_img,
             'status_id' => AdvertisementStatus::where('name', 'В продаже')->first()->id,
             'created_by' => auth()->id() ?? 1, // Временно используем id=1
+            'published_at' => now(), // Устанавливаем дату публикации при создании
         ]);
 
         // Устанавливаем has_advertise=true для товара
@@ -1711,10 +1712,16 @@ class AdvertisementController extends Controller
             }
         }
 
+        // Подготавливаем данные для обновления
+        $updateData = ['status_id' => $request->status_id];
+        
+        // Если новый статус "В продаже", "Холд" или "Резерв", обновляем published_at
+        if (in_array($newStatus->name, ['В продаже', 'Холд', 'Резерв'])) {
+            $updateData['published_at'] = now();
+        }
+        
         // Обновляем статус объявления
-        $advertisement->update([
-            'status_id' => $request->status_id
-        ]);
+        $advertisement->update($updateData);
 
         // Создаем запись в логе
         $userName = auth()->user()->name ?? 'Неизвестный пользователь';
@@ -1808,9 +1815,10 @@ class AdvertisementController extends Controller
             // Сохраняем старый статус для логирования
             $oldStatusName = $advertisement->status ? $advertisement->status->name : 'Не указан';
 
-            // Обновляем статус объявления
+            // Обновляем статус объявления и published_at
             $advertisement->update([
-                'status_id' => $activeStatus->id
+                'status_id' => $activeStatus->id,
+                'published_at' => now()
             ]);
 
             // Создаем запись в логе

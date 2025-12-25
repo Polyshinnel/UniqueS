@@ -33,7 +33,7 @@ class CheckHoldAdv extends Command
      */
     public function handle()
     {
-        $this->info('Начало проверки объявлений в статусе "Резерв"...');
+        $this->info('Начало проверки объявлений в статусе "Холд"...');
         $this->newLine();
 
         // Получаем статусы
@@ -57,12 +57,13 @@ class CheckHoldAdv extends Command
             return 1;
         }
 
-        // Находим все объявления в статусе "Резерв", которые не обновлялись 7 дней
+        // Находим все объявления в статусе "Холд", которые были опубликованы 30 дней назад
         $sevenDaysAgo = Carbon::now()->subDays(30);
 
         $advertisements = Advertisement::with(['product', 'product.owner'])
             ->where('status_id', $reserveStatus->id)
-            ->where('updated_at', '<=', $sevenDaysAgo)
+            ->whereNotNull('published_at')
+            ->where('published_at', '<=', $sevenDaysAgo)
             ->get();
 
         if ($advertisements->isEmpty()) {
@@ -88,7 +89,7 @@ class CheckHoldAdv extends Command
                 }
 
                 $product = $advertisement->product;
-                $daysInReserve = Carbon::parse($advertisement->updated_at)->diffInDays(Carbon::now());
+                $daysInReserve = Carbon::parse($advertisement->published_at)->diffInDays(Carbon::now());
 
                 // Обновляем статус объявления
                 $advertisement->update([
@@ -144,7 +145,7 @@ class CheckHoldAdv extends Command
                 //     $this->info("  ✓ Создана задача для создателя объявления ID: {$advertisement->created_by}");
                 // }
 
-                $this->info("  ✓ Статусы успешно обновлены: Резерв → Ревизия");
+                $this->info("  ✓ Статусы успешно обновлены: Холд → Ревизия");
                 $this->newLine();
 
                 $successCount++;

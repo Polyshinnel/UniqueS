@@ -2509,8 +2509,16 @@ class ProductController extends Controller
         foreach ($advertisements as $advertisement) {
             $oldAdvertisementStatus = $advertisement->status;
             
+            // Подготавливаем данные для обновления
+            $updateData = ['status_id' => $newAdvertisementStatus->id];
+            
+            // Если новый статус "В продаже", "Холд" или "Резерв", обновляем published_at
+            if (in_array($newAdvertisementStatusName, ['В продаже', 'Холд', 'Резерв'])) {
+                $updateData['published_at'] = now();
+            }
+            
             // Обновляем статус объявления
-            $advertisement->update(['status_id' => $newAdvertisementStatus->id]);
+            $advertisement->update($updateData);
             
             // Создаем лог о смене статуса объявления
             $this->logAdvertisementStatusChange($advertisement, $oldAdvertisementStatus, $newAdvertisementStatus, $newStatus);
