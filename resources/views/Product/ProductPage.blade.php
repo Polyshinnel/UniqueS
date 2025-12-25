@@ -296,7 +296,7 @@
                                     @if($product->main_image)
                                         <img src="{{ asset('storage/' . $product->main_image->file_path) }}" alt="{{ $product->name }}">
                                     @else
-                                        <img src="{{ asset('assets/img/stanok.png') }}" alt="{{ $product->name }}">
+                                        <img src="{{ asset('assets/img/no-picture.jpg') }}" alt="{{ $product->name }}">
                                     @endif
                                 </a>
                             </div>

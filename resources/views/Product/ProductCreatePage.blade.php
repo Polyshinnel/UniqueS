@@ -623,6 +623,25 @@
     box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
 }
 
+.select-input.error,
+.treeselect-input.error {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.select-wrapper.error .select-input,
+.treeselect-wrapper.error .treeselect-input {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+.payment-checkboxes.error {
+    border: 2px solid #dc3545;
+    border-radius: 8px;
+    padding: 8px;
+    background-color: rgba(220, 53, 69, 0.05);
+}
+
 .error-message {
     color: #dc3545;
     font-size: 0.875rem;
@@ -833,7 +852,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="company_id">
-                        Поставщик
+                        Поставщик <span class="required">*</span>
                         <span class="tooltip-trigger" data-tooltip="Доступны только компании со статусами 'В работе' и 'Вторая очередь'. Компании со статусами 'Холд' и 'Отказ' недоступны для создания товаров.">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -876,7 +895,7 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="category_id">
-                        Категория
+                        Категория <span class="required">*</span>
                         <span class="tooltip-trigger" data-tooltip="Можно выбирать только категории без подкатегорий. Недоступные категории отображаются серым цветом.">
                             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -910,7 +929,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="name">Название станка</label>
+                    <label for="name">Название станка <span class="required">*</span></label>
                     <input type="text" name="name" id="name" class="form-control" required>
                 </div>
             </div>
@@ -930,14 +949,14 @@
 
             <div class="form-row">
             <div class="form-group">
-                <label for="product_address">Адрес станка</label>
-                <input type="text" name="product_address" id="product_address" class="form-control" placeholder="Будет подставлен из основного адреса поставщика">
+                <label for="product_address">Адрес станка <span class="required">*</span></label>
+                <input type="text" name="product_address" id="product_address" class="form-control" required placeholder="Будет подставлен из основного адреса поставщика">
             </div>
         </div>
 
         <div class="form-row">
             <div class="form-group">
-                <label for="state_id">Состояние станка</label>
+                <label for="state_id">Состояние станка <span class="required">*</span></label>
                 <select name="state_id" id="state_id" class="form-control" required>
                     <option value="">Выберите состояние</option>
                     @foreach($states as $state)
@@ -947,7 +966,7 @@
             </div>
 
             <div class="form-group">
-                <label for="available_id">Доступность</label>
+                <label for="available_id">Доступность <span class="required">*</span></label>
                 <select name="available_id" id="available_id" class="form-control" required>
                     <option value="">Выберите доступность</option>
                     @foreach($availables as $available)
@@ -968,7 +987,7 @@
 
             <div class="form-group">
                 <label for="main_chars">
-                    Основные характеристики
+                    Основные характеристики <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: токарный 16К20, Рязанец, РМЦ 1500">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -976,12 +995,12 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="main_chars" id="main_chars" class="form-control" rows="4"></textarea>
+                <textarea name="main_chars" id="main_chars" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="form-group">
                 <label for="mark">
-                    Оценка
+                    Оценка <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: В отличном состоянии, с проверкой в работе. Направляющие без износа, электрика на пускателях.">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -989,12 +1008,12 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="mark" id="mark" class="form-control" rows="4"></textarea>
+                <textarea name="mark" id="mark" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="form-group">
                 <label for="complectation">
-                    Комплектация
+                    Комплектация <span class="required">*</span>
                     <span class="tooltip-trigger" data-tooltip="Пример: Комплектный, но без станции СОЖ">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <circle cx="8" cy="8" r="7" stroke="#133E71" stroke-width="2"/>
@@ -1002,7 +1021,7 @@
                         </svg>
                     </span>
                 </label>
-                <textarea name="complectation" id="complectation" class="form-control" rows="4"></textarea>
+                <textarea name="complectation" id="complectation" class="form-control" rows="4" required></textarea>
             </div>
 
             <div class="step-actions">
@@ -1016,8 +1035,8 @@
             <h2>Проверка</h2>
 
             <div class="form-group">
-                <label for="check_status_id">Статус проверки</label>
-                <select name="check_status_id" id="check_status_id" class="form-control">
+                <label for="check_status_id">Статус проверки <span class="required">*</span></label>
+                <select name="check_status_id" id="check_status_id" class="form-control" required>
                     <option value="">Выберите статус проверки</option>
                     @foreach($checkStatuses as $status)
                         <option value="{{ $status->id }}">{{ $status->name }}</option>
@@ -1049,8 +1068,8 @@
             <h2>Погрузка</h2>
 
             <div class="form-group">
-                <label for="loading_status_id">Статус погрузки</label>
-                <select name="loading_status_id" id="loading_status_id" class="form-control">
+                <label for="loading_status_id">Статус погрузки <span class="required">*</span></label>
+                <select name="loading_status_id" id="loading_status_id" class="form-control" required>
                     <option value="">Выберите статус погрузки</option>
                     @foreach($installStatuses as $status)
                         <option value="{{ $status->id }}">{{ $status->name }}</option>
@@ -1082,8 +1101,8 @@
             <h2>Демонтаж</h2>
 
             <div class="form-group">
-                <label for="removal_status_id">Статус демонтажа</label>
-                <select name="removal_status_id" id="removal_status_id" class="form-control">
+                <label for="removal_status_id">Статус демонтажа <span class="required">*</span></label>
+                <select name="removal_status_id" id="removal_status_id" class="form-control" required>
                     <option value="">Выберите статус демонтажа</option>
                     @foreach($installStatuses as $status)
                         <option value="{{ $status->id }}">{{ $status->name }}</option>
@@ -1115,7 +1134,7 @@
             <h2>Оплата</h2>
 
             <div class="form-group">
-                <label for="payment_types">Варианты оплаты</label>
+                <label for="payment_types">Варианты оплаты <span class="required">*</span></label>
                 <div class="payment-checkboxes">
                     @foreach($priceTypes as $priceType)
                         <label class="payment-checkbox">
@@ -1137,8 +1156,8 @@
             </div>
 
             <div class="form-group">
-                <label for="purchase_price">Цена покупки (руб.)</label>
-                <input type="number" name="purchase_price" id="purchase_price" class="form-control" step="0.01" min="0">
+                <label for="purchase_price">Цена покупки (руб.) <span class="required">*</span></label>
+                <input type="number" name="purchase_price" id="purchase_price" class="form-control" step="0.01" min="0" required>
             </div>
 
             <div class="form-group">
@@ -1480,56 +1499,163 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateStep(stepNumber) {
         const stepElement = document.getElementById(`step-${stepNumber}`);
-        const requiredFields = stepElement.querySelectorAll('[required]');
 
         // Очищаем предыдущие ошибки
         clearValidationErrors(stepElement);
 
-        // Специальная валидация для шага 3 (Проверка)
+        // Специальная валидация для каждого шага
+        if (stepNumber === 1) {
+            return validateStep1(stepElement);
+        }
+        if (stepNumber === 2) {
+            return validateStep2(stepElement);
+        }
         if (stepNumber === 3) {
             return validateStep3(stepElement);
         }
-
-        // Специальная валидация для шага 4 (Погрузка)
         if (stepNumber === 4) {
             return validateStep4(stepElement);
         }
-
-        // Специальная валидация для шага 5 (Демонтаж)
         if (stepNumber === 5) {
             return validateStep5(stepElement);
         }
-
-        // Специальная валидация для шага 6 (Оплата)
         if (stepNumber === 6) {
             return validateStep6(stepElement);
         }
-
-        // Специальная валидация для шага 8 (Общий комментарий)
         if (stepNumber === 8) {
             return validateStep8(stepElement);
         }
 
-        // Стандартная валидация для остальных шагов
-        for (let field of requiredFields) {
-            if (!field.value.trim()) {
-                showFieldError(field, 'Это поле обязательно для заполнения');
-                field.focus();
-                return false;
+        return true;
+    }
+
+    function validateStep1(stepElement) {
+        let isValid = true;
+        let firstErrorField = null;
+
+        // Проверяем поставщика
+        const companySelect = document.getElementById('company_id');
+        if (!companySelect || !companySelect.value || companySelect.value.trim() === '') {
+            const companyWrapper = stepElement.querySelector('.select-wrapper');
+            showFieldError(companySelect || companyWrapper, 'Поле "Поставщик" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = document.getElementById('company_select');
+        }
+
+        // Проверяем категорию
+        const categorySelect = document.getElementById('category_id');
+        if (!categorySelect || !categorySelect.value || categorySelect.value.trim() === '') {
+            const categoryWrapper = stepElement.querySelector('.treeselect-wrapper');
+            showFieldError(categorySelect || categoryWrapper, 'Поле "Категория" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = document.getElementById('category_treeselect');
+        }
+
+        // Проверяем название станка
+        const nameField = stepElement.querySelector('#name');
+        if (!nameField || !nameField.value.trim()) {
+            showFieldError(nameField, 'Поле "Название станка" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = nameField;
+        }
+
+        // Проверяем адрес станка
+        const productAddress = stepElement.querySelector('#product_address');
+        if (!productAddress || !productAddress.value.trim()) {
+            showFieldError(productAddress, 'Поле "Адрес станка" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = productAddress;
+        }
+
+        // Проверяем состояние станка
+        const stateSelect = stepElement.querySelector('#state_id');
+        if (!stateSelect || !stateSelect.value || stateSelect.value.trim() === '') {
+            showFieldError(stateSelect, 'Поле "Состояние станка" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = stateSelect;
+        }
+
+        // Проверяем доступность
+        const availableSelect = stepElement.querySelector('#available_id');
+        if (!availableSelect || !availableSelect.value || availableSelect.value.trim() === '') {
+            showFieldError(availableSelect, 'Поле "Доступность" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = availableSelect;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
-        return true;
+
+        return isValid;
+    }
+
+    function validateStep2(stepElement) {
+        let isValid = true;
+        let firstErrorField = null;
+
+        // Проверяем основные характеристики
+        const mainChars = stepElement.querySelector('#main_chars');
+        if (!mainChars || !mainChars.value.trim()) {
+            showFieldError(mainChars, 'Поле "Основные характеристики" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = mainChars;
+        }
+
+        // Проверяем оценку
+        const mark = stepElement.querySelector('#mark');
+        if (!mark || !mark.value.trim()) {
+            showFieldError(mark, 'Поле "Оценка" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = mark;
+        }
+
+        // Проверяем комплектацию
+        const complectation = stepElement.querySelector('#complectation');
+        if (!complectation || !complectation.value.trim()) {
+            showFieldError(complectation, 'Поле "Комплектация" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = complectation;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+
+        return isValid;
     }
 
     function validateStep3(stepElement) {
         let isValid = true;
+        let firstErrorField = null;
+
+        // Проверяем статус проверки
+        const checkStatus = stepElement.querySelector('#check_status_id');
+        if (!checkStatus || !checkStatus.value || checkStatus.value.trim() === '') {
+            showFieldError(checkStatus, 'Поле "Статус проверки" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = checkStatus;
+        }
 
         // Проверяем комментарий к проверке
         const checkComment = stepElement.querySelector('#check_comment');
-        if (!checkComment.value.trim()) {
-            showFieldError(checkComment, 'Комментарий к проверке обязателен для заполнения');
+        if (!checkComment || !checkComment.value.trim()) {
+            showFieldError(checkComment, 'Поле "Комментарий к проверке" обязательно для заполнения');
             isValid = false;
-            checkComment.focus();
+            if (!firstErrorField) firstErrorField = checkComment;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         return isValid;
@@ -1537,13 +1663,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateStep4(stepElement) {
         let isValid = true;
+        let firstErrorField = null;
+
+        // Проверяем статус погрузки
+        const loadingStatus = stepElement.querySelector('#loading_status_id');
+        if (!loadingStatus || !loadingStatus.value || loadingStatus.value.trim() === '') {
+            showFieldError(loadingStatus, 'Поле "Статус погрузки" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = loadingStatus;
+        }
 
         // Проверяем комментарий к погрузке
         const loadingComment = stepElement.querySelector('#loading_comment');
-        if (!loadingComment.value.trim()) {
-            showFieldError(loadingComment, 'Комментарий к погрузке обязателен для заполнения');
+        if (!loadingComment || !loadingComment.value.trim()) {
+            showFieldError(loadingComment, 'Поле "Комментарий" обязательно для заполнения');
             isValid = false;
-            loadingComment.focus();
+            if (!firstErrorField) firstErrorField = loadingComment;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         return isValid;
@@ -1551,13 +1693,29 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateStep5(stepElement) {
         let isValid = true;
+        let firstErrorField = null;
+
+        // Проверяем статус демонтажа
+        const removalStatus = stepElement.querySelector('#removal_status_id');
+        if (!removalStatus || !removalStatus.value || removalStatus.value.trim() === '') {
+            showFieldError(removalStatus, 'Поле "Статус демонтажа" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = removalStatus;
+        }
 
         // Проверяем комментарий к демонтажу
         const removalComment = stepElement.querySelector('#removal_comment');
-        if (!removalComment.value.trim()) {
-            showFieldError(removalComment, 'Комментарий к демонтажу обязателен для заполнения');
+        if (!removalComment || !removalComment.value.trim()) {
+            showFieldError(removalComment, 'Поле "Комментарий" обязательно для заполнения');
             isValid = false;
-            removalComment.focus();
+            if (!firstErrorField) firstErrorField = removalComment;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         return isValid;
@@ -1565,34 +1723,44 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateStep6(stepElement) {
         let isValid = true;
-
-        // Проверяем основной способ оплаты
-        const mainPaymentMethod = stepElement.querySelector('#main_payment_method');
-        if (!mainPaymentMethod.value.trim()) {
-            showFieldError(mainPaymentMethod, 'Выберите основной способ оплаты');
-            isValid = false;
-        }
-
-        // Проверяем комментарий
-        const paymentComment = stepElement.querySelector('#payment_comment');
-        if (!paymentComment.value.trim()) {
-            showFieldError(paymentComment, 'Комментарий обязателен для заполнения');
-            isValid = false;
-        }
+        let firstErrorField = null;
 
         // Проверяем, что выбран хотя бы один вариант оплаты
         const paymentTypes = stepElement.querySelectorAll('input[name="payment_types[]"]:checked');
         if (paymentTypes.length === 0) {
             const paymentTypesContainer = stepElement.querySelector('.payment-checkboxes');
-            showContainerError(paymentTypesContainer, 'Выберите хотя бы один вариант оплаты');
+            showContainerError(paymentTypesContainer, 'Поле "Варианты оплаты" обязательно для заполнения. Выберите хотя бы один вариант оплаты');
             isValid = false;
         }
 
-        if (!isValid) {
-            // Фокусируемся на первом поле с ошибкой
-            const firstErrorField = stepElement.querySelector('.form-control.error');
-            if (firstErrorField) {
-                firstErrorField.focus();
+        // Проверяем основной способ оплаты
+        const mainPaymentMethod = stepElement.querySelector('#main_payment_method');
+        if (!mainPaymentMethod || !mainPaymentMethod.value || mainPaymentMethod.value.trim() === '') {
+            showFieldError(mainPaymentMethod, 'Поле "Основной способ оплаты" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = mainPaymentMethod;
+        }
+
+        // Проверяем цену покупки
+        const purchasePrice = stepElement.querySelector('#purchase_price');
+        if (!purchasePrice || !purchasePrice.value || purchasePrice.value.trim() === '' || parseFloat(purchasePrice.value) <= 0) {
+            showFieldError(purchasePrice, 'Поле "Цена покупки" обязательно для заполнения и должно быть больше нуля');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = purchasePrice;
+        }
+
+        // Проверяем комментарий
+        const paymentComment = stepElement.querySelector('#payment_comment');
+        if (!paymentComment || !paymentComment.value.trim()) {
+            showFieldError(paymentComment, 'Поле "Комментарий" обязательно для заполнения');
+            isValid = false;
+            if (!firstErrorField) firstErrorField = paymentComment;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }
 
@@ -1601,33 +1769,75 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function validateStep8(stepElement) {
         let isValid = true;
+        let firstErrorField = null;
 
         // Проверяем общий комментарий после осмотра
         const commonCommentary = stepElement.querySelector('#common_commentary_after');
-        if (!commonCommentary.value.trim()) {
-            showFieldError(commonCommentary, 'Общий комментарий обязателен для заполнения');
+        if (!commonCommentary || !commonCommentary.value.trim()) {
+            showFieldError(commonCommentary, 'Поле "Общий комментарий после осмотра" обязательно для заполнения');
             isValid = false;
-            commonCommentary.focus();
+            if (!firstErrorField) firstErrorField = commonCommentary;
+        }
+
+        if (!isValid && firstErrorField) {
+            firstErrorField.focus();
+            if (firstErrorField.scrollIntoView) {
+                firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         return isValid;
     }
 
     function showFieldError(field, message) {
-        field.classList.add('error');
+        if (!field) return;
+        
+        // Находим родительский элемент для размещения сообщения об ошибке
+        let parentElement = field.parentNode;
+        let visibleField = field;
+        
+        // Если поле - скрытый select, находим соответствующий видимый элемент
+        if (field.tagName === 'SELECT' && field.style.display === 'none') {
+            const wrapper = parentElement.closest('.select-wrapper') || parentElement.closest('.treeselect-wrapper');
+            if (wrapper) {
+                parentElement = wrapper;
+                // Находим видимый input элемент
+                const visibleInput = wrapper.querySelector('.select-input') || wrapper.querySelector('.treeselect-input');
+                if (visibleInput) {
+                    visibleField = visibleInput;
+                }
+            }
+        }
+        
+        // Добавляем класс ошибки к видимому полю
+        if (visibleField && visibleField.classList) {
+            visibleField.classList.add('error');
+        }
+        
+        // Также добавляем класс к скрытому полю, если оно есть
+        if (field.classList) {
+            field.classList.add('error');
+        }
         
         // Создаем или обновляем сообщение об ошибке
-        let errorMessage = field.parentNode.querySelector('.error-message');
+        let errorMessage = parentElement.querySelector('.error-message');
         if (!errorMessage) {
             errorMessage = document.createElement('div');
             errorMessage.className = 'error-message';
-            field.parentNode.appendChild(errorMessage);
+            parentElement.appendChild(errorMessage);
         }
         errorMessage.textContent = message;
         errorMessage.classList.add('show');
     }
 
     function showContainerError(container, message) {
+        if (!container) return;
+        
+        // Добавляем класс ошибки к контейнеру
+        if (container.classList) {
+            container.classList.add('error');
+        }
+        
         // Создаем или обновляем сообщение об ошибке для контейнера
         let errorMessage = container.parentNode.querySelector('.error-message');
         if (!errorMessage) {
@@ -1640,9 +1850,13 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function clearValidationErrors(stepElement) {
-        // Убираем классы ошибок
-        const errorFields = stepElement.querySelectorAll('.form-control.error');
+        // Убираем классы ошибок со всех полей
+        const errorFields = stepElement.querySelectorAll('.form-control.error, .select-input.error, .treeselect-input.error, .select-wrapper.error, .treeselect-wrapper.error');
         errorFields.forEach(field => field.classList.remove('error'));
+
+        // Убираем классы ошибок с контейнеров
+        const errorContainers = stepElement.querySelectorAll('.payment-checkboxes.error');
+        errorContainers.forEach(container => container.classList.remove('error'));
 
         // Скрываем сообщения об ошибках
         const errorMessages = stepElement.querySelectorAll('.error-message');
