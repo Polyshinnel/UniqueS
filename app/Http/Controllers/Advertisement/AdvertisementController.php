@@ -100,8 +100,8 @@ class AdvertisementController extends Controller
         }
 
         if ($request->filled('region_id')) {
-            $advertisementsQuery->whereHas('product.warehouse.regions', function($query) use ($request) {
-                $query->where('regions.id', $request->region_id);
+            $advertisementsQuery->whereHas('product.company', function($query) use ($request) {
+                $query->where('region_id', $request->region_id);
             });
         }
 
