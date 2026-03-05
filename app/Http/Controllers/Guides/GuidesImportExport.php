@@ -14,9 +14,15 @@ use App\Models\Sources;
 use App\Models\Regions;
 use App\Models\User;
 use App\Models\Warehouses;
+use App\Models\Advertisement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class GuidesImportExport extends Controller
 {
@@ -453,6 +459,147 @@ class GuidesImportExport extends Controller
     {
         // TODO: Реализовать логику экспорта товаров
         return redirect()->route('import-export.index')->with('success', 'Экспорт товаров начат');
+    }
+
+    public function exportAdvertisements()
+    {
+        try {
+            $advertisements = Advertisement::with([
+                'creator',
+                'category',
+                'status',
+                'product.company.region',
+                'productState',
+                'productAvailable',
+                'mediaOrdered',
+            ])->orderByDesc('id')->get();
+
+            $spreadsheet = new Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+            $sheet->setTitle('Объявления');
+
+            $headers = [
+                'Отвественный',
+                'Регион',
+                'Состояние станка',
+                'Доступность станка',
+                'Дата создания',
+                'Дата публикации',
+                'Категория',
+                'Статус обьявления',
+                'Название обьявления',
+                'Ссылка на обьявление',
+                'Артикул',
+                'Основные характеристики',
+                'Основная информация',
+                'Технические характеристики',
+                'Стоимость покупки',
+                'Цена продажи',
+                'Комментарий к продаже',
+                'Отображение цены на сайте',
+                'Главное фото обьявления',
+            ];
+
+            foreach ($headers as $index => $header) {
+                $column = Coordinate::stringFromColumnIndex($index + 1);
+                $sheet->setCellValue($column . '1', $header);
+            }
+
+            $sheet->getStyle('A1:S1')->getFont()->setBold(true);
+            $sheet->getStyle('A1:S1')->getAlignment()
+                ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+                ->setVertical(Alignment::VERTICAL_CENTER)
+                ->setWrapText(true);
+
+            $columnWidths = [
+                'A' => 24, 'B' => 24, 'C' => 20, 'D' => 22, 'E' => 20,
+                'F' => 20, 'G' => 30, 'H' => 20, 'I' => 40, 'J' => 45,
+                'K' => 24, 'L' => 50, 'M' => 50, 'N' => 50, 'O' => 18,
+                'P' => 18, 'Q' => 45, 'R' => 26, 'S' => 34,
+            ];
+
+            foreach ($columnWidths as $column => $width) {
+                $sheet->getColumnDimension($column)->setWidth($width);
+            }
+
+            $row = 2;
+            foreach ($advertisements as $advertisement) {
+                $sheet->fromArray([
+                    $advertisement->creator?->name ?? '',
+                    $advertisement->product?->company?->region?->name ?? '',
+                    $advertisement->productState?->name ?? '',
+                    $advertisement->productAvailable?->name ?? '',
+                    $advertisement->created_at?->format('d.m.Y H:i:s') ?? '',
+                    $advertisement->published_at?->format('d.m.Y H:i:s') ?? '',
+                    $advertisement->category?->name ?? '',
+                    $advertisement->status?->name ?? '',
+                    $advertisement->title ?? '',
+                    route('advertisements.show', $advertisement->id),
+                    $advertisement->product?->sku ?? '',
+                    $advertisement->main_characteristics ?? '',
+                    $advertisement->main_info ?? '',
+                    $advertisement->technical_characteristics ?? '',
+                    $advertisement->product?->purchase_price ?? '',
+                    $advertisement->adv_price ?? '',
+                    $advertisement->adv_price_comment ?? '',
+                    $advertisement->show_price ? 'Показывать цену' : 'Скрывать цену',
+                    '',
+                ], null, 'A' . $row);
+
+                $sheet->getStyle('A' . $row . ':S' . $row)->getAlignment()
+                    ->setVertical(Alignment::VERTICAL_TOP)
+                    ->setWrapText(true);
+
+                $mainImage = $advertisement->getMainImage();
+                $sheet->setCellValue('S' . $row, 'Нет фото');
+
+                if ($mainImage && !empty($mainImage->file_path)) {
+                    $relativePath = ltrim($mainImage->file_path, '/');
+                    $storageImagePath = storage_path('app/public/' . $relativePath);
+                    $publicImagePath = public_path('storage/' . $relativePath);
+                    $imagePath = file_exists($storageImagePath) ? $storageImagePath : $publicImagePath;
+
+                    if (file_exists($imagePath)) {
+                        $drawing = new Drawing();
+                        $drawing->setName('Главное фото');
+                        $drawing->setDescription('Главное фото объявления');
+                        $drawing->setPath($imagePath);
+                        $drawing->setCoordinates('S' . $row);
+                        $drawing->setHeight(200);
+                        $drawing->setWidth(200);
+                        $drawing->setOffsetX(6);
+                        $drawing->setOffsetY(6);
+                        $drawing->setWorksheet($sheet);
+
+                        $sheet->setCellValue('S' . $row, '');
+                        $sheet->getRowDimension($row)->setRowHeight(155);
+                    } else {
+                        $sheet->setCellValue('S' . $row, 'Фото не найдено');
+                    }
+                }
+
+                $row++;
+            }
+
+            $sheet->setAutoFilter('A1:S1');
+            $sheet->freezePane('A2');
+
+            $exportDir = storage_path('app/public/exports');
+            if (!is_dir($exportDir)) {
+                mkdir($exportDir, 0755, true);
+            }
+
+            $fileName = 'advertisements_export_' . now()->format('d_m_Y_H_i_s') . '.xlsx';
+            $filePath = $exportDir . DIRECTORY_SEPARATOR . $fileName;
+
+            $writer = new Xlsx($spreadsheet);
+            $writer->save($filePath);
+
+            return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            return redirect()->route('import-export.index')
+                ->with('error', 'Ошибка при экспорте объявлений: ' . $e->getMessage());
+        }
     }
 }
 

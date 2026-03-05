@@ -189,6 +189,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::post('/guide/import-export/companies/import', [GuidesImportExport::class, 'importCompanies'])->name('import-export.companies.import');
     Route::post('/guide/import-export/companies/export', [GuidesImportExport::class, 'exportCompanies'])->name('import-export.companies.export');
     Route::post('/guide/import-export/products/export', [GuidesImportExport::class, 'exportProducts'])->name('import-export.products.export');
+    Route::post('/guide/import-export/advertisements/export', [GuidesImportExport::class, 'exportAdvertisements'])->name('import-export.advertisements.export');
 
     Route::post('/guide/users', [GuidesUsers::class, 'store'])->name('users.store');
     Route::get('/guide/users/{user}/edit', [GuidesUsers::class, 'edit'])->name('users.edit');

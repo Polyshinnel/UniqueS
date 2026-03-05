@@ -170,6 +170,44 @@
                 </form>
             </div>
         </div>
+
+        <!-- Экспорт объявлений -->
+        <div class="import-export-card">
+            <div class="card-header">
+                <div class="card-icon export-icon">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7,10 12,15 17,10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                </div>
+                <div class="card-title-section">
+                    <h3 class="card-title">Экспорт объявлений</h3>
+                    <p class="card-description">Скачайте список всех объявлений в формате Excel</p>
+                </div>
+            </div>
+            <div class="card-body">
+                <form action="{{ route('import-export.advertisements.export') }}" method="POST" class="export-form">
+                    @csrf
+                    <div class="export-info">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        <p>Нажмите кнопку ниже, чтобы скачать файл со всеми объявлениями</p>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7,10 12,15 17,10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Экспортировать объявления
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
 </div>
 
