@@ -464,6 +464,8 @@ class GuidesImportExport extends Controller
     public function exportAdvertisements()
     {
         try {
+            $allowedStatuses = ['В продаже', 'Ревизия', 'Холд', 'Резерв'];
+
             $advertisements = Advertisement::with([
                 'creator',
                 'category',
@@ -472,7 +474,12 @@ class GuidesImportExport extends Controller
                 'productState',
                 'productAvailable',
                 'mediaOrdered',
-            ])->orderByDesc('id')->get();
+            ])
+                ->whereHas('status', function ($query) use ($allowedStatuses) {
+                    $query->whereIn('name', $allowedStatuses);
+                })
+                ->orderByDesc('id')
+                ->get();
 
             $spreadsheet = new Spreadsheet();
             $sheet = $spreadsheet->getActiveSheet();
