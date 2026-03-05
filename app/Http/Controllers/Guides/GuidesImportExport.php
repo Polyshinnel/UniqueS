@@ -584,18 +584,14 @@ class GuidesImportExport extends Controller
             $sheet->setAutoFilter('A1:S1');
             $sheet->freezePane('A2');
 
-            $exportDir = storage_path('app/public/exports');
-            if (!is_dir($exportDir)) {
-                mkdir($exportDir, 0755, true);
-            }
-
             $fileName = 'advertisements_export_' . now()->format('d_m_Y_H_i_s') . '.xlsx';
-            $filePath = $exportDir . DIRECTORY_SEPARATOR . $fileName;
-
             $writer = new Xlsx($spreadsheet);
-            $writer->save($filePath);
 
-            return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
+            return response()->streamDownload(function () use ($writer) {
+                $writer->save('php://output');
+            }, $fileName, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
         } catch (\Throwable $e) {
             return redirect()->route('import-export.index')
                 ->with('error', 'Ошибка при экспорте объявлений: ' . $e->getMessage());
