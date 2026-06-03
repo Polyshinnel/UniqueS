@@ -26,6 +26,42 @@ use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class GuidesImportExport extends Controller
 {
+    /**
+     * Безопасно определяет локальный путь к изображению для экспорта.
+     */
+    private function resolveExportImagePath(?string $filePath): ?string
+    {
+        if (empty($filePath)) {
+            return null;
+        }
+
+        $relativePath = ltrim($filePath, '/');
+        $candidatePaths = [
+            storage_path('app/public/' . $relativePath),
+            public_path('storage/' . $relativePath),
+        ];
+
+        foreach ($candidatePaths as $candidatePath) {
+            if ($this->safeFileExists($candidatePath)) {
+                return $candidatePath;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Проверяет наличие файла без выброса warning из-за open_basedir.
+     */
+    private function safeFileExists(?string $path): bool
+    {
+        if (empty($path)) {
+            return false;
+        }
+
+        return @is_file($path);
+    }
+
     public function index()
     {
         return view('Guides.GuidesImportExportPage');
@@ -561,12 +597,9 @@ class GuidesImportExport extends Controller
                 $sheet->setCellValue('S' . $row, 'Нет фото');
 
                 if ($mainImage && !empty($mainImage->file_path)) {
-                    $relativePath = ltrim($mainImage->file_path, '/');
-                    $storageImagePath = storage_path('app/public/' . $relativePath);
-                    $publicImagePath = public_path('storage/' . $relativePath);
-                    $imagePath = file_exists($storageImagePath) ? $storageImagePath : $publicImagePath;
+                    $imagePath = $this->resolveExportImagePath($mainImage->file_path);
 
-                    if (file_exists($imagePath)) {
+                    if ($imagePath) {
                         $drawing = new Drawing();
                         $drawing->setName('Главное фото');
                         $drawing->setDescription('Главное фото объявления');
