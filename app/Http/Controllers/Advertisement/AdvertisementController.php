@@ -125,6 +125,9 @@ class AdvertisementController extends Controller
                 $query->where('title', 'like', '%' . $searchTerm . '%')
                       ->orWhereHas('product', function($subQuery) use ($searchTerm) {
                           $subQuery->where('sku', 'like', '%' . $searchTerm . '%');
+                      })
+                      ->orWhereHas('tags', function($subQuery) use ($searchTerm) {
+                          $subQuery->where('tag', 'like', '%' . $searchTerm . '%');
                       });
             });
         }
