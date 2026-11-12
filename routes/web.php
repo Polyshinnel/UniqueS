@@ -162,6 +162,10 @@ Route::get('/', function () {
 Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/guide', [GuidesMain::class, 'index']);
     Route::get('/guide/users', [GuidesUsers::class, 'index'])->name('users.index');
+    Route::get('/guide/users/transfer', [\App\Http\Controllers\Guides\EmployeeTransferController::class, 'index'])->name('users.transfer');
+    Route::get('/guide/users/transfer/options', [\App\Http\Controllers\Guides\EmployeeTransferController::class, 'options'])->name('users.transfer.options');
+    Route::post('/guide/users/transfer/preview', [\App\Http\Controllers\Guides\EmployeeTransferController::class, 'preview'])->name('users.transfer.preview');
+    Route::post('/guide/users/transfer', [\App\Http\Controllers\Guides\EmployeeTransferController::class, 'store'])->name('users.transfer.store');
     Route::get('/guide/regions', [GuidesRegions::class, 'index'])->name('regions.index');
     Route::post('/guide/regions', [GuidesRegions::class, 'store'])->name('regions.store');
     Route::get('/guide/regions/{region}/edit', [GuidesRegions::class, 'edit'])->name('regions.edit');

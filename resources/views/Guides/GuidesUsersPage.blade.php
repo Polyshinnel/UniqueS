@@ -3,6 +3,8 @@
 @section('title', 'Сотрудники')
 
 @section('header-action-btn')
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+    <a href="{{ route('users.transfer') }}" class="btn btn-primary">Изменить сотрудника</a>
     <button class="btn btn-primary" onclick="openModal()">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="12" y1="5" x2="12" y2="19"></line>
@@ -10,6 +12,7 @@
         </svg>
         Добавить сотрудника
     </button>
+    </div>
 @endsection
 
 @section('header-title')
