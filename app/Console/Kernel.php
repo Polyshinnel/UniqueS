@@ -28,7 +28,7 @@ class Kernel extends ConsoleKernel
         // Копирование медиафайлов товаров в webserv/products каждый день в 00:00
         $schedule->command('products:copy-media-to-webserv')->dailyAt('00:00');
 
-        // Полный дамп базы данных в products каждый день в 23:00
+        // Полный дамп в webserv/products каждый день в 23:00, хранение за 7 дней
         $schedule->command('database:backup-products')->dailyAt('23:00');
     }
 

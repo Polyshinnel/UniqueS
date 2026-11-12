@@ -12,7 +12,7 @@ class BackupDatabaseToProducts extends Command
 {
     protected $signature = 'database:backup-products';
 
-    protected $description = 'Создает полный дамп базы данных в storage/app/public/products';
+    protected $description = 'Создает полный дамп базы данных в storage/app/public/webserv/products и хранит дампы за 7 дней';
 
     public function handle(): int
     {
@@ -29,7 +29,7 @@ class BackupDatabaseToProducts extends Command
             return self::FAILURE;
         }
 
-        $directory = storage_path('app/public/products');
+        $directory = storage_path('app/public/webserv/products');
 
         if (! File::isDirectory($directory) && ! File::makeDirectory($directory, 0755, true)) {
             $this->error("Не удалось создать папку: {$directory}");
@@ -101,6 +101,35 @@ class BackupDatabaseToProducts extends Command
 
         $this->info("Дамп базы данных сохранен: {$filePath}");
 
+        try {
+            $this->rotateDumps($directory);
+        } catch (\Throwable $exception) {
+            $this->error('Не удалось удалить старые дампы: ' . $exception->getMessage());
+            return self::FAILURE;
+        }
+
         return self::SUCCESS;
+    }
+
+    private function rotateDumps(string $directory): void
+    {
+        // Сегодня и шесть предыдущих дней; дата берется из имени, а не mtime.
+        $oldestDate = now()->startOfDay()->subDays(6)->format('Y-m-d');
+
+        foreach (File::files($directory) as $file) {
+            if (! preg_match('/^(\d{2}-\d{2}-\d{4})_uniqset_dump\.sql$/', $file->getFilename(), $matches)) {
+                continue;
+            }
+
+            $date = \DateTimeImmutable::createFromFormat('!d-m-Y', $matches[1]);
+
+            if ($date === false || $date->format('d-m-Y') !== $matches[1] || $date->format('Y-m-d') >= $oldestDate) {
+                continue;
+            }
+
+            if (! File::delete($file->getPathname())) {
+                throw new \RuntimeException('Не удалось удалить файл: ' . $file->getPathname());
+            }
+        }
     }
 }
