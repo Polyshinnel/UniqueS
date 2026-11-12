@@ -3915,6 +3915,7 @@ function saveContactsBlock() {
     fetch(`/company/${currentCompanyId}/contacts`, {
         method: 'PATCH',
         headers: {
+            'Accept': 'application/json',
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
         },
@@ -3924,6 +3925,13 @@ function saveContactsBlock() {
         console.log('Response status:', response.status);
         console.log('Response headers:', response.headers);
         
+        if (response.status === 422) {
+            return response.json().then(data => {
+                const messages = Object.values(data.errors || {}).flat();
+                throw new Error(messages.join('\n') || data.message || 'Проверьте данные контактов');
+            });
+        }
+
         if (!response.ok) {
             return response.text().then(text => {
                 console.log('Error response text:', text);

@@ -1311,7 +1311,7 @@ class CompanyController extends Controller
             'contacts.*.name' => 'required|string|max:255',
             'contacts.*.position' => 'required|string|max:255',
             'contacts.*.phones' => 'array',
-            'contacts.*.phones.*' => 'string|max:20',
+            'contacts.*.phones.*' => 'string|max:255',
             'contacts.*.emails' => 'array',
             'contacts.*.emails.*' => 'email|max:255',
             'contacts.*.main_contact' => 'boolean'
