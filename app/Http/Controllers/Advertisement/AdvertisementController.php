@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Advertisement;
 
 use App\Http\Controllers\Controller;
+use App\Support\FilterOptions;
 use App\Models\Advertisement;
 use App\Models\AdvertisementMedia;
 use App\Models\Product;
@@ -72,6 +73,8 @@ class AdvertisementController extends Controller
             });
         }
 
+        $availableRecords = (clone $advertisementsQuery)->withoutEagerLoads();
+
         // Фильтр по типу объявлений (Свои/Все) - применяется поверх прав доступа
         if ($request->filled('advertisement_type')) {
             if ($request->advertisement_type === 'own') {
@@ -135,7 +138,7 @@ class AdvertisementController extends Controller
         $advertisements = $advertisementsQuery->orderBy('id', 'desc')->paginate(20)->withQueryString();
 
         // Получаем данные для фильтров с учетом прав доступа
-        $filterData = $this->getFilterData($user, $currentUserId);
+        $filterData = $this->getFilterData($user, $availableRecords);
 
         return view('Advertisement.AdvertisementListPage', compact('advertisements', 'filterData'));
     }
@@ -143,63 +146,22 @@ class AdvertisementController extends Controller
     /**
      * Получает данные для фильтров с учетом прав доступа пользователя
      */
-    private function getFilterData($user, $currentUserId)
+    private function getFilterData($user, $availableRecords)
     {
-        $filterData = [];
+        $products = Product::whereIn('id', (clone $availableRecords)->select('product_id'));
+        $companies = Company::whereIn('id', $products->select('company_id'));
 
-        // Категории - доступны всем
-        $filterData['categories'] = \App\Models\ProductCategories::where('active', true)->get();
-
-        // Статусы объявлений - показываем все статусы
-        $filterData['statuses'] = \App\Models\AdvertisementStatus::all();
-
-        // Поставщики (компании) - с учетом прав доступа
-        $companiesQuery = \App\Models\Company::with('status');
-
-        if ($user && $user->role) {
-            if ($user->role->name === 'Региональный представитель') {
-                // Для регионального представителя показываем компании, где он назначен как региональный представитель
-                $companiesQuery->where('regional_user_id', $currentUserId);
-            } elseif ($user->role->can_view_companies === 1) {
-                // Для пользователей с ограниченным доступом показываем только их компании
-                $companiesQuery->where('owner_user_id', $currentUserId);
-            } elseif ($user->role->can_view_companies === 3) {
-                // Для администраторов показываем все компании
-                // Ничего не добавляем к запросу
-            } else {
-                // Для остальных ролей показываем только их компании
-                $companiesQuery->where('owner_user_id', $currentUserId);
-            }
-        } else {
-            // Если пользователь не авторизован или нет роли, показываем только его компании
-            $companiesQuery->where('owner_user_id', $currentUserId);
-        }
-
-        $filterData['companies'] = $companiesQuery->get();
-
-        // Регионы - показываем все активные регионы
-        $filterData['regions'] = \App\Models\Regions::where('active', true)->get();
-
-        // Состояния товаров - показываем все состояния
-        $filterData['productStates'] = \App\Models\ProductState::all();
-
-        // Доступности товаров - показываем все доступности
-        $filterData['productAvailables'] = \App\Models\ProductAvailable::all();
-
-        // Пользователи (ответственные) - только для администраторов, исключая региональных представителей
-        if ($user && $user->role && $user->role->name === 'Администратор') {
-            $filterData['users'] = \App\Models\User::with('role')
-                ->where('active', true)
-                ->whereHas('role', function($query) {
-                    $query->where('name', '!=', 'Региональный представитель');
-                })
-                ->orderBy('name')
-                ->get();
-        } else {
-            $filterData['users'] = collect();
-        }
-
-        return $filterData;
+        return [
+            'categories' => FilterOptions::from($availableRecords, ProductCategories::class, 'category_id'),
+            'statuses' => FilterOptions::from($availableRecords, AdvertisementStatus::class, 'status_id'),
+            'companies' => $companies->with('status')->orderBy('name')->get(),
+            'regions' => FilterOptions::from($companies, Regions::class, 'region_id'),
+            'productStates' => FilterOptions::from($availableRecords, \App\Models\ProductState::class, 'product_state'),
+            'productAvailables' => FilterOptions::from($availableRecords, \App\Models\ProductAvailable::class, 'product_available'),
+            'users' => $user && $user->role && $user->role->name === 'Администратор'
+                ? FilterOptions::from($availableRecords, \App\Models\User::class, 'created_by')
+                : collect(),
+        ];
     }
 
     public function create(Request $request)

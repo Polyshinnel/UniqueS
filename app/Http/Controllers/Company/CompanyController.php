@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Company;
 
 use App\Http\Controllers\Controller;
+use App\Support\FilterOptions;
 use App\Models\Company;
 use App\Models\CompanyAddress;
 use App\Models\CompanyContacts;
@@ -76,6 +77,8 @@ class CompanyController extends Controller
             $query->whereRaw('1 = 0'); // Всегда false
         }
 
+        $availableRecords = (clone $query)->withoutEagerLoads();
+
         // Применяем фильтры
         if (request('search')) {
             $search = request('search');
@@ -120,24 +123,14 @@ class CompanyController extends Controller
 
         $companies = $query->orderBy('id', 'desc')->paginate(20);
 
-        // Данные для фильтров
         $filterData = [
-            'statuses' => \App\Models\CompanyStatus::all(),
-            'regions' => $this->getUserRegions(),
-            'sources' => Sources::all(),
-            'regionals' => User::where('role_id', 3)
-                ->where('active', true)
-                ->get(),
+            'statuses' => FilterOptions::from($availableRecords, \App\Models\CompanyStatus::class, 'company_status_id'),
+            'regions' => FilterOptions::from($availableRecords, Regions::class, 'region_id'),
+            'sources' => FilterOptions::from($availableRecords, Sources::class, 'source_id'),
+            'regionals' => FilterOptions::from($availableRecords, User::class, 'regional_user_id'),
             'owners' => $user && $user->role && $user->role->can_view_companies === 3
-                ? User::where('active', true)
-                    ->whereIn('id', function($query) {
-                        $query->select('owner_user_id')
-                              ->from('companies')
-                              ->whereNotNull('owner_user_id');
-                    })
-                    ->orderBy('name')
-                    ->get(['id', 'name'])
-                : collect()
+                ? FilterOptions::from($availableRecords, User::class, 'owner_user_id')
+                : collect(),
         ];
 
         $warehouses = Warehouses::all();

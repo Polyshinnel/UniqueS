@@ -32,6 +32,9 @@
                         <form method="GET" action="{{ request()->url() }}" class="filter-form">
                             <select name="user_id" class="user-select" onchange="this.form.submit()">
                                 <option value="">Все ответственные</option>
+                                @if($hasSystemRecords)
+                                <option value="system" {{ request('user_id') == 'system' ? 'selected' : '' }}>Система</option>
+                                @endif
                                 @if(isset($usersForFilter))
                                     @foreach($usersForFilter as $user)
                                         <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>

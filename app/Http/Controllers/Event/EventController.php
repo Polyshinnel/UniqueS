@@ -104,9 +104,6 @@ class EventController extends Controller
         // Определяем роли: 1 - Администратор, 2 - Менеджер, 3 - Региональный представитель
         $isAdmin = $user->role_id == 1;
         
-        // Получаем список пользователей для фильтра (только для администраторов)
-        $usersForFilter = $isAdmin ? User::orderBy('name')->get() : collect();
-        
         // Получаем активные задачи (expired_at > now и status = 0)
         $productActionsQuery = ProductAction::with(['product', 'user'])
             ->where('status', 0)
@@ -120,6 +117,10 @@ class EventController extends Controller
             ->where('status', 0)
             ->where('expired_at', '>', Carbon::now());
         
+        [$usersForFilter, $hasSystemRecords] = $isAdmin
+            ? $this->getUserFilterData([$productActionsQuery, $companyActionsQuery, $advActionsQuery])
+            : [collect(), false];
+
         // Если не администратор, показываем только свои задачи
         if (!$isAdmin) {
             $productActionsQuery->where('user_id', $user->id);
@@ -225,7 +226,7 @@ class EventController extends Controller
         // Добавляем параметры запроса к пагинации для сохранения фильтров
         $paginator->appends($request->query());
         
-        return view('Events.ActiveEventsBlock', compact('paginator', 'isAdmin', 'usersForFilter'));
+        return view('Events.ActiveEventsBlock', compact('paginator', 'isAdmin', 'usersForFilter', 'hasSystemRecords'));
     }
 
     public function expired(Request $request)
@@ -238,9 +239,6 @@ class EventController extends Controller
         
         // Определяем роли: 1 - Администратор, 2 - Менеджер, 3 - Региональный представитель
         $isAdmin = $user->role_id == 1;
-        
-        // Получаем список пользователей для фильтра (только для администраторов)
-        $usersForFilter = $isAdmin ? User::orderBy('name')->get() : collect();
         
         // Получаем просроченные задачи (expired_at < now и status = 0)
         $productActionsQuery = ProductAction::with(['product', 'user'])
@@ -255,6 +253,10 @@ class EventController extends Controller
             ->where('status', 0)
             ->where('expired_at', '<', Carbon::now());
         
+        [$usersForFilter, $hasSystemRecords] = $isAdmin
+            ? $this->getUserFilterData([$productActionsQuery, $companyActionsQuery, $advActionsQuery])
+            : [collect(), false];
+
         // Если не администратор, показываем только свои задачи
         if (!$isAdmin) {
             $productActionsQuery->where('user_id', $user->id);
@@ -360,7 +362,7 @@ class EventController extends Controller
         // Добавляем параметры запроса к пагинации для сохранения фильтров
         $paginator->appends($request->query());
         
-        return view('Events.ExpiredEventsBlock', compact('paginator', 'isAdmin', 'usersForFilter'));
+        return view('Events.ExpiredEventsBlock', compact('paginator', 'isAdmin', 'usersForFilter', 'hasSystemRecords'));
     }
 
     public function logs(Request $request)
@@ -373,9 +375,6 @@ class EventController extends Controller
         
         // Определяем роли: 1 - Администратор, 2 - Менеджер, 3 - Региональный представитель
         $isAdmin = $user->role_id == 1;
-        
-        // Получаем список пользователей для фильтра (только для администраторов)
-        $usersForFilter = $isAdmin ? User::orderBy('name')->get() : collect();
         
         // Используем UNION для объединения всех логов в один запрос
         $productLogsQuery = ProductLog::select([
@@ -411,6 +410,10 @@ class EventController extends Controller
         ->selectRaw("'advertisement' as log_type")
         ->selectRaw("'advertisement' as entity_type");
         
+        [$usersForFilter, $hasSystemRecords] = $isAdmin
+            ? $this->getUserFilterData([$productLogsQuery, $companyLogsQuery, $advLogsQuery])
+            : [collect(), false];
+
         // Если не администратор, показываем только свои логи
         if (!$isAdmin) {
             $productLogsQuery->where('user_id', $user->id);
@@ -518,6 +521,21 @@ class EventController extends Controller
         // Добавляем параметры запроса к пагинации для сохранения фильтров
         $paginator->appends($request->query());
         
-        return view('Events.LogListPage', compact('paginator', 'isAdmin', 'usersForFilter'));
+        return view('Events.LogListPage', compact('paginator', 'isAdmin', 'usersForFilter', 'hasSystemRecords'));
     }
+
+    private function getUserFilterData(array $queries): array
+    {
+        $userIds = null;
+        $hasSystemRecords = false;
+
+        foreach ($queries as $query) {
+            $ids = (clone $query)->withoutEagerLoads()->reorder()->select('user_id')->toBase();
+            $userIds = $userIds ? $userIds->union($ids) : $ids;
+            $hasSystemRecords = $hasSystemRecords || (clone $query)->whereNull('user_id')->exists();
+        }
+
+        return [User::whereIn('id', $userIds)->orderBy('name')->get(), $hasSystemRecords];
+    }
+
 }
