@@ -79,9 +79,21 @@ class CompanyController extends Controller
         // Применяем фильтры
         if (request('search')) {
             $search = request('search');
-            $query->where(function($q) use ($search) {
+            $phoneDigits = preg_replace('/[^0-9]/', '', $search);
+            $isPhoneSearch = strlen($phoneDigits) >= 3
+                && preg_match('/^[0-9+\s().\-]+$/u', $search);
+
+            $query->where(function($q) use ($search, $phoneDigits, $isPhoneSearch) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('sku', 'like', "%{$search}%");
+
+                if ($isPhoneSearch) {
+                    // Ищем во всех контактах, игнорируя разделители между цифрами.
+                    $phonePattern = implode('[^0-9]*', str_split($phoneDigits));
+                    $q->orWhereHas('contacts.phones', function($phones) use ($phonePattern) {
+                        $phones->where('phone', 'regexp', $phonePattern);
+                    });
+                }
             });
         }
 
