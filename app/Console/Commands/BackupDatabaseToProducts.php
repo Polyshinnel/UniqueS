@@ -3,7 +3,9 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Symfony\Component\Process\ExecutableFinder;
 use Symfony\Component\Process\Process;
 
 class BackupDatabaseToProducts extends Command
@@ -14,8 +16,13 @@ class BackupDatabaseToProducts extends Command
 
     public function handle(): int
     {
-        $connectionName = config('database.default');
-        $connection = config("database.connections.{$connectionName}");
+        try {
+            // Используем параметры подключения после обработки DATABASE_URL Laravel.
+            $connection = DB::connection()->getConfig();
+        } catch (\Throwable $exception) {
+            $this->error('Не удалось получить параметры подключения к базе данных.');
+            return self::FAILURE;
+        }
 
         if (! $connection || $connection['driver'] !== 'mysql') {
             $this->error('Команда поддерживает только MySQL.');
@@ -39,7 +46,9 @@ class BackupDatabaseToProducts extends Command
         }
 
         $command = [
-            'mysqldump',
+            (new ExecutableFinder())->find('mariadb-dump') ?? 'mysqldump',
+            // Должен быть первым параметром: исключает пароль из /root/.my.cnf.
+            '--no-defaults',
             '--single-transaction',
             '--routines',
             '--triggers',
