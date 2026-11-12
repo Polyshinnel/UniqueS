@@ -12,7 +12,7 @@ class BackupDatabaseToProducts extends Command
 {
     protected $signature = 'database:backup-products';
 
-    protected $description = 'Создает полный дамп базы данных в storage/app/public/webserv/products и хранит дампы за 7 дней';
+    protected $description = 'Создает полный дамп базы данных в storage/app/public/webserv/database и хранит дампы за 7 дней';
 
     public function handle(): int
     {
@@ -29,7 +29,7 @@ class BackupDatabaseToProducts extends Command
             return self::FAILURE;
         }
 
-        $directory = storage_path('app/public/webserv/products');
+        $directory = storage_path('app/public/webserv/database');
 
         if (! File::isDirectory($directory) && ! File::makeDirectory($directory, 0755, true)) {
             $this->error("Не удалось создать папку: {$directory}");
